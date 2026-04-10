@@ -1,0 +1,15 @@
+{
+  "title": "Pixel Disintegration",
+  "description": "A richly styled HTML profile card rendered into canvas, then disintegrated into thousands of color-sampled particles on click. Particles explode outward with physics-based drift, then reassemble on a second click — a Thanos snap effect powered by getImageData.",
+  "tags": ["2d", "particles", "animation", "interactive", "visual"],
+  "author": "En Dash Consulting",
+  "dateCreated": "2026-04-10",
+  "context": "2d",
+  "difficulty": "advanced",
+  "features": ["layoutsubtree", "drawElementImage", "onpaint", "requestPaint"],
+  "browserSupport": {
+    "chrome": true,
+    "firefox": false,
+    "safari": false
+  }
+}

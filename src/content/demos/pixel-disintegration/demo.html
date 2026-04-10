@@ -1,0 +1,788 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pixel Disintegration — HTML-in-Canvas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        background: #0a0a0f;
+        color: #f0f0f0;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 1.5rem 1rem;
+        overflow-x: hidden;
+      }
+
+      h1 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 0.25rem;
+      }
+
+      .page-subtitle {
+        text-align: center;
+        font-size: 0.8rem;
+        color: #6a6a80;
+        margin-bottom: 1.5rem;
+        max-width: 420px;
+        line-height: 1.4;
+      }
+
+      /* ============================================================
+         Canvas container
+         ============================================================ */
+      .scene {
+        position: relative;
+        width: 420px;
+        max-width: 100%;
+        cursor: pointer;
+      }
+
+      #canvas {
+        width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 20px;
+      }
+
+      /* ============================================================
+         Card styles (rendered inside the canvas via drawElementImage)
+         ============================================================ */
+      .card {
+        width: 420px;
+        padding: 2rem;
+        background: linear-gradient(160deg, #16162a 0%, #0d0d1a 100%);
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        color: #f0f0f0;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .card-glow {
+        position: absolute;
+        border-radius: 50%;
+        pointer-events: none;
+      }
+
+      .card-glow-1 {
+        top: -80px;
+        right: -60px;
+        width: 280px;
+        height: 280px;
+        background: radial-gradient(
+          circle,
+          rgba(240, 65, 108, 0.18) 0%,
+          transparent 70%
+        );
+      }
+
+      .card-glow-2 {
+        bottom: -50px;
+        left: -40px;
+        width: 220px;
+        height: 220px;
+        background: radial-gradient(
+          circle,
+          rgba(108, 65, 240, 0.12) 0%,
+          transparent 70%
+        );
+      }
+
+      .card-inner {
+        position: relative;
+        z-index: 1;
+      }
+
+      .avatar-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #f0416c 0%, #6c41f0 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.6rem;
+        flex-shrink: 0;
+        box-shadow: 0 4px 24px rgba(240, 65, 108, 0.3);
+      }
+
+      .avatar-info h2 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        margin-bottom: 0.1rem;
+        letter-spacing: -0.01em;
+      }
+
+      .avatar-info .handle {
+        font-size: 0.78rem;
+        color: #6a6a80;
+        font-weight: 400;
+      }
+
+      .tweet-body {
+        font-size: 0.88rem;
+        color: #d0d0e0;
+        line-height: 1.6;
+        margin-bottom: 1.15rem;
+      }
+
+      .tweet-body .highlight {
+        color: #a78bfa;
+        font-weight: 500;
+      }
+
+      .tweet-media {
+        width: 100%;
+        height: 140px;
+        border-radius: 14px;
+        background: linear-gradient(
+          135deg,
+          #1a1a3a 0%,
+          #0f0f2a 40%,
+          #1a0a2a 100%
+        );
+        margin-bottom: 1.15rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .media-pattern {
+        position: absolute;
+        inset: 0;
+        opacity: 0.15;
+        background-image: radial-gradient(
+            circle at 20% 40%,
+            #f0416c 1px,
+            transparent 1px
+          ),
+          radial-gradient(circle at 60% 25%, #6c41f0 1.5px, transparent 1.5px),
+          radial-gradient(circle at 80% 70%, #a78bfa 1px, transparent 1px),
+          radial-gradient(circle at 35% 75%, #f0416c 2px, transparent 2px),
+          radial-gradient(circle at 50% 50%, #6c41f0 1px, transparent 1px);
+        background-size: 80px 80px, 60px 60px, 90px 90px, 70px 70px, 50px 50px;
+      }
+
+      .media-text {
+        font-size: 0.72rem;
+        color: #4a4a60;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        font-weight: 600;
+      }
+
+      .tweet-actions {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: space-between;
+        padding-top: 0.75rem;
+        border-top: 1px solid #1e1e38;
+      }
+
+      .action {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.72rem;
+        color: #4a4a60;
+        font-weight: 500;
+      }
+
+      .action-icon {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.65rem;
+      }
+
+      .action-reply .action-icon {
+        color: #4a9eff;
+      }
+
+      .action-repost .action-icon {
+        color: #00c875;
+      }
+
+      .action-like .action-icon {
+        color: #f0416c;
+      }
+
+      .action-share .action-icon {
+        color: #6c41f0;
+      }
+
+      /* ============================================================
+         Status indicator + hint
+         ============================================================ */
+      .status-bar {
+        margin-top: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.72rem;
+        color: #4a4a60;
+      }
+
+      .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #333;
+        transition: background 0.3s;
+      }
+
+      .status-dot.intact {
+        background: #00c875;
+      }
+
+      .status-dot.disintegrating {
+        background: #f0416c;
+        animation: pulse 0.6s ease-in-out infinite alternate;
+      }
+
+      .status-dot.scattered {
+        background: #6c41f0;
+      }
+
+      .status-dot.reassembling {
+        background: #a78bfa;
+        animation: pulse 0.6s ease-in-out infinite alternate;
+      }
+
+      @keyframes pulse {
+        from {
+          opacity: 0.5;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      .hint {
+        margin-top: 0.75rem;
+        font-size: 0.7rem;
+        color: #4a4a60;
+        text-align: center;
+      }
+
+      .hint kbd {
+        display: inline-block;
+        padding: 0.1rem 0.35rem;
+        background: #1a1a30;
+        border: 1px solid #333;
+        border-radius: 3px;
+        font-family: inherit;
+        font-size: 0.65rem;
+        color: #6a6a80;
+      }
+
+      /* ============================================================
+         Pipeline explanation
+         ============================================================ */
+      .pipeline-info {
+        margin-top: 1.25rem;
+        max-width: 420px;
+        width: 100%;
+        padding: 0.85rem 1rem;
+        background: #14141f;
+        border: 1px solid #282840;
+        border-radius: 10px;
+        font-size: 0.72rem;
+        color: #6a6a80;
+        line-height: 1.55;
+      }
+
+      .pipeline-info p {
+        margin-bottom: 0.3rem;
+      }
+
+      .pipeline-info p:last-child {
+        margin-bottom: 0;
+      }
+
+      .pipeline-info strong {
+        color: #8a8aaf;
+      }
+
+      .pipeline-info .hl {
+        color: #f0416c;
+      }
+
+      .pipeline-info code {
+        color: #6c41f0;
+        font-family: "Courier New", monospace;
+        font-size: 0.68rem;
+      }
+
+      .pipeline-info .note {
+        color: #3a3a50;
+        font-size: 0.65rem;
+        margin-top: 0.4rem;
+      }
+
+      @media (max-width: 480px) {
+        body {
+          padding: 1rem 0.75rem;
+        }
+
+        .card {
+          width: 100%;
+          padding: 1.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Pixel Disintegration</h1>
+    <p class="page-subtitle">
+      Click the card to disintegrate it into thousands of particles sampled from
+      the rendered pixels. Click again to reassemble. A Thanos snap for HTML.
+    </p>
+
+    <div class="scene" id="scene">
+      <canvas id="canvas" width="840" height="1120" layoutsubtree>
+        <div class="card" id="card">
+          <div class="card-glow card-glow-1"></div>
+          <div class="card-glow card-glow-2"></div>
+          <div class="card-inner">
+            <div class="avatar-row">
+              <div class="avatar">&#10024;</div>
+              <div class="avatar-info">
+                <h2>Mika Torres</h2>
+                <div class="handle">@mika_builds</div>
+              </div>
+            </div>
+            <p class="tweet-body">
+              Just discovered you can render
+              <span class="highlight">full HTML + CSS</span> directly into a
+              canvas and then explode the pixels into particles. The future of
+              the web is absolutely wild.
+              <span class="highlight">#HTMLInCanvas</span>
+            </p>
+            <div class="tweet-media">
+              <div class="media-pattern"></div>
+              <span class="media-text">html-in-canvas preview</span>
+            </div>
+            <div class="tweet-actions">
+              <div class="action action-reply">
+                <div class="action-icon">&#8617;</div>
+                <span>247</span>
+              </div>
+              <div class="action action-repost">
+                <div class="action-icon">&#8635;</div>
+                <span>1.2k</span>
+              </div>
+              <div class="action action-like">
+                <div class="action-icon">&#9829;</div>
+                <span>4.8k</span>
+              </div>
+              <div class="action action-share">
+                <div class="action-icon">&#8599;</div>
+                <span>Share</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </canvas>
+    </div>
+
+    <div class="status-bar">
+      <div class="status-dot intact" id="status-dot"></div>
+      <span id="status-text">Intact — click to disintegrate</span>
+    </div>
+
+    <p class="hint">
+      <kbd>click</kbd> to snap &mdash; <kbd>click</kbd> again to reassemble
+    </p>
+
+    <div class="pipeline-info">
+      <p>
+        <strong>1.</strong> A tweet card lives inside a
+        <code>&lt;canvas layoutsubtree&gt;</code> — fully styled with CSS
+      </p>
+      <p>
+        <strong>2.</strong>
+        <span class="hl">drawElementImage()</span> renders the live HTML into
+        the canvas bitmap
+      </p>
+      <p>
+        <strong>3.</strong>
+        <span class="hl">getImageData()</span> reads every pixel's color and
+        position to seed particles
+      </p>
+      <p>
+        <strong>4.</strong> Particles <span class="hl">explode outward</span>
+        with velocity, gravity, and drag — then reassemble on demand
+      </p>
+      <p class="note">
+        This effect requires pixel-level access to rendered HTML — impossible
+        without HTML-in-Canvas.
+      </p>
+    </div>
+
+    <script>
+      /* ==============================================================
+         DOM references
+         ============================================================== */
+      const scene = document.getElementById("scene");
+      const canvas = document.getElementById("canvas");
+      const card = document.getElementById("card");
+      const statusDot = document.getElementById("status-dot");
+      const statusText = document.getElementById("status-text");
+      const ctx = canvas.getContext("2d");
+
+      /* ==============================================================
+         State machine
+         ============================================================== */
+      const State = {
+        INTACT: "intact",
+        DISINTEGRATING: "disintegrating",
+        SCATTERED: "scattered",
+        REASSEMBLING: "reassembling",
+      };
+
+      let state = State.INTACT;
+      let particles = [];
+      let animationProgress = 0;
+      let lastFrameTime = 0;
+
+      /* ==============================================================
+         Canvas sizing — match CSS layout at device pixel ratio
+         ============================================================== */
+      function syncCanvasSize() {
+        const rect = scene.getBoundingClientRect();
+        const dpr = devicePixelRatio;
+        const w = Math.round(rect.width * dpr);
+        const h = Math.round(rect.height * dpr);
+
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+        }
+      }
+
+      function requestRepaint() {
+        if (canvas.requestPaint) {
+          canvas.requestPaint();
+        } else if (canvas.onpaint) {
+          canvas.onpaint();
+        }
+      }
+
+      const ro = new ResizeObserver(() => {
+        syncCanvasSize();
+        if (state === State.INTACT) {
+          requestRepaint();
+        }
+      });
+      ro.observe(scene);
+
+      /* ==============================================================
+         Paint handler — draws the HTML card into the canvas
+         ============================================================== */
+      canvas.onpaint = () => {
+        if (state !== State.INTACT) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawElementImage(card, 0, 0, canvas.width, canvas.height);
+      };
+
+      /* ==============================================================
+         Particle system
+         ============================================================== */
+
+      /* Sampling density — controls particle count vs. performance */
+      const SAMPLE_STEP = 4;
+
+      /* Physics constants */
+      const DISINTEGRATE_DURATION = 1.8;
+      const REASSEMBLE_DURATION = 1.4;
+
+      /**
+       * Harvest pixel data from the canvas and build the particle array.
+       * We sample every SAMPLE_STEP pixels to keep the count manageable
+       * while still capturing the full visual appearance.
+       */
+      function createParticles() {
+        const w = canvas.width;
+        const h = canvas.height;
+        const imageData = ctx.getImageData(0, 0, w, h);
+        const data = imageData.data;
+
+        particles = [];
+
+        for (let y = 0; y < h; y += SAMPLE_STEP) {
+          for (let x = 0; x < w; x += SAMPLE_STEP) {
+            const i = (y * w + x) * 4;
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            const a = data[i + 3];
+
+            /* Skip fully transparent pixels */
+            if (a < 10) continue;
+
+            /* Normalized position from card center */
+            const cx = w / 2;
+            const cy = h / 2;
+            const dx = x - cx;
+            const dy = y - cy;
+
+            /* Disintegration sweeps left-to-right: particles on the right
+               start moving first, creating the classic snap wave */
+            const normalizedX = x / w;
+
+            /* Random explosion angle biased outward from center */
+            const baseAngle = Math.atan2(dy, dx);
+            const spread = (Math.random() - 0.5) * 1.2;
+            const angle = baseAngle + spread;
+
+            /* Speed varies: further from center = faster */
+            const distFromCenter = Math.sqrt(dx * dx + dy * dy);
+            const maxDist = Math.sqrt(cx * cx + cy * cy);
+            const normalizedDist = distFromCenter / maxDist;
+            const speed =
+              (80 + Math.random() * 200 + normalizedDist * 120) *
+              (0.6 + Math.random() * 0.8);
+
+            particles.push({
+              /* Original (home) position */
+              homeX: x,
+              homeY: y,
+
+              /* Current animated position */
+              x: x,
+              y: y,
+
+              /* Velocity for explosion */
+              vx: Math.cos(angle) * speed,
+              vy: Math.sin(angle) * speed,
+
+              /* Color */
+              r: r,
+              g: g,
+              b: b,
+              a: a / 255,
+
+              /* Per-particle timing: wave delay based on X position */
+              delay: normalizedX * 0.5 + Math.random() * 0.15,
+
+              /* Size variation */
+              size: SAMPLE_STEP * (0.6 + Math.random() * 0.6),
+
+              /* Gravity and drag per-particle for organic feel */
+              gravity: 20 + Math.random() * 60,
+              drag: 0.96 + Math.random() * 0.03,
+
+              /* Rotation for visual interest */
+              rotation: Math.random() * Math.PI * 2,
+              rotationSpeed: (Math.random() - 0.5) * 4,
+
+              /* Fade timing */
+              fadeStart: 0.5 + Math.random() * 0.3,
+            });
+          }
+        }
+      }
+
+      /* ==============================================================
+         Render particles onto the canvas
+         ============================================================== */
+      function renderParticles(progress, isReassembling) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        for (let i = 0; i < particles.length; i++) {
+          const p = particles[i];
+
+          /* Compute per-particle progress accounting for wave delay */
+          let t;
+          if (isReassembling) {
+            /* Reassembly: reverse the delay order (right-side returns last) */
+            const reverseDelay = (1 - p.delay / 0.65) * 0.4;
+            t = Math.max(0, Math.min(1, (progress - reverseDelay) / 0.6));
+          } else {
+            t = Math.max(0, Math.min(1, (progress - p.delay) / 0.5));
+          }
+
+          if (t <= 0 && !isReassembling) {
+            /* Particle hasn't started moving yet — draw at home */
+            ctx.globalAlpha = p.a;
+            ctx.fillStyle = `rgb(${p.r},${p.g},${p.b})`;
+            ctx.fillRect(p.homeX, p.homeY, SAMPLE_STEP, SAMPLE_STEP);
+            continue;
+          }
+
+          let px, py, alpha, size;
+
+          if (isReassembling) {
+            /* Ease-out: particles decelerate as they approach home */
+            const ease = 1 - Math.pow(1 - t, 3);
+            px = p.x + (p.homeX - p.x) * ease;
+            py = p.y + (p.homeY - p.y) * ease;
+            alpha = p.a * (0.3 + t * 0.7);
+            size = p.size * (0.4 + t * 0.6);
+          } else {
+            /* Ease-in: particles accelerate outward */
+            const ease = t * t;
+
+            /* Apply velocity with drag */
+            const dragFactor = Math.pow(p.drag, t * 60);
+            const dt = ease;
+            px = p.homeX + p.vx * dt * dragFactor;
+            py = p.homeY + p.vy * dt * dragFactor + p.gravity * dt * dt;
+
+            /* Fade out */
+            alpha =
+              t > p.fadeStart
+                ? p.a * (1 - (t - p.fadeStart) / (1 - p.fadeStart))
+                : p.a;
+            size = p.size * (1 + t * 0.5);
+          }
+
+          if (alpha < 0.01) continue;
+
+          ctx.globalAlpha = Math.max(0, alpha);
+          ctx.fillStyle = `rgb(${p.r},${p.g},${p.b})`;
+
+          /* Draw as a small rotated square for organic feel */
+          ctx.save();
+          ctx.translate(px, py);
+          ctx.rotate(p.rotation + p.rotationSpeed * t);
+          const half = size / 2;
+          ctx.fillRect(-half, -half, size, size);
+          ctx.restore();
+        }
+
+        ctx.globalAlpha = 1;
+      }
+
+      /* ==============================================================
+         Animation loop
+         ============================================================== */
+      function animate(timestamp) {
+        if (state === State.INTACT) return;
+
+        if (!lastFrameTime) lastFrameTime = timestamp;
+        const dt = (timestamp - lastFrameTime) / 1000;
+        lastFrameTime = timestamp;
+
+        const duration =
+          state === State.DISINTEGRATING
+            ? DISINTEGRATE_DURATION
+            : REASSEMBLE_DURATION;
+
+        animationProgress += dt / duration;
+
+        if (animationProgress >= 1) {
+          animationProgress = 1;
+
+          if (state === State.DISINTEGRATING) {
+            state = State.SCATTERED;
+            updateStatus();
+            /* Render final scattered state */
+            renderParticles(1, false);
+            return;
+          }
+
+          if (state === State.REASSEMBLING) {
+            state = State.INTACT;
+            updateStatus();
+            particles = [];
+            /* Re-render the original HTML card */
+            requestRepaint();
+            return;
+          }
+        }
+
+        renderParticles(
+          animationProgress,
+          state === State.REASSEMBLING,
+        );
+
+        requestAnimationFrame(animate);
+      }
+
+      /* ==============================================================
+         Click handler — toggle disintegrate / reassemble
+         ============================================================== */
+      scene.addEventListener("click", () => {
+        if (state === State.INTACT) {
+          /* Capture the rendered HTML card into pixels */
+          syncCanvasSize();
+
+          /* Ensure the card is drawn before sampling */
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawElementImage(card, 0, 0, canvas.width, canvas.height);
+
+          createParticles();
+          state = State.DISINTEGRATING;
+          animationProgress = 0;
+          lastFrameTime = 0;
+          updateStatus();
+          requestAnimationFrame(animate);
+          return;
+        }
+
+        if (state === State.SCATTERED) {
+          state = State.REASSEMBLING;
+          animationProgress = 0;
+          lastFrameTime = 0;
+          updateStatus();
+          requestAnimationFrame(animate);
+          return;
+        }
+
+        /* Ignore clicks during animation */
+      });
+
+      /* ==============================================================
+         Status indicator
+         ============================================================== */
+      function updateStatus() {
+        statusDot.className = "status-dot " + state;
+
+        const messages = {
+          [State.INTACT]: "Intact \u2014 click to disintegrate",
+          [State.DISINTEGRATING]: "Disintegrating\u2026",
+          [State.SCATTERED]: "Scattered \u2014 click to reassemble",
+          [State.REASSEMBLING]: "Reassembling\u2026",
+        };
+
+        statusText.textContent = messages[state];
+      }
+
+      /* ==============================================================
+         Initial paint
+         ============================================================== */
+      syncCanvasSize();
+      requestRepaint();
+    </script>
+  </body>
+</html>
