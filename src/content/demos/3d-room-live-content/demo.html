@@ -496,7 +496,9 @@
         letter-spacing: 0.06em;
       }
 
-      .poster-field .input {
+      .poster-field input[type="text"],
+      .poster-field input[type="email"],
+      .poster-field select {
         padding: 0.7rem 0.9rem;
         font-family: inherit;
         font-size: 0.95rem;
@@ -504,28 +506,29 @@
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 8px;
         color: #f0f0f0;
+        outline: none;
+        appearance: none;
+        width: 100%;
       }
 
-      .poster-field .input.placeholder {
-        color: #5a5a70;
+      .poster-field input[type="text"]:focus,
+      .poster-field input[type="email"]:focus,
+      .poster-field select:focus {
+        border-color: rgba(108, 65, 240, 0.6);
+        background: rgba(0, 0, 0, 0.55);
       }
 
-      .poster-field .select {
-        padding: 0.7rem 0.9rem;
-        font-family: inherit;
-        font-size: 0.95rem;
-        background: rgba(0, 0, 0, 0.4);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
-        color: #f0f0f0;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-
-      .poster-field .select::after {
-        content: "▾";
-        color: #6a6a80;
+      .poster-field select {
+        cursor: pointer;
+        background-image:
+          linear-gradient(45deg, transparent 50%, #6a6a80 50%),
+          linear-gradient(135deg, #6a6a80 50%, transparent 50%);
+        background-position:
+          calc(100% - 16px) 50%,
+          calc(100% - 11px) 50%;
+        background-size: 5px 5px;
+        background-repeat: no-repeat;
+        padding-right: 2rem;
       }
 
       .poster-checkbox-row {
@@ -534,20 +537,15 @@
         gap: 0.6rem;
         font-size: 0.85rem;
         color: #a0a0b8;
+        cursor: pointer;
       }
 
-      .poster-checkbox-row .check {
+      .poster-checkbox-row input[type="checkbox"] {
         width: 18px;
         height: 18px;
-        border-radius: 4px;
-        background: rgba(0, 229, 185, 0.2);
-        border: 1px solid #00e5b9;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.8rem;
-        color: #00e5b9;
-        font-weight: 700;
+        accent-color: #00e5b9;
+        cursor: pointer;
+        margin: 0;
       }
 
       .poster-submit {
@@ -561,7 +559,12 @@
         border: none;
         border-radius: 8px;
         text-align: center;
+        cursor: pointer;
         box-shadow: 0 12px 30px -10px rgba(108, 65, 240, 0.6);
+      }
+
+      .poster-submit:hover {
+        background: linear-gradient(135deg, #7d52ff, #9b66ff);
       }
 
       .poster-fineprint {
@@ -960,25 +963,42 @@
           </p>
         </div>
 
-        <div class="poster-form">
+        <form class="poster-form" id="poster-form" onsubmit="return false">
           <div class="poster-field">
-            <label>Name</label>
-            <div class="input">Jane Doe</div>
+            <label for="poster-name">Name</label>
+            <input
+              type="text"
+              id="poster-name"
+              value="Jane Doe"
+              autocomplete="off"
+            />
           </div>
           <div class="poster-field">
-            <label>Email</label>
-            <div class="input">jane@example.com</div>
+            <label for="poster-email">Email</label>
+            <input
+              type="email"
+              id="poster-email"
+              value="jane@example.com"
+              autocomplete="off"
+            />
           </div>
           <div class="poster-field">
-            <label>Role</label>
-            <div class="select">Frontend engineer</div>
+            <label for="poster-role">Role</label>
+            <select id="poster-role">
+              <option>Frontend engineer</option>
+              <option>Designer</option>
+              <option>Product manager</option>
+              <option>Other</option>
+            </select>
           </div>
-          <div class="poster-checkbox-row">
-            <div class="check">✓</div>
+          <label class="poster-checkbox-row">
+            <input type="checkbox" id="poster-notify" checked />
             <span>Email me when the spec ships in stable Chrome</span>
-          </div>
-          <div class="poster-submit">Get Early Access →</div>
-        </div>
+          </label>
+          <button type="submit" class="poster-submit">
+            Get Early Access →
+          </button>
+        </form>
 
         <div class="poster-fineprint">
           html-in-canvas.dev · No spam, no third-party tracking
@@ -1124,10 +1144,12 @@
       }
       const initial = viewportSize();
 
+      // Near plane is small so the monitor / poster / TV planes don't
+      // get clipped when the user walks right up to them.
       const camera = new THREE.PerspectiveCamera(
         70,
         initial.w / initial.h,
-        0.1,
+        0.01,
         100,
       );
       camera.position.set(0, 1.7, 2.5);
