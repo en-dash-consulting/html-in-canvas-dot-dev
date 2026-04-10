@@ -1,0 +1,15 @@
+{
+  "title": "Multi-Element Composition",
+  "description": "Multiple draggable canvas children drawn at different positions with transforms, demonstrating z-ordering, changedElements paint data, and multi-element management.",
+  "tags": ["demo", "intermediate", "2d", "composition", "drag-and-drop"],
+  "author": "En Dash Consulting",
+  "dateCreated": "2026-04-10",
+  "context": "2d",
+  "difficulty": "intermediate",
+  "features": ["layoutsubtree", "drawElementImage", "onpaint", "requestPaint"],
+  "browserSupport": {
+    "chrome": true,
+    "firefox": false,
+    "safari": false
+  }
+}
