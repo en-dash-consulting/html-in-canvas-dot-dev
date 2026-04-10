@@ -6,16 +6,22 @@
     <title>Accessible Charts — HTML-in-Canvas</title>
     <style>
       * {
-        margin: 0;
         box-sizing: border-box;
       }
 
-      body {
-        min-height: 100vh;
+      html {
+        height: 100%;
+      }
+
+      :where(body, :host) {
+        display: block;
+        margin: 0;
+        min-height: 100%;
         background: #0a0a0f;
         color: #f0f0f0;
         font-family: system-ui, -apple-system, sans-serif;
         padding: 1.5rem;
+        overflow-y: auto;
       }
 
       h1 {
@@ -262,10 +268,14 @@
     </p>
 
     <script>
+      // Resolve the script's root: a ShadowRoot when mounted via shadow
+      // DOM, or `document` when this file is served standalone.
+      const root = window.__demoRoot ?? document;
+
       // =============================================================
       // BAR CHART
       // =============================================================
-      const barCanvas = document.getElementById("bar-chart");
+      const barCanvas = root.getElementById("bar-chart");
       const barCtx = barCanvas.getContext("2d");
       const barItems = Array.from(barCanvas.children);
 
@@ -355,7 +365,7 @@
           // 35 = half of the 70px CSS width of .bar-label
           const labelX = x + barW / 2 - 35;
           const labelY = y - 38;
-          const transform = barCtx.drawElement(el, labelX, labelY);
+          const transform = barCtx.drawElementImage(el, labelX, labelY);
           if (transform) el.style.transform = transform.toString();
 
           // Draw the browser's native focus ring around the bar
@@ -369,7 +379,7 @@
       // =============================================================
       // PIE CHART
       // =============================================================
-      const pieCanvas = document.getElementById("pie-chart");
+      const pieCanvas = root.getElementById("pie-chart");
       const pieCtx = pieCanvas.getContext("2d");
       const pieItems = Array.from(pieCanvas.children);
 
@@ -422,7 +432,7 @@
           const lh = 15; // ~half of rendered label height
           const lx = cx + Math.cos(mid) * radius * 0.6 - lw;
           const ly = cy + Math.sin(mid) * radius * 0.6 - lh;
-          const transform = pieCtx.drawElement(el, lx, ly);
+          const transform = pieCtx.drawElementImage(el, lx, ly);
           if (transform) el.style.transform = transform.toString();
 
           // Focus ring around the wedge path
@@ -440,7 +450,10 @@
       // =============================================================
       function setupKeyNav(canvas, items) {
         canvas.addEventListener("keydown", (e) => {
-          const focused = document.activeElement;
+          // In shadow DOM, the active element lives on the shadow root;
+          // in standalone, it lives on document. `root` resolves to the
+          // right thing in both contexts.
+          const focused = root.activeElement ?? document.activeElement;
           const idx = items.indexOf(focused);
           if (idx === -1) return;
 
@@ -491,7 +504,10 @@
           canvas.width = Math.round(width * devicePixelRatio);
           canvas.height = Math.round(height * devicePixelRatio);
           ctx.scale(devicePixelRatio, devicePixelRatio);
-          if (canvas.onpaint) canvas.onpaint();
+          // requestPaint() instead of onpaint() so the browser's paint
+          // pipeline runs and generates the cached paint records that
+          // drawElement() depends on.
+          canvas.requestPaint?.();
         });
         ro.observe(canvas);
       }

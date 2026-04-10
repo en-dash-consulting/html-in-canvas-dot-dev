@@ -12,12 +12,16 @@
     />
     <style>
       * {
-        margin: 0;
         box-sizing: border-box;
       }
 
-      body {
-        min-height: 100vh;
+      html {
+        height: 100%;
+      }
+
+      :where(body, :host) {
+        margin: 0;
+        min-height: 100%;
         background: #0a0a0f;
         color: #f0f0f0;
         font-family: "Inter", system-ui, -apple-system, sans-serif;
@@ -318,7 +322,7 @@
       }
 
       @media (max-width: 480px) {
-        body {
+        :where(body, :host) {
           padding: 1rem 0.75rem;
         }
 
@@ -416,16 +420,21 @@
     </div>
 
     <script>
+      // Resolve the script's root: a ShadowRoot when mounted via shadow
+      // DOM, or `document` when this file is served standalone.
+      const root = window.__demoRoot ?? document;
+      const $ = (id) => root.getElementById(id);
+
       /* ==============================================================
          DOM references
          ============================================================== */
-      const scene = document.getElementById("scene");
-      const sourceCanvas = document.getElementById("source-canvas");
-      const glassCanvas = document.getElementById("glass-canvas");
-      const card = document.getElementById("card");
-      const followBtn = document.getElementById("follow-btn");
-      const msgBtn = document.getElementById("msg-btn");
-      const followerCount = document.getElementById("follower-count");
+      const scene = $("scene");
+      const sourceCanvas = $("source-canvas");
+      const glassCanvas = $("glass-canvas");
+      const card = $("card");
+      const followBtn = $("follow-btn");
+      const msgBtn = $("msg-btn");
+      const followerCount = $("follower-count");
 
       /* ==============================================================
          2D context — renders the HTML card via drawElementImage

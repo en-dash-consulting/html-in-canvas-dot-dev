@@ -12,16 +12,22 @@
     />
     <style>
       * {
-        margin: 0;
         box-sizing: border-box;
       }
 
-      body {
-        min-height: 100vh;
+      html {
+        height: 100%;
+      }
+
+      :where(body, :host) {
+        display: block;
+        margin: 0;
+        min-height: 100%;
         background: #0a0a0f;
         color: #f0f0f0;
         font-family: "Inter", system-ui, -apple-system, sans-serif;
         padding: 1.5rem;
+        overflow-y: auto;
       }
 
       h1 {
@@ -677,12 +683,17 @@ canvas.<span class="fn">onpaint</span> = () => {
     </p>
 
     <script>
+      // Resolve the script's root: a ShadowRoot when mounted via shadow
+      // DOM, or `document` when this file is served standalone.
+      const root = window.__demoRoot ?? document;
+      const $ = (id) => root.getElementById(id);
+
       // =============================================================
       // CANVAS SETUP
       // =============================================================
-      const canvas = document.getElementById("canvas");
+      const canvas = $("canvas");
       const ctx = canvas.getContext("2d");
-      const editor = document.getElementById("editor");
+      const editor = $("editor");
 
       // =============================================================
       // EFFECT STATE
@@ -819,7 +830,7 @@ canvas.<span class="fn">onpaint</span> = () => {
         canvas.width = Math.round(width * devicePixelRatio);
         canvas.height = Math.round(height * devicePixelRatio);
         ctx.scale(devicePixelRatio, devicePixelRatio);
-        if (canvas.onpaint) canvas.onpaint();
+        canvas.requestPaint?.();
       });
       ro.observe(canvas);
 
@@ -850,7 +861,7 @@ canvas.<span class="fn">onpaint</span> = () => {
       // synchronous way to apply formatting to a contenteditable
       // region and is still supported in all browsers.
       // =============================================================
-      document.querySelectorAll(".toolbar button[data-cmd]").forEach((btn) => {
+      root.querySelectorAll(".toolbar button[data-cmd]").forEach((btn) => {
         btn.addEventListener("mousedown", (e) => {
           // Prevent the button click from stealing focus from the
           // editor, which would collapse the selection.
@@ -874,7 +885,7 @@ canvas.<span class="fn">onpaint</span> = () => {
 
       /** Update active state of toolbar buttons based on selection. */
       function updateToolbarState() {
-        document.querySelectorAll(".toolbar button[data-cmd]").forEach((btn) => {
+        root.querySelectorAll(".toolbar button[data-cmd]").forEach((btn) => {
           const cmd = btn.dataset.cmd;
           if (cmd === "formatBlock") {
             const block = document.queryCommandValue("formatBlock");
@@ -902,7 +913,7 @@ canvas.<span class="fn">onpaint</span> = () => {
 
       /** Helper: bind a checkbox toggle to an effect's enabled flag. */
       function bindToggle(id, effectKey) {
-        const el = document.getElementById(id);
+        const el = $(id);
         el.addEventListener("change", () => {
           effects[effectKey].enabled = el.checked;
           requestRepaint();
@@ -911,8 +922,8 @@ canvas.<span class="fn">onpaint</span> = () => {
 
       /** Helper: bind a range slider to an effect property. */
       function bindRange(id, effectKey, prop, valId) {
-        const el = document.getElementById(id);
-        const valEl = valId ? document.getElementById(valId) : null;
+        const el = $(id);
+        const valEl = valId ? $(valId) : null;
         el.addEventListener("input", () => {
           effects[effectKey][prop] = parseFloat(el.value);
           if (valEl) valEl.textContent = el.value;
@@ -922,7 +933,7 @@ canvas.<span class="fn">onpaint</span> = () => {
 
       /** Helper: bind a color picker to an effect property. */
       function bindColor(id, effectKey, prop) {
-        const el = document.getElementById(id);
+        const el = $(id);
         el.addEventListener("input", () => {
           effects[effectKey][prop] = el.value;
           requestRepaint();

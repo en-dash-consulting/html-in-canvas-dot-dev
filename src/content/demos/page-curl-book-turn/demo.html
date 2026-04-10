@@ -12,12 +12,16 @@
     />
     <style>
       * {
-        margin: 0;
         box-sizing: border-box;
       }
 
-      body {
-        min-height: 100vh;
+      html {
+        height: 100%;
+      }
+
+      :where(body, :host) {
+        margin: 0;
+        min-height: 100%;
         background: #0a0a0f;
         color: #f0f0f0;
         font-family: "Inter", system-ui, -apple-system, sans-serif;
@@ -335,7 +339,7 @@
       }
 
       @media (max-width: 480px) {
-        body {
+        :where(body, :host) {
           padding: 1rem 0.75rem;
         }
 
@@ -475,15 +479,20 @@
     </div>
 
     <script>
+      // Resolve the script's root: a ShadowRoot when mounted via shadow
+      // DOM, or `document` when this file is served standalone.
+      const root = window.__demoRoot ?? document;
+      const $ = (id) => root.getElementById(id);
+
       /* ==============================================================
          DOM references
          ============================================================== */
-      const scene = document.getElementById("scene");
-      const glCanvas = document.getElementById("gl-canvas");
-      const page1Canvas = document.getElementById("page1-canvas");
-      const page2Canvas = document.getElementById("page2-canvas");
-      const page1Content = document.getElementById("page1-content");
-      const page2Content = document.getElementById("page2-content");
+      const scene = $("scene");
+      const glCanvas = $("gl-canvas");
+      const page1Canvas = $("page1-canvas");
+      const page2Canvas = $("page2-canvas");
+      const page1Content = $("page1-content");
+      const page2Content = $("page2-content");
 
       /* ==============================================================
          2D contexts — render HTML pages via drawElementImage
@@ -630,8 +639,10 @@
       });
 
       if (!gl) {
-        document.body.innerHTML =
-          '<p style="padding:2rem;color:#f44">WebGL is not available in this browser.</p>';
+        const msg = document.createElement("p");
+        msg.textContent = "WebGL is not available in this browser.";
+        msg.style.cssText = "padding:2rem;color:#f44";
+        glCanvas.replaceWith(msg);
         throw new Error("WebGL unavailable");
       }
 

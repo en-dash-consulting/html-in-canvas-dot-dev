@@ -12,16 +12,22 @@
     />
     <style>
       * {
-        margin: 0;
         box-sizing: border-box;
       }
 
-      body {
-        min-height: 100vh;
+      html {
+        height: 100%;
+      }
+
+      :where(body, :host) {
+        display: block;
+        margin: 0;
+        min-height: 100%;
         background: #0a0a0f;
         color: #f0f0f0;
         font-family: system-ui, -apple-system, sans-serif;
         padding: 1rem;
+        overflow-y: auto;
       }
 
       h1 {
@@ -577,25 +583,35 @@ void main() {
   background: radial-gradient(ellipse at 30% 20%, #1e1e3a, #0a0a1a);
 }`;
 
+      // Resolve the script's root: a ShadowRoot when mounted via shadow
+      // DOM, or `document` when this file is served standalone.
+      const root = window.__demoRoot ?? document;
+      const $ = (id) => root.getElementById(id);
+
       /* ==============================================================
          DOM references
          ============================================================== */
-      const cssEditor = document.getElementById("css-editor");
-      const glslEditor = document.getElementById("glsl-editor");
-      const previewCanvas = document.getElementById("preview-canvas");
-      const stagingCanvas = document.getElementById("staging-canvas");
-      const stagingContent = document.getElementById("staging-content");
-      const fpsCounter = document.getElementById("fps-counter");
-      const tabs = document.querySelectorAll(".editor-tab");
-      const editorAreas = document.querySelectorAll(".editor-area");
-      const presetBtns = document.querySelectorAll(".preset-btn");
+      const cssEditor = $("css-editor");
+      const glslEditor = $("glsl-editor");
+      const previewCanvas = $("preview-canvas");
+      const stagingCanvas = $("staging-canvas");
+      const stagingContent = $("staging-content");
+      const fpsCounter = $("fps-counter");
+      const tabs = root.querySelectorAll(".editor-tab");
+      const editorAreas = root.querySelectorAll(".editor-area");
+      const presetBtns = root.querySelectorAll(".preset-btn");
 
       /* ==============================================================
          2D staging context — captures HTML via drawElementImage
          ============================================================== */
       const ctx2d = stagingCanvas.getContext("2d");
+      // Inject the live-editable <style> into the same root as the
+      // staging content so it scopes correctly in shadow DOM (and
+      // doesn't leak into the host page). In standalone the right
+      // target is document.head; in shadow context it's the shadow
+      // root itself.
       const styleEl = document.createElement("style");
-      document.head.appendChild(styleEl);
+      (root === document ? document.head : root).appendChild(styleEl);
 
       /* ==============================================================
          Initialise editors
@@ -692,8 +708,12 @@ void main() {
       });
 
       if (!gl) {
-        document.body.innerHTML =
-          '<p style="padding:2rem;color:#f44">WebGL is not available in this browser.</p>';
+        // Replace just the preview canvas's parent rather than the
+        // whole body — works in both standalone and shadow contexts.
+        const msg = document.createElement("p");
+        msg.textContent = "WebGL is not available in this browser.";
+        msg.style.cssText = "padding:2rem;color:#f44";
+        previewCanvas.replaceWith(msg);
         throw new Error("WebGL unavailable");
       }
 

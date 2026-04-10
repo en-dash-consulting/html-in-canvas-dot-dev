@@ -12,12 +12,16 @@
     />
     <style>
       * {
-        margin: 0;
         box-sizing: border-box;
       }
 
-      body {
-        min-height: 100vh;
+      html {
+        height: 100%;
+      }
+
+      :where(body, :host) {
+        margin: 0;
+        min-height: 100%;
         background: #0a0a0f;
         color: #f0f0f0;
         font-family: "Inter", system-ui, -apple-system, sans-serif;
@@ -349,7 +353,7 @@
       }
 
       @media (max-width: 480px) {
-        body {
+        :where(body, :host) {
           padding: 1rem 0.75rem;
         }
 
@@ -449,14 +453,19 @@
     </div>
 
     <script>
+      // Resolve the script's root: a ShadowRoot when mounted via shadow
+      // DOM, or `document` when this file is served standalone.
+      const root = window.__demoRoot ?? document;
+      const $ = (id) => root.getElementById(id);
+
       /* ==============================================================
          DOM references
          ============================================================== */
-      const scene = document.getElementById("scene");
-      const canvas = document.getElementById("canvas");
-      const card = document.getElementById("card");
-      const statusDot = document.getElementById("status-dot");
-      const statusText = document.getElementById("status-text");
+      const scene = $("scene");
+      const canvas = $("canvas");
+      const card = $("card");
+      const statusDot = $("status-dot");
+      const statusText = $("status-text");
       const ctx = canvas.getContext("2d");
 
       /* ==============================================================

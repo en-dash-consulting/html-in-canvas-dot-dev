@@ -6,16 +6,22 @@
     <title>Interactive Form — HTML-in-Canvas</title>
     <style>
       * {
-        margin: 0;
         box-sizing: border-box;
       }
 
-      body {
-        min-height: 100vh;
+      html {
+        height: 100%;
+      }
+
+      :where(body, :host) {
+        display: block;
+        margin: 0;
+        min-height: 100%;
         background: #0a0a0f;
         color: #f0f0f0;
         font-family: system-ui, -apple-system, sans-serif;
         padding: 2rem;
+        overflow-y: auto;
       }
 
       h1 {
@@ -529,11 +535,16 @@ canvas.<span class="at">onpaint</span> <span class="op">=</span> () <span class=
     </div>
 
     <script>
+      // Resolve the script's root: a ShadowRoot when mounted via shadow
+      // DOM, or `document` when this file is served standalone.
+      const root = window.__demoRoot ?? document;
+      const $ = (id) => root.getElementById(id);
+
       /* ── Canvas setup ──────────────────────────────── */
-      const canvas = document.getElementById("canvas");
+      const canvas = $("canvas");
       const ctx = canvas.getContext("2d");
-      const formRoot = document.getElementById("form-root");
-      const paintCountEl = document.getElementById("paint-count");
+      const formRoot = $("form-root");
+      const paintCountEl = $("paint-count");
 
       let paintCount = 0;
 
@@ -562,23 +573,23 @@ canvas.<span class="at">onpaint</span> <span class="op">=</span> () <span class=
         canvas.width = Math.round(width * dp);
         canvas.height = Math.round(height * dp);
         ctx.scale(dp, dp);
-        if (canvas.onpaint) canvas.onpaint();
+        canvas.requestPaint?.();
       }).observe(canvas);
 
       /* ── Slider value display ──────────────────────── */
-      const slider = document.getElementById("experience");
-      const expValue = document.getElementById("exp-value");
+      const slider = $("experience");
+      const expValue = $("exp-value");
 
       slider.addEventListener("input", () => {
         expValue.textContent = slider.value;
       });
 
       /* ── Reset button ──────────────────────────────── */
-      document.getElementById("btn-reset").addEventListener("click", () => {
-        document.getElementById("name").value = "";
-        document.getElementById("email").value = "";
-        document.getElementById("message").value = "";
-        document.getElementById("role").selectedIndex = 0;
+      $("btn-reset").addEventListener("click", () => {
+        $("name").value = "";
+        $("email").value = "";
+        $("message").value = "";
+        $("role").selectedIndex = 0;
         slider.value = 5;
         expValue.textContent = "5";
 
@@ -593,12 +604,12 @@ canvas.<span class="at">onpaint</span> <span class="op">=</span> () <span class=
       });
 
       /* ── Submit button ─────────────────────────────── */
-      document.getElementById("btn-submit").addEventListener("click", () => {
+      $("btn-submit").addEventListener("click", () => {
         const data = {
-          name: document.getElementById("name").value,
-          email: document.getElementById("email").value,
-          message: document.getElementById("message").value,
-          role: document.getElementById("role").value,
+          name: $("name").value,
+          email: $("email").value,
+          message: $("message").value,
+          role: $("role").value,
           experience: slider.value,
           interests: Array.from(
             formRoot.querySelectorAll('input[name="interest"]:checked')

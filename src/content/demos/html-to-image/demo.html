@@ -12,16 +12,22 @@
     />
     <style>
       * {
-        margin: 0;
         box-sizing: border-box;
       }
 
-      body {
-        min-height: 100vh;
+      html {
+        height: 100%;
+      }
+
+      :where(body, :host) {
+        display: block;
+        margin: 0;
+        min-height: 100%;
         background: #0a0a0f;
         color: #f0f0f0;
         font-family: system-ui, -apple-system, sans-serif;
         padding: 1.5rem;
+        overflow-y: auto;
       }
 
       h1 {
@@ -590,12 +596,17 @@ canvas.<span class="fn">toBlob</span>(<span class="fn">download</span>);</pre>
     </p>
 
     <script>
+      // Resolve the script's root: a ShadowRoot when mounted via shadow
+      // DOM, or `document` when this file is served standalone.
+      const root = window.__demoRoot ?? document;
+      const $ = (id) => root.getElementById(id);
+
       // =============================================================
       // CANVAS SETUP
       // =============================================================
-      const canvas = document.getElementById("canvas");
+      const canvas = $("canvas");
       const ctx = canvas.getContext("2d");
-      const card = document.getElementById("card");
+      const card = $("card");
 
       // =============================================================
       // PAINT CALLBACK
@@ -634,7 +645,7 @@ canvas.<span class="fn">toBlob</span>(<span class="fn">download</span>);</pre>
         canvas.width = Math.round(width * devicePixelRatio);
         canvas.height = Math.round(height * devicePixelRatio);
         ctx.scale(devicePixelRatio, devicePixelRatio);
-        if (canvas.onpaint) canvas.onpaint();
+        canvas.requestPaint?.();
       });
       ro.observe(canvas);
 
@@ -644,22 +655,22 @@ canvas.<span class="fn">toBlob</span>(<span class="fn">download</span>);</pre>
       // properties on the card element, then request a repaint. The
       // canvas re-renders the updated HTML automatically.
       // =============================================================
-      const inputTitle = document.getElementById("input-title");
-      const inputDesc = document.getElementById("input-desc");
-      const inputAuthor = document.getElementById("input-author");
-      const inputColor1 = document.getElementById("input-color1");
-      const inputColor2 = document.getElementById("input-color2");
-      const inputAngle = document.getElementById("input-angle");
-      const inputFormat = document.getElementById("input-format");
-      const inputQuality = document.getElementById("input-quality");
-      const angleValue = document.getElementById("angle-value");
-      const qualityValue = document.getElementById("quality-value");
-      const qualityGroup = document.getElementById("quality-group");
+      const inputTitle = $("input-title");
+      const inputDesc = $("input-desc");
+      const inputAuthor = $("input-author");
+      const inputColor1 = $("input-color1");
+      const inputColor2 = $("input-color2");
+      const inputAngle = $("input-angle");
+      const inputFormat = $("input-format");
+      const inputQuality = $("input-quality");
+      const angleValue = $("angle-value");
+      const qualityValue = $("quality-value");
+      const qualityGroup = $("quality-group");
 
-      const cardTitle = document.getElementById("card-title");
-      const cardDesc = document.getElementById("card-desc");
-      const cardAuthorName = document.getElementById("card-author-name");
-      const cardAvatar = document.getElementById("card-avatar");
+      const cardTitle = $("card-title");
+      const cardDesc = $("card-desc");
+      const cardAuthorName = $("card-author-name");
+      const cardAvatar = $("card-avatar");
 
       /** Extract up to two initials from a name. */
       function getInitials(name) {
@@ -732,9 +743,7 @@ canvas.<span class="fn">toBlob</span>(<span class="fn">download</span>);</pre>
       // pixel-perfect — matching exactly what the browser's CSS engine
       // produces. No screenshot approximation, no missing styles.
       // =============================================================
-      document
-        .getElementById("btn-download")
-        .addEventListener("click", () => {
+      $("btn-download").addEventListener("click", () => {
           const format = inputFormat.value;
           const quality =
             format === "image/jpeg"

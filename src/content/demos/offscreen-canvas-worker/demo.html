@@ -6,16 +6,22 @@
     <title>OffscreenCanvas Worker — HTML-in-Canvas</title>
     <style>
       * {
-        margin: 0;
         box-sizing: border-box;
       }
 
-      body {
-        min-height: 100vh;
+      html {
+        height: 100%;
+      }
+
+      :where(body, :host) {
+        display: block;
+        margin: 0;
+        min-height: 100%;
         background: #0a0a0f;
         color: #f0f0f0;
         font-family: system-ui, -apple-system, sans-serif;
         padding: 2rem;
+        overflow-y: auto;
       }
 
       h1 {
@@ -671,14 +677,19 @@ self.<span class="at">onmessage</span> <span class="op">=</span> (e) <span class
     </div>
 
     <script>
+      // Resolve the script's root: a ShadowRoot when mounted via shadow
+      // DOM, or `document` when this file is served standalone.
+      const root = window.__demoRoot ?? document;
+      const $ = (id) => root.getElementById(id);
+
       /* ── DOM references ────────────────────────────── */
-      const canvas = document.getElementById("output");
-      const source = document.getElementById("source");
-      const captureBtn = document.getElementById("capture-btn");
-      const animateToggle = document.getElementById("animate-toggle");
-      const transformDisplay = document.getElementById("transform-display");
-      const fpsDisplay = document.getElementById("fps-display");
-      const logPanel = document.getElementById("log");
+      const canvas = $("output");
+      const source = $("source");
+      const captureBtn = $("capture-btn");
+      const animateToggle = $("animate-toggle");
+      const transformDisplay = $("transform-display");
+      const fpsDisplay = $("fps-display");
+      const logPanel = $("log");
 
       /* ── Message log utility ───────────────────────── */
       function log(direction, text) {

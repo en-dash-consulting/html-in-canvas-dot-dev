@@ -12,16 +12,22 @@
     />
     <style>
       * {
-        margin: 0;
         box-sizing: border-box;
       }
 
-      body {
-        min-height: 100vh;
+      html {
+        height: 100%;
+      }
+
+      :where(body, :host) {
+        display: block;
+        margin: 0;
+        min-height: 100%;
         background: #0a0a0f;
         color: #f0f0f0;
         font-family: system-ui, -apple-system, sans-serif;
         padding: 1.5rem;
+        overflow-y: auto;
       }
 
       h1 {
@@ -724,12 +730,17 @@ rec.<span class="fn">start</span>();</pre>
     </p>
 
     <script>
+      // Resolve the script's root: a ShadowRoot when mounted via shadow
+      // DOM, or `document` when this file is served standalone.
+      const root = window.__demoRoot ?? document;
+      const $ = (id) => root.getElementById(id);
+
       // =============================================================
       // CANVAS SETUP
       // =============================================================
-      const canvas = document.getElementById("canvas");
+      const canvas = $("canvas");
       const ctx = canvas.getContext("2d");
-      const scene = document.getElementById("scene");
+      const scene = $("scene");
 
       // =============================================================
       // PAINT CALLBACK
@@ -762,7 +773,7 @@ rec.<span class="fn">start</span>();</pre>
         canvas.width = Math.round(width * devicePixelRatio);
         canvas.height = Math.round(height * devicePixelRatio);
         ctx.scale(devicePixelRatio, devicePixelRatio);
-        if (canvas.onpaint) canvas.onpaint();
+        canvas.requestPaint?.();
       });
       ro.observe(canvas);
 
@@ -804,12 +815,12 @@ rec.<span class="fn">start</span>();</pre>
       // =============================================================
       // CONTROLS -> SCENE UPDATES
       // =============================================================
-      const inputMessage = document.getElementById("input-message");
-      const inputAuthor = document.getElementById("input-author");
-      const inputSpeed = document.getElementById("input-speed");
-      const speedValue = document.getElementById("speed-value");
-      const messageText = document.getElementById("message-text");
-      const messageAuthor = document.getElementById("message-author");
+      const inputMessage = $("input-message");
+      const inputAuthor = $("input-author");
+      const inputSpeed = $("input-speed");
+      const speedValue = $("speed-value");
+      const messageText = $("message-text");
+      const messageAuthor = $("message-author");
 
       inputMessage.addEventListener("input", () => {
         messageText.textContent = inputMessage.value || "...";
@@ -842,15 +853,15 @@ rec.<span class="fn">start</span>();</pre>
       // animated HTML content — gradients, custom fonts, floating
       // shapes, everything.
       // =============================================================
-      const btnRecord = document.getElementById("btn-record");
-      const btnStop = document.getElementById("btn-stop");
-      const btnDownload = document.getElementById("btn-download");
-      const btnReplay = document.getElementById("btn-replay");
-      const recBadge = document.getElementById("rec-badge");
-      const recTimer = document.getElementById("rec-timer");
-      const statusState = document.getElementById("status-state");
-      const statusDuration = document.getElementById("status-duration");
-      const statusSize = document.getElementById("status-size");
+      const btnRecord = $("btn-record");
+      const btnStop = $("btn-stop");
+      const btnDownload = $("btn-download");
+      const btnReplay = $("btn-replay");
+      const recBadge = $("rec-badge");
+      const recTimer = $("rec-timer");
+      const statusState = $("status-state");
+      const statusDuration = $("status-duration");
+      const statusSize = $("status-size");
 
       let mediaRecorder = null;
       let recordedChunks = [];

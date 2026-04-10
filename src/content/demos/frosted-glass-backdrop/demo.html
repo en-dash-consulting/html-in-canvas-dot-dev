@@ -12,12 +12,16 @@
     />
     <style>
       * {
-        margin: 0;
         box-sizing: border-box;
       }
 
-      body {
-        min-height: 100vh;
+      html {
+        height: 100%;
+      }
+
+      :where(body, :host) {
+        margin: 0;
+        min-height: 100%;
         background: #0a0a0f;
         color: #f0f0f0;
         font-family: "Inter", system-ui, -apple-system, sans-serif;
@@ -563,7 +567,7 @@
       }
 
       @media (max-width: 640px) {
-        body {
+        :where(body, :host) {
           padding: 1rem 0.75rem;
         }
 
@@ -762,15 +766,20 @@
     </div>
 
     <script>
+      // Resolve the script's root: a ShadowRoot when mounted via shadow
+      // DOM, or `document` when this file is served standalone.
+      const root = window.__demoRoot ?? document;
+      const $ = (id) => root.getElementById(id);
+
       /* ==============================================================
          DOM references
          ============================================================== */
-      const scene = document.getElementById("scene");
-      const canvas = document.getElementById("canvas");
+      const scene = $("scene");
+      const canvas = $("canvas");
       const ctx = canvas.getContext("2d");
-      const bgLayer = document.getElementById("bg-layer");
-      const frostPanel = document.getElementById("frost-panel");
-      const frostContent = document.getElementById("frost-content");
+      const bgLayer = $("bg-layer");
+      const frostPanel = $("frost-panel");
+      const frostContent = $("frost-content");
 
       /* ==============================================================
          State
@@ -794,8 +803,10 @@
       });
 
       if (!gl) {
-        document.body.innerHTML =
-          '<p style="padding:2rem;color:#f44">WebGL is not available.</p>';
+        const msg = document.createElement("p");
+        msg.textContent = "WebGL is not available in this browser.";
+        msg.style.cssText = "padding:2rem;color:#f44";
+        canvas.replaceWith(msg);
         throw new Error("WebGL unavailable");
       }
 
@@ -1121,8 +1132,11 @@ void main() {
 
         ctx.restore();
 
-        /* 7. Draw frost panel content on top */
-        ctx.drawElementImage(frostContent, px, py, pw, ph);
+        /* 7. Draw frost panel content on top.
+         * drawElementImage requires a direct child of the canvas, so we
+         * draw the panel itself (which is transparent) and let its
+         * child .frost-inner come along for the ride. */
+        ctx.drawElementImage(frostPanel, px, py, pw, ph);
       };
 
       /* ==============================================================
@@ -1235,15 +1249,15 @@ void main() {
       /* ==============================================================
          Control panel event handlers
          ============================================================== */
-      const modeButtons = document.getElementById("mode-buttons");
-      const radiusSlider = document.getElementById("radius-slider");
-      const radiusValue = document.getElementById("radius-value");
-      const angleGroup = document.getElementById("angle-group");
-      const angleSlider = document.getElementById("angle-slider");
-      const angleValue = document.getElementById("angle-value");
-      const focusGroup = document.getElementById("focus-group");
-      const focusSlider = document.getElementById("focus-slider");
-      const focusValue = document.getElementById("focus-value");
+      const modeButtons = $("mode-buttons");
+      const radiusSlider = $("radius-slider");
+      const radiusValue = $("radius-value");
+      const angleGroup = $("angle-group");
+      const angleSlider = $("angle-slider");
+      const angleValue = $("angle-value");
+      const focusGroup = $("focus-group");
+      const focusSlider = $("focus-slider");
+      const focusValue = $("focus-value");
 
       modeButtons.addEventListener("click", (e) => {
         const btn = e.target.closest(".mode-btn");

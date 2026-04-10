@@ -6,16 +6,22 @@
     <title>Multi-Element Composition — HTML-in-Canvas</title>
     <style>
       * {
-        margin: 0;
         box-sizing: border-box;
       }
 
-      body {
-        min-height: 100vh;
+      html {
+        height: 100%;
+      }
+
+      :where(body, :host) {
+        display: block;
+        margin: 0;
+        min-height: 100%;
         background: #0a0a0f;
         color: #f0f0f0;
         font-family: system-ui, -apple-system, sans-serif;
         padding: 2rem;
+        overflow-y: auto;
       }
 
       h1 {
@@ -451,18 +457,23 @@ canvas.<span class="fn">addEventListener</span>(<span class="st">"pointerdown"</
     </div>
 
     <script>
+      // Resolve the script's root: a ShadowRoot when mounted via shadow
+      // DOM, or `document` when this file is served standalone.
+      const root = window.__demoRoot ?? document;
+      const $ = (id) => root.getElementById(id);
+
       /* ── Canvas setup ──────────────────────────────── */
-      const canvas = document.getElementById("canvas");
+      const canvas = $("canvas");
       const ctx = canvas.getContext("2d");
-      const zOrderDisplay = document.getElementById("z-order-display");
-      const paintInfo = document.getElementById("paint-info");
+      const zOrderDisplay = $("z-order-display");
+      const paintInfo = $("paint-info");
 
       /* ── Element definitions ───────────────────────── */
-      const cardA = document.getElementById("card-a");
-      const cardB = document.getElementById("card-b");
-      const cardC = document.getElementById("card-c");
-      const cardD = document.getElementById("card-d");
-      const cardE = document.getElementById("card-e");
+      const cardA = $("card-a");
+      const cardB = $("card-b");
+      const cardC = $("card-c");
+      const cardD = $("card-d");
+      const cardE = $("card-e");
 
       /*
        * Each element has a position (x, y), rotation (degrees),
@@ -681,7 +692,7 @@ canvas.<span class="fn">addEventListener</span>(<span class="st">"pointerdown"</
         canvas.width = Math.round(width * dp);
         canvas.height = Math.round(height * dp);
         /* Do not call ctx.scale here — onpaint handles it after reset */
-        if (canvas.onpaint) canvas.onpaint();
+        canvas.requestPaint?.();
       }).observe(canvas);
     </script>
   </body>

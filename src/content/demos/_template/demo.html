@@ -5,15 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Demo Title</title>
     <style>
+      /*
+       * Demos are authored to work in two contexts:
+       *  1. As a standalone HTML page (served at /demos/{slug}/demo.html)
+       *  2. Mounted inside a shadow root on the wrapped /demos/{slug}/ page
+       *
+       * The :where(body, :host) selector matches whichever root element
+       * exists in the current context. :host only matches inside a shadow
+       * root; body only matches in a regular document.
+       */
       * {
-        margin: 0;
         box-sizing: border-box;
       }
 
-      body {
+      html {
+        height: 100%;
+      }
+
+      :where(body, :host) {
         display: grid;
         place-items: center;
-        min-height: 100vh;
+        margin: 0;
+        min-height: 100%;
         background: #111;
         color: #eee;
         font-family: system-ui, sans-serif;
@@ -37,32 +50,42 @@
     </canvas>
 
     <script>
-      const canvas = document.getElementById("canvas");
+      // Resolve the script's root: a ShadowRoot when mounted via shadow
+      // DOM, or `document` when this file is served standalone.
+      const root = window.__demoRoot ?? document;
+
+      const canvas = root.getElementById("canvas");
       const ctx = canvas.getContext("2d");
-      const content = document.getElementById("content");
+      const content = root.getElementById("content");
 
       // ---------------------------------------------------------------
       // Paint callback
       // Fires whenever the browser needs to re-render canvas children.
-      // Use ctx.drawElement() to composite laid-out DOM into the canvas.
+      // Use ctx.drawElementImage() to composite laid-out DOM into the
+      // canvas. The returned DOMMatrix can be applied as a CSS
+      // transform on the source element to keep DOM hit-testing in
+      // sync with the painted position.
       // ---------------------------------------------------------------
       canvas.onpaint = () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawElement(content, 0, 0);
+        const transform = ctx.drawElementImage(content, 0, 0);
+        if (transform) content.style.transform = transform.toString();
       };
 
       // ---------------------------------------------------------------
       // ResizeObserver
       // Keeps the canvas resolution in sync with its CSS layout size
-      // so the output stays crisp at any viewport width.
+      // so the output stays crisp at any viewport width. Use
+      // requestPaint() (not onpaint() directly) so the browser's paint
+      // pipeline runs and generates the cached paint records that
+      // drawElementImage depends on.
       // ---------------------------------------------------------------
       const ro = new ResizeObserver(([entry]) => {
         const { width, height } = entry.contentRect;
         canvas.width = Math.round(width * devicePixelRatio);
         canvas.height = Math.round(height * devicePixelRatio);
         ctx.scale(devicePixelRatio, devicePixelRatio);
-        // Re-paint after resize
-        if (canvas.onpaint) canvas.onpaint();
+        canvas.requestPaint?.();
       });
       ro.observe(canvas);
     </script>
