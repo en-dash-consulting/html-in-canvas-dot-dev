@@ -1,0 +1,20 @@
+# Build output
+dist/
+
+# Dependencies
+node_modules/
+
+# Astro generated types
+.astro/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+
+# Hench / Rex
+.rex/n-dx_workflow.md
+.rex/execution-log*.jsonl

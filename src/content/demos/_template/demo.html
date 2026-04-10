@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Demo Title</title>
+    <style>
+      * {
+        margin: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+        background: #111;
+        color: #eee;
+        font-family: system-ui, sans-serif;
+      }
+
+      canvas {
+        border: 1px solid #333;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas" width="800" height="600" layoutsubtree>
+      <div id="content" style="padding: 2rem; font-size: 1.5rem">
+        Hello from HTML-in-Canvas!
+      </div>
+    </canvas>
+
+    <script>
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+      const content = document.getElementById("content");
+
+      // The onpaint callback fires when canvas children need re-rendering
+      canvas.onpaint = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawElement(content, 0, 0);
+      };
+    </script>
+  </body>
+</html>

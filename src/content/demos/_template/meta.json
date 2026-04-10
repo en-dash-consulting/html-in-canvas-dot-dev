@@ -1,0 +1,13 @@
+{
+  "title": "Demo Title",
+  "description": "A brief description of what this demo shows.",
+  "tags": ["example"],
+  "author": "",
+  "difficulty": "beginner",
+  "features": ["layoutsubtree", "drawElement"],
+  "browserSupport": {
+    "chrome": true,
+    "firefox": false,
+    "safari": false
+  }
+}

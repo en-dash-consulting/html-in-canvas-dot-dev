@@ -1,0 +1,14 @@
+{
+  "title": "Hello World",
+  "description": "Minimal HTML-in-Canvas example rendering styled text inside a canvas element.",
+  "tags": ["basics", "text"],
+  "author": "En Dash Consulting",
+  "dateCreated": "2026-04-10",
+  "difficulty": "beginner",
+  "features": ["layoutsubtree", "drawElement"],
+  "browserSupport": {
+    "chrome": true,
+    "firefox": false,
+    "safari": false
+  }
+}
