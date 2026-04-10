@@ -135,6 +135,34 @@ const githubUrl = `${GITHUB_REPO}/tree/main/src/content/demos/${demo.id}`;
           class="demo-iframe"
           loading="lazy"
         />
+        <div class="demo-fallback" id="demo-fallback" hidden>
+          <div class="fallback-content">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            <p class="fallback-title">API Unavailable</p>
+            <p class="fallback-text">
+              This demo requires <strong>Chrome Canary</strong> with the
+              <code>canvas-draw-element</code> flag enabled.
+            </p>
+            <a href="/docs/browser-support/" class="fallback-link">
+              Setup instructions &rarr;
+            </a>
+          </div>
+        </div>
       </div>
 
       <aside class="demo-sidebar">
@@ -207,6 +235,22 @@ const githubUrl = `${GITHUB_REPO}/tree/main/src/content/demos/${demo.id}`;
     </section>
   </div>
 </BaseLayout>
+
+<script>
+  function initDemoFallback() {
+    const fallback = document.getElementById('demo-fallback');
+    if (!fallback) return;
+
+    const isSupported =
+      typeof CanvasRenderingContext2D !== 'undefined' &&
+      'drawElementImage' in CanvasRenderingContext2D.prototype;
+
+    fallback.hidden = isSupported;
+  }
+
+  initDemoFallback();
+  document.addEventListener('astro:after-swap', initDemoFallback);
+</script>
 
 <style>
   /* ------- Page ------- */
@@ -342,6 +386,7 @@ const githubUrl = `${GITHUB_REPO}/tree/main/src/content/demos/${demo.id}`;
 
   /* ------- iframe ------- */
   .demo-iframe-wrapper {
+    position: relative;
     border: 1px solid var(--border-color);
     border-radius: 8px;
     overflow: hidden;
@@ -353,6 +398,60 @@ const githubUrl = `${GITHUB_REPO}/tree/main/src/content/demos/${demo.id}`;
     width: 100%;
     min-height: 24rem;
     border: none;
+  }
+
+  /* ------- Fallback overlay (API unavailable) ------- */
+  .demo-fallback {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-surface);
+    border-radius: 8px;
+  }
+
+  .fallback-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+  }
+
+  .fallback-content svg {
+    color: var(--color-orange);
+    margin-bottom: 0.25rem;
+  }
+
+  .fallback-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .fallback-text {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    max-width: 24rem;
+  }
+
+  .fallback-text code {
+    font-size: 0.8rem;
+    padding: 0.1em 0.3em;
+    background: rgba(255, 89, 38, 0.1);
+    border-radius: 3px;
+    color: var(--color-orange);
+  }
+
+  .fallback-link {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-top: 0.25rem;
   }
 
   /* ------- Sidebar ------- */

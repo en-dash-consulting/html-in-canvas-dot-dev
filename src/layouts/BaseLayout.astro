@@ -4,6 +4,7 @@
  * Renders nav, footer, and global styles.
  */
 import Nav from '../components/Nav.astro';
+import BrowserSupportBanner from '../components/BrowserSupportBanner.astro';
 import Footer from '../components/Footer.astro';
 import '../styles/global.css';
 
@@ -42,6 +43,7 @@ const pageTitle = title === 'HTML-in-Canvas' ? title : `${title} | HTML-in-Canva
   </head>
   <body>
     <Nav />
+    <BrowserSupportBanner />
     <main>
       <slot />
     </main>
