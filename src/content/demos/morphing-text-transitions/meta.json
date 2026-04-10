@@ -1,0 +1,15 @@
+{
+  "title": "Morphing Text Transitions",
+  "description": "Two distinct HTML text layouts morph between each other using canvas pixel manipulation — crossfade, dissolve, wave wipe, and pixel sort transitions that CSS alone cannot achieve across different DOM structures.",
+  "tags": ["demo", "2d", "animation", "text"],
+  "author": "En Dash Consulting",
+  "dateCreated": "2026-04-10",
+  "context": "2d",
+  "difficulty": "advanced",
+  "features": ["layoutsubtree", "drawElementImage", "onpaint", "requestPaint"],
+  "browserSupport": {
+    "chrome": true,
+    "firefox": false,
+    "safari": false
+  }
+}

@@ -1,0 +1,1005 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Morphing Text Transitions — HTML-in-Canvas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        background: #0a0a0f;
+        color: #f0f0f0;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 1.5rem 1rem;
+        overflow-x: hidden;
+      }
+
+      h1 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 0.25rem;
+      }
+
+      .page-subtitle {
+        text-align: center;
+        font-size: 0.8rem;
+        color: #6a6a80;
+        margin-bottom: 1.25rem;
+        max-width: 420px;
+        line-height: 1.4;
+      }
+
+      /* ============================================================
+         Controls
+         ============================================================ */
+      .controls {
+        display: flex;
+        gap: 0.4rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+        justify-content: center;
+        max-width: 420px;
+      }
+
+      .controls button {
+        padding: 0.35rem 0.7rem;
+        background: #14141f;
+        border: 1px solid #282840;
+        border-radius: 6px;
+        color: #8a8aaf;
+        font-family: inherit;
+        font-size: 0.68rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        letter-spacing: 0.01em;
+      }
+
+      .controls button:hover {
+        border-color: #6c41f0;
+        color: #c0b0ff;
+      }
+
+      .controls button.active {
+        background: #6c41f0;
+        border-color: #6c41f0;
+        color: #fff;
+      }
+
+      .morph-btn {
+        display: block;
+        margin: 0 auto 1rem;
+        padding: 0.5rem 1.6rem;
+        background: linear-gradient(135deg, #6c41f0 0%, #f0416c 100%);
+        border: none;
+        border-radius: 8px;
+        color: #fff;
+        font-family: inherit;
+        font-size: 0.78rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.2s;
+        letter-spacing: 0.02em;
+      }
+
+      .morph-btn:hover {
+        opacity: 0.85;
+      }
+
+      .morph-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      /* ============================================================
+         Canvas container
+         ============================================================ */
+      .scene {
+        position: relative;
+        width: 420px;
+        max-width: 100%;
+      }
+
+      #canvas {
+        width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 16px;
+      }
+
+      /* ============================================================
+         Text layout A — editorial magazine style
+         ============================================================ */
+      .layout-a {
+        width: 420px;
+        padding: 2.5rem 2rem;
+        background: linear-gradient(160deg, #16162a 0%, #0d0d1a 100%);
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        color: #f0f0f0;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .layout-a .glow {
+        position: absolute;
+        top: -60px;
+        right: -40px;
+        width: 260px;
+        height: 260px;
+        background: radial-gradient(
+          circle,
+          rgba(108, 65, 240, 0.2) 0%,
+          transparent 70%
+        );
+        pointer-events: none;
+      }
+
+      .layout-a .content {
+        position: relative;
+        z-index: 1;
+      }
+
+      .layout-a .eyebrow {
+        font-size: 0.6rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        color: #a78bfa;
+        margin-bottom: 0.75rem;
+      }
+
+      .layout-a .headline {
+        font-size: 1.8rem;
+        font-weight: 800;
+        line-height: 1.15;
+        letter-spacing: -0.03em;
+        margin-bottom: 0.75rem;
+        background: linear-gradient(135deg, #f0f0f0 30%, #a78bfa 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .layout-a .body-text {
+        font-size: 0.82rem;
+        color: #8a8aaf;
+        line-height: 1.65;
+        margin-bottom: 1.25rem;
+      }
+
+      .layout-a .tag-row {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+      }
+
+      .layout-a .tag {
+        padding: 0.2rem 0.55rem;
+        background: rgba(108, 65, 240, 0.12);
+        border: 1px solid rgba(108, 65, 240, 0.25);
+        border-radius: 100px;
+        font-size: 0.62rem;
+        color: #a78bfa;
+        font-weight: 500;
+      }
+
+      .layout-a .divider {
+        width: 40px;
+        height: 2px;
+        background: linear-gradient(90deg, #6c41f0, transparent);
+        margin-bottom: 1rem;
+      }
+
+      /* ============================================================
+         Text layout B — code announcement / changelog style
+         ============================================================ */
+      .layout-b {
+        width: 420px;
+        padding: 2rem;
+        background: linear-gradient(160deg, #0d1a1a 0%, #0a0f1a 100%);
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        color: #f0f0f0;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .layout-b .glow {
+        position: absolute;
+        bottom: -50px;
+        left: -30px;
+        width: 240px;
+        height: 240px;
+        background: radial-gradient(
+          circle,
+          rgba(0, 229, 185, 0.15) 0%,
+          transparent 70%
+        );
+        pointer-events: none;
+      }
+
+      .layout-b .content {
+        position: relative;
+        z-index: 1;
+      }
+
+      .layout-b .version-badge {
+        display: inline-block;
+        padding: 0.2rem 0.6rem;
+        background: rgba(0, 229, 185, 0.1);
+        border: 1px solid rgba(0, 229, 185, 0.3);
+        border-radius: 4px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: #00e5b9;
+        margin-bottom: 0.75rem;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .layout-b .title {
+        font-size: 1.3rem;
+        font-weight: 700;
+        line-height: 1.3;
+        letter-spacing: -0.02em;
+        margin-bottom: 0.5rem;
+        color: #e0f0ea;
+      }
+
+      .layout-b .subtitle {
+        font-size: 0.78rem;
+        color: #5a8a80;
+        line-height: 1.5;
+        margin-bottom: 1.25rem;
+      }
+
+      .layout-b .feature-list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .layout-b .feature-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+        font-size: 0.75rem;
+        color: #8ab0a5;
+        line-height: 1.5;
+      }
+
+      .layout-b .feature-icon {
+        flex-shrink: 0;
+        width: 18px;
+        height: 18px;
+        border-radius: 4px;
+        background: rgba(0, 229, 185, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.6rem;
+        color: #00e5b9;
+        margin-top: 1px;
+      }
+
+      .layout-b .code-block {
+        background: #0a1218;
+        border: 1px solid #1a2e2a;
+        border-radius: 8px;
+        padding: 0.75rem 0.85rem;
+        font-family: "Courier New", monospace;
+        font-size: 0.65rem;
+        line-height: 1.7;
+        color: #7aaa9a;
+        overflow: hidden;
+      }
+
+      .layout-b .code-block .kw {
+        color: #00e5b9;
+      }
+
+      .layout-b .code-block .str {
+        color: #f0a040;
+      }
+
+      .layout-b .code-block .cm {
+        color: #3a5a50;
+      }
+
+      /* ============================================================
+         Status indicator + hint
+         ============================================================ */
+      .status-bar {
+        margin-top: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.72rem;
+        color: #4a4a60;
+      }
+
+      .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #333;
+        transition: background 0.3s;
+      }
+
+      .status-dot.ready {
+        background: #00c875;
+      }
+
+      .status-dot.morphing {
+        background: #a78bfa;
+        animation: pulse 0.6s ease-in-out infinite alternate;
+      }
+
+      @keyframes pulse {
+        from {
+          opacity: 0.5;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      .hint {
+        margin-top: 0.75rem;
+        font-size: 0.7rem;
+        color: #4a4a60;
+        text-align: center;
+      }
+
+      .hint kbd {
+        display: inline-block;
+        padding: 0.1rem 0.35rem;
+        background: #1a1a30;
+        border: 1px solid #333;
+        border-radius: 3px;
+        font-family: inherit;
+        font-size: 0.65rem;
+        color: #6a6a80;
+      }
+
+      /* ============================================================
+         Pipeline explanation
+         ============================================================ */
+      .pipeline-info {
+        margin-top: 1.25rem;
+        max-width: 420px;
+        width: 100%;
+        padding: 0.85rem 1rem;
+        background: #14141f;
+        border: 1px solid #282840;
+        border-radius: 10px;
+        font-size: 0.72rem;
+        color: #6a6a80;
+        line-height: 1.55;
+      }
+
+      .pipeline-info p {
+        margin-bottom: 0.3rem;
+      }
+
+      .pipeline-info p:last-child {
+        margin-bottom: 0;
+      }
+
+      .pipeline-info strong {
+        color: #8a8aaf;
+      }
+
+      .pipeline-info .hl {
+        color: #f0416c;
+      }
+
+      .pipeline-info code {
+        color: #6c41f0;
+        font-family: "Courier New", monospace;
+        font-size: 0.68rem;
+      }
+
+      .pipeline-info .note {
+        color: #3a3a50;
+        font-size: 0.65rem;
+        margin-top: 0.4rem;
+      }
+
+      @media (max-width: 480px) {
+        body {
+          padding: 1rem 0.75rem;
+        }
+
+        .layout-a,
+        .layout-b {
+          width: 100%;
+        }
+
+        .layout-a {
+          padding: 2rem 1.5rem;
+        }
+
+        .layout-b {
+          padding: 1.5rem;
+        }
+
+        .layout-a .headline {
+          font-size: 1.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Morphing Text Transitions</h1>
+    <p class="page-subtitle">
+      Two completely different HTML text layouts morph between each other using
+      pixel-level canvas manipulation. Select a transition and click morph.
+    </p>
+
+    <div class="controls" id="controls">
+      <button class="active" data-mode="crossfade">Crossfade</button>
+      <button data-mode="dissolve">Dissolve</button>
+      <button data-mode="wave">Wave Wipe</button>
+      <button data-mode="pixelsort">Pixel Sort</button>
+    </div>
+
+    <button class="morph-btn" id="morph-btn">Morph</button>
+
+    <div class="scene" id="scene">
+      <canvas id="canvas" width="840" height="1120" layoutsubtree>
+        <!-- Layout A: Magazine editorial style -->
+        <div class="layout-a" id="layout-a">
+          <div class="glow"></div>
+          <div class="content">
+            <div class="eyebrow">The Future of the Web</div>
+            <div class="divider"></div>
+            <div class="headline">Pixels Meet the DOM</div>
+            <p class="body-text">
+              For the first time, browsers can render full HTML and CSS directly
+              into a canvas bitmap. This unlocks visual effects that were
+              previously impossible &mdash; from particle explosions to shader
+              pipelines, all driven by real DOM content.
+            </p>
+            <div class="tag-row">
+              <span class="tag">HTML-in-Canvas</span>
+              <span class="tag">Creative Coding</span>
+              <span class="tag">Web Standards</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Layout B: Changelog / code announcement style -->
+        <div class="layout-b" id="layout-b">
+          <div class="glow"></div>
+          <div class="content">
+            <div class="version-badge">spec v1.0</div>
+            <div class="title">drawElementImage() Shipped</div>
+            <p class="subtitle">
+              Render any DOM element into a canvas context with full CSS fidelity.
+              No screenshots, no hacks &mdash; native pixel access to live HTML.
+            </p>
+            <ul class="feature-list">
+              <li class="feature-item">
+                <div class="feature-icon">&#10003;</div>
+                <span>Pixel-perfect HTML rendering into 2D and WebGL contexts</span>
+              </li>
+              <li class="feature-item">
+                <div class="feature-icon">&#10003;</div>
+                <span>Full getImageData() access for post-processing effects</span>
+              </li>
+              <li class="feature-item">
+                <div class="feature-icon">&#10003;</div>
+                <span>Compositing with other canvas draw calls and shaders</span>
+              </li>
+            </ul>
+            <div class="code-block">
+              <span class="cm">// Render HTML into canvas</span><br />
+              <span class="kw">ctx</span>.drawElementImage(<span class="str">el</span>, 0, 0, w, h);
+            </div>
+          </div>
+        </div>
+      </canvas>
+    </div>
+
+    <div class="status-bar">
+      <div class="status-dot ready" id="status-dot"></div>
+      <span id="status-text">Showing layout A &mdash; ready to morph</span>
+    </div>
+
+    <p class="hint">
+      Select a transition mode, then click <kbd>Morph</kbd> to blend between layouts
+    </p>
+
+    <div class="pipeline-info">
+      <p>
+        <strong>1.</strong> Two distinct HTML layouts live inside a
+        <code>&lt;canvas layoutsubtree&gt;</code> &mdash; each with unique
+        structure and styling
+      </p>
+      <p>
+        <strong>2.</strong>
+        <span class="hl">drawElementImage()</span> renders each layout into the
+        canvas bitmap separately
+      </p>
+      <p>
+        <strong>3.</strong>
+        <span class="hl">getImageData()</span> captures both as raw pixel
+        buffers for per-pixel blending
+      </p>
+      <p>
+        <strong>4.</strong> Custom transition algorithms
+        <span class="hl">blend the pixels</span> frame-by-frame: crossfade,
+        dissolve, wave wipe, or pixel sort
+      </p>
+      <p class="note">
+        These transitions work across entirely different DOM structures and text
+        content &mdash; something CSS transitions simply cannot do.
+      </p>
+    </div>
+
+    <script>
+      /* ==============================================================
+         DOM references
+         ============================================================== */
+      const scene = document.getElementById("scene");
+      const canvas = document.getElementById("canvas");
+      const layoutA = document.getElementById("layout-a");
+      const layoutB = document.getElementById("layout-b");
+      const morphBtn = document.getElementById("morph-btn");
+      const statusDot = document.getElementById("status-dot");
+      const statusText = document.getElementById("status-text");
+      const controlsEl = document.getElementById("controls");
+      const ctx = canvas.getContext("2d");
+
+      /* ==============================================================
+         State
+         ============================================================== */
+      let currentLayout = "a"; /* 'a' or 'b' */
+      let transitionMode = "crossfade";
+      let isMorphing = false;
+      let morphProgress = 0;
+      let morphStart = 0;
+
+      /* Pixel buffers for source and target */
+      let sourcePixels = null;
+      let targetPixels = null;
+
+      /* Noise seed for dissolve pattern */
+      let noiseSeed = null;
+
+      const MORPH_DURATION = 1.6; /* seconds */
+
+      /* ==============================================================
+         Canvas sizing — match CSS layout at device pixel ratio
+         ============================================================== */
+      function syncCanvasSize() {
+        const rect = scene.getBoundingClientRect();
+        const dpr = devicePixelRatio;
+        const w = Math.round(rect.width * dpr);
+        /* Compute height from the current visible layout's aspect ratio */
+        const layoutEl = currentLayout === "a" ? layoutA : layoutB;
+        layoutEl.style.display = "";
+        const otherEl = currentLayout === "a" ? layoutB : layoutA;
+        otherEl.style.display = "none";
+        const layoutRect = layoutEl.getBoundingClientRect();
+        const aspect = layoutRect.height / layoutRect.width;
+        const h = Math.round(w * aspect);
+
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+        }
+      }
+
+      function requestRepaint() {
+        if (canvas.requestPaint) {
+          canvas.requestPaint();
+        } else if (canvas.onpaint) {
+          canvas.onpaint();
+        }
+      }
+
+      const ro = new ResizeObserver(() => {
+        if (!isMorphing) {
+          syncCanvasSize();
+          requestRepaint();
+        }
+      });
+      ro.observe(scene);
+
+      /* ==============================================================
+         Paint handler — draws the current layout into the canvas
+         ============================================================== */
+      canvas.onpaint = () => {
+        if (isMorphing) return;
+        const el = currentLayout === "a" ? layoutA : layoutB;
+        const other = currentLayout === "a" ? layoutB : layoutA;
+        el.style.display = "";
+        other.style.display = "none";
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawElementImage(el, 0, 0, canvas.width, canvas.height);
+      };
+
+      /* ==============================================================
+         Capture a layout's pixels into an ImageData buffer
+         ============================================================== */
+      function captureLayout(layoutEl, otherEl) {
+        layoutEl.style.display = "";
+        otherEl.style.display = "none";
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawElementImage(layoutEl, 0, 0, canvas.width, canvas.height);
+        return ctx.getImageData(0, 0, canvas.width, canvas.height);
+      }
+
+      /* ==============================================================
+         Noise generation for dissolve effect
+         ============================================================== */
+      function generateNoise(w, h) {
+        const buf = new Float32Array(w * h);
+        /* Simple value noise with some spatial coherence */
+        const scale = 8;
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            /* Mix random with spatial coordinates for organic feel */
+            const base = Math.random();
+            const spatial =
+              (Math.sin(x / scale + y * 0.7) * 0.5 + 0.5) * 0.3 +
+              (Math.cos(y / scale - x * 0.3) * 0.5 + 0.5) * 0.2;
+            buf[y * w + x] = base * 0.5 + spatial;
+          }
+        }
+        return buf;
+      }
+
+      /* ==============================================================
+         Transition algorithms — all operate on raw pixel data
+         ============================================================== */
+
+      /**
+       * Crossfade: simple alpha blend between source and target.
+       * Clean and classic, but with a luminance-weighted curve that
+       * keeps bright text legible throughout the transition.
+       */
+      function transitionCrossfade(out, src, tgt, w, h, t) {
+        const d = out.data;
+        const s = src.data;
+        const g = tgt.data;
+        const len = d.length;
+
+        /* Smooth ease-in-out curve */
+        const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+        for (let i = 0; i < len; i += 4) {
+          /* Luminance-weighted: bright pixels transition slightly faster
+             so text remains sharp during the crossfade */
+          const srcLum = (s[i] * 0.299 + s[i + 1] * 0.587 + s[i + 2] * 0.114) / 255;
+          const tgtLum = (g[i] * 0.299 + g[i + 1] * 0.587 + g[i + 2] * 0.114) / 255;
+          const lumBias = (srcLum + tgtLum) * 0.08;
+          const localT = Math.min(1, Math.max(0, ease + (lumBias - 0.08)));
+
+          d[i] = s[i] + (g[i] - s[i]) * localT;
+          d[i + 1] = s[i + 1] + (g[i + 1] - s[i + 1]) * localT;
+          d[i + 2] = s[i + 2] + (g[i + 2] - s[i + 2]) * localT;
+          d[i + 3] = s[i + 3] + (g[i + 3] - s[i + 3]) * localT;
+        }
+      }
+
+      /**
+       * Dissolve: threshold a noise pattern against progress,
+       * revealing the target wherever noise < t. Creates an organic,
+       * film-grain dissolution between the two layouts.
+       */
+      function transitionDissolve(out, src, tgt, w, h, t) {
+        const d = out.data;
+        const s = src.data;
+        const g = tgt.data;
+
+        /* Ease curve for smooth start/end */
+        const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+        /* Soft edge width — pixels near the threshold get blended */
+        const edgeWidth = 0.08;
+
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            const idx = y * w + x;
+            const pi = idx * 4;
+            const n = noiseSeed[idx];
+
+            /* Soft threshold: blend over edgeWidth range */
+            let blend;
+            if (n < ease - edgeWidth) {
+              blend = 1;
+            } else if (n > ease + edgeWidth) {
+              blend = 0;
+            } else {
+              blend = 1 - (n - (ease - edgeWidth)) / (edgeWidth * 2);
+            }
+
+            d[pi] = s[pi] + (g[pi] - s[pi]) * blend;
+            d[pi + 1] = s[pi + 1] + (g[pi + 1] - s[pi + 1]) * blend;
+            d[pi + 2] = s[pi + 2] + (g[pi + 2] - s[pi + 2]) * blend;
+            d[pi + 3] = s[pi + 3] + (g[pi + 3] - s[pi + 3]) * blend;
+          }
+        }
+      }
+
+      /**
+       * Wave wipe: a sinusoidal boundary sweeps across the canvas,
+       * revealing the target layout with a wavy edge. Combines
+       * horizontal sweep with vertical wave displacement.
+       */
+      function transitionWave(out, src, tgt, w, h, t) {
+        const d = out.data;
+        const s = src.data;
+        const g = tgt.data;
+
+        /* Ease the overall progress */
+        const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+        /* Wave parameters */
+        const waveAmp = w * 0.06; /* wave amplitude in pixels */
+        const waveFreq = 4; /* wave cycles across height */
+        const edgeSoftness = w * 0.03; /* soft edge in pixels */
+
+        /* Sweep position: from left edge to right edge */
+        const sweepX = ease * (w + waveAmp * 2) - waveAmp;
+
+        for (let y = 0; y < h; y++) {
+          /* Sinusoidal wave offset based on Y position and time */
+          const waveOffset =
+            Math.sin((y / h) * Math.PI * waveFreq + t * Math.PI * 2) *
+            waveAmp;
+          const boundary = sweepX + waveOffset;
+
+          for (let x = 0; x < w; x++) {
+            const pi = (y * w + x) * 4;
+            const dist = x - boundary;
+
+            let blend;
+            if (dist < -edgeSoftness) {
+              blend = 1; /* fully target */
+            } else if (dist > edgeSoftness) {
+              blend = 0; /* fully source */
+            } else {
+              /* Smooth step across the edge */
+              const u = (dist + edgeSoftness) / (edgeSoftness * 2);
+              blend = 1 - u * u * (3 - 2 * u);
+            }
+
+            d[pi] = s[pi] + (g[pi] - s[pi]) * blend;
+            d[pi + 1] = s[pi + 1] + (g[pi + 1] - s[pi + 1]) * blend;
+            d[pi + 2] = s[pi + 2] + (g[pi + 2] - s[pi + 2]) * blend;
+            d[pi + 3] = s[pi + 3] + (g[pi + 3] - s[pi + 3]) * blend;
+          }
+        }
+      }
+
+      /**
+       * Pixel sort: sorts pixels by luminance in horizontal bands,
+       * creating a glitch-art effect that gradually resolves into
+       * the target layout. Mimics the "pixel sorting" aesthetic
+       * popular in creative coding.
+       */
+      function transitionPixelSort(out, src, tgt, w, h, t) {
+        const d = out.data;
+        const s = src.data;
+        const g = tgt.data;
+
+        /* Ease with a sharp middle peak for the sort intensity */
+        const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+        /* Sort intensity peaks at t=0.5, creating max chaos in the middle */
+        const sortIntensity = 1 - Math.abs(t - 0.5) * 2;
+        const sortStrength = sortIntensity * sortIntensity * 0.4;
+
+        /* First: blend source and target based on ease */
+        const blended = new Uint8ClampedArray(d.length);
+        for (let i = 0; i < d.length; i += 4) {
+          blended[i] = s[i] + (g[i] - s[i]) * ease;
+          blended[i + 1] = s[i + 1] + (g[i + 1] - s[i + 1]) * ease;
+          blended[i + 2] = s[i + 2] + (g[i + 2] - s[i + 2]) * ease;
+          blended[i + 3] = s[i + 3] + (g[i + 3] - s[i + 3]) * ease;
+        }
+
+        if (sortStrength < 0.01) {
+          /* No sorting needed — just copy blended result */
+          d.set(blended);
+          return;
+        }
+
+        /* Sort horizontal bands by luminance */
+        const bandHeight = Math.max(1, Math.round(2 + sortIntensity * 4));
+
+        for (let bandY = 0; bandY < h; bandY += bandHeight) {
+          const rowEnd = Math.min(bandY + bandHeight, h);
+
+          /* Collect pixel columns in this band */
+          const cols = [];
+          for (let x = 0; x < w; x++) {
+            /* Average luminance across the band for this column */
+            let lum = 0;
+            let count = 0;
+            for (let y = bandY; y < rowEnd; y++) {
+              const pi = (y * w + x) * 4;
+              lum +=
+                blended[pi] * 0.299 +
+                blended[pi + 1] * 0.587 +
+                blended[pi + 2] * 0.114;
+              count++;
+            }
+            cols.push({ x, lum: lum / count });
+          }
+
+          /* Partially sort: blend between original and sorted positions */
+          const sorted = cols.slice().sort((a, b) => a.lum - b.lum);
+
+          for (let i = 0; i < cols.length; i++) {
+            const origX = cols[i].x;
+            const sortedX = sorted[i].x;
+
+            /* Interpolate between original and sorted column position */
+            const srcX = Math.round(
+              origX + (sortedX - origX) * sortStrength
+            );
+            const clampedX = Math.max(0, Math.min(w - 1, srcX));
+
+            for (let y = bandY; y < rowEnd; y++) {
+              const dstIdx = (y * w + origX) * 4;
+              const srcIdx = (y * w + clampedX) * 4;
+              d[dstIdx] = blended[srcIdx];
+              d[dstIdx + 1] = blended[srcIdx + 1];
+              d[dstIdx + 2] = blended[srcIdx + 2];
+              d[dstIdx + 3] = blended[srcIdx + 3];
+            }
+          }
+        }
+      }
+
+      /* Transition dispatch */
+      const transitions = {
+        crossfade: transitionCrossfade,
+        dissolve: transitionDissolve,
+        wave: transitionWave,
+        pixelsort: transitionPixelSort,
+      };
+
+      /* ==============================================================
+         Controls — transition mode selection
+         ============================================================== */
+      controlsEl.addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-mode]");
+        if (!btn || isMorphing) return;
+
+        transitionMode = btn.dataset.mode;
+        controlsEl
+          .querySelectorAll("button")
+          .forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+      });
+
+      /* ==============================================================
+         Morph trigger
+         ============================================================== */
+      morphBtn.addEventListener("click", startMorph);
+
+      function startMorph() {
+        if (isMorphing) return;
+
+        const w = canvas.width;
+        const h = canvas.height;
+
+        /* Determine source and target */
+        const srcEl = currentLayout === "a" ? layoutA : layoutB;
+        const tgtEl = currentLayout === "a" ? layoutB : layoutA;
+        const srcOther = currentLayout === "a" ? layoutB : layoutA;
+        const tgtOther = currentLayout === "a" ? layoutA : layoutB;
+
+        /* Capture source pixels */
+        sourcePixels = captureLayout(srcEl, srcOther);
+
+        /* Capture target pixels at the same canvas dimensions */
+        targetPixels = captureLayout(tgtEl, tgtOther);
+
+        /* Restore source display so the transition starts visually correct */
+        srcEl.style.display = "";
+        tgtEl.style.display = "none";
+
+        /* Generate noise for dissolve */
+        if (transitionMode === "dissolve") {
+          noiseSeed = generateNoise(w, h);
+        }
+
+        isMorphing = true;
+        morphProgress = 0;
+        morphStart = 0;
+        morphBtn.disabled = true;
+
+        updateStatus("morphing", "Morphing\u2026");
+        requestAnimationFrame(animateMorph);
+      }
+
+      /* ==============================================================
+         Morph animation loop
+         ============================================================== */
+      function animateMorph(timestamp) {
+        if (!morphStart) morphStart = timestamp;
+        const elapsed = (timestamp - morphStart) / 1000;
+        morphProgress = Math.min(1, elapsed / MORPH_DURATION);
+
+        const w = canvas.width;
+        const h = canvas.height;
+
+        /* Create output buffer */
+        const output = ctx.createImageData(w, h);
+
+        /* Run the selected transition */
+        transitions[transitionMode](
+          output,
+          sourcePixels,
+          targetPixels,
+          w,
+          h,
+          morphProgress
+        );
+
+        /* Write the blended frame to canvas */
+        ctx.putImageData(output, 0, 0);
+
+        if (morphProgress < 1) {
+          requestAnimationFrame(animateMorph);
+          return;
+        }
+
+        /* Morph complete — switch to target layout */
+        currentLayout = currentLayout === "a" ? "b" : "a";
+        isMorphing = false;
+        morphBtn.disabled = false;
+        sourcePixels = null;
+        targetPixels = null;
+        noiseSeed = null;
+
+        /* Re-render the target layout cleanly */
+        requestRepaint();
+
+        const label = currentLayout === "a" ? "A" : "B";
+        updateStatus("ready", `Showing layout ${label} \u2014 ready to morph`);
+      }
+
+      /* ==============================================================
+         Status updates
+         ============================================================== */
+      function updateStatus(state, text) {
+        statusDot.className = "status-dot " + state;
+        statusText.textContent = text;
+      }
+
+      /* ==============================================================
+         Initial setup
+         ============================================================== */
+
+      /* Hide layout B initially */
+      layoutB.style.display = "none";
+
+      syncCanvasSize();
+      requestRepaint();
+    </script>
+  </body>
+</html>
