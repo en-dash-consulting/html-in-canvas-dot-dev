@@ -1,0 +1,16 @@
+{
+  "title": "Interactive Form",
+  "description": "A full HTML form rendered inside canvas — inputs, checkboxes, selects, sliders, and buttons all remain fully interactive, proving that typing, clicking, and tabbing work natively.",
+  "tags": ["demo", "beginner", "2d", "interactive"],
+  "author": "En Dash Consulting",
+  "dateCreated": "2026-04-10",
+  "dateUpdated": "2026-04-10",
+  "context": "2d",
+  "difficulty": "beginner",
+  "features": ["layoutsubtree", "drawElementImage", "onpaint"],
+  "browserSupport": {
+    "chrome": true,
+    "firefox": false,
+    "safari": false
+  }
+}
