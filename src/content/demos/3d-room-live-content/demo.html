@@ -220,11 +220,10 @@
         position: absolute;
         right: 0;
         bottom: 0;
-        width: 200px;
-        height: 200px;
-        overflow: visible;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
         pointer-events: none;
-        outline: 2px solid red;
       }
 
       #monitor-canvas {
@@ -1277,70 +1276,82 @@
       /* ==============================================================
          Content surfaces with HTML-in-Canvas textures.
 
-         Three.js's CanvasTexture doesn't reliably re-upload from a
-         <canvas layoutsubtree> source — even with needsUpdate=true on
-         every frame, the texture stays at the canvas's first-frame
-         contents (empty). Workaround: maintain a plain mirror canvas
-         per surface, drawImage() the layoutsubtree canvas into the
-         mirror each frame, and use the mirror as the texture source.
+         Three.js's CanvasTexture upload pipeline doesn't reliably
+         re-upload from a <canvas layoutsubtree>-derived canvas (even
+         with needsUpdate=true and a plain mirror canvas in the
+         middle). The texture sticks at its first-frame contents,
+         which are empty.
+
+         Workaround: use a bare THREE.Texture as the wrapper so the
+         material picks up filtering / mip settings, then bypass
+         Three.js's upload entirely each frame by binding the texture
+         and calling raw gl.texImage2D ourselves. This is the same
+         pattern css-to-shader uses, and it works reliably.
          ============================================================== */
 
-      function makeMirrorTexture(srcCanvas) {
-        const mirror = document.createElement('canvas');
-        mirror.width = srcCanvas.width;
-        mirror.height = srcCanvas.height;
-        // Attach to the document body (NOT shadow root) — there are
-        // open Chrome bugs around using shadow-DOM canvases as WebGL
-        // texture sources. Hide visually with offscreen positioning
-        // and a 1px clip-rect.
-        mirror.style.cssText =
-          'position:fixed;left:-1px;top:-1px;width:1px;height:1px;' +
-          'opacity:0.001;pointer-events:none;z-index:-1';
-        document.body.appendChild(mirror);
-        const mctx = mirror.getContext('2d');
-        const tex = new THREE.Texture(mirror);
+      const gl = renderer.getContext();
+
+      function makeStagingTexture(srcCanvas) {
+        // Build the placeholder at the staging canvas's exact size so
+        // Three.js's initTexture allocates immutable storage at the
+        // right dimensions. Subsequent texSubImage2D calls update the
+        // contents in place without reallocating.
+        const placeholder = document.createElement('canvas');
+        placeholder.width = srcCanvas.width;
+        placeholder.height = srcCanvas.height;
+        const pctx = placeholder.getContext('2d');
+        pctx.fillStyle = '#000';
+        pctx.fillRect(0, 0, placeholder.width, placeholder.height);
+
+        const tex = new THREE.Texture(placeholder);
         tex.minFilter = THREE.LinearFilter;
         tex.magFilter = THREE.LinearFilter;
         tex.generateMipmaps = false;
-        tex.flipY = true;
+        tex.format = THREE.RGBAFormat;
+        tex.type = THREE.UnsignedByteType;
+        tex.flipY = false;
         tex.needsUpdate = true;
+        renderer.initTexture(tex);
+
         return {
-          mirror,
           tex,
           sync() {
-            if (
-              mirror.width !== srcCanvas.width ||
-              mirror.height !== srcCanvas.height
-            ) {
-              mirror.width = srcCanvas.width;
-              mirror.height = srcCanvas.height;
-            }
-            mctx.clearRect(0, 0, mirror.width, mirror.height);
+            const props = renderer.properties.get(tex);
+            const webglTex = props && props.__webglTexture;
+            if (!webglTex) return;
+            gl.bindTexture(gl.TEXTURE_2D, webglTex);
+            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+            gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
             try {
-              mctx.drawImage(srcCanvas, 0, 0);
-            } catch {}
-            tex.needsUpdate = true;
+              // texSubImage2D (not texImage2D) so we don't try to
+              // reallocate the texture's immutable storage that
+              // Three.js's initTexture set up via texStorage2D.
+              gl.texSubImage2D(
+                gl.TEXTURE_2D,
+                0,
+                0,
+                0,
+                gl.RGBA,
+                gl.UNSIGNED_BYTE,
+                srcCanvas,
+              );
+            } catch {
+              // Silent — sometimes the canvas isn't ready on the
+              // very first frame; subsequent frames succeed.
+            }
+            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
           },
         };
       }
 
-      const monitorMirror = makeMirrorTexture(monitorCanvas);
-      const posterMirror = makeMirrorTexture(posterCanvas);
-      const tvMirror = makeMirrorTexture(tvCanvas);
-      const monitorTexture = monitorMirror.tex;
-      const posterTexture = posterMirror.tex;
-      const tvTexture = tvMirror.tex;
-      window.__mirrors = { monitor: monitorMirror, poster: posterMirror, tv: tvMirror };
-      window.__getMonitorMesh = () => monitorMesh;
+      const monitorStaging = makeStagingTexture(monitorCanvas);
+      const posterStaging = makeStagingTexture(posterCanvas);
+      const tvStaging = makeStagingTexture(tvCanvas);
+      const monitorTexture = monitorStaging.tex;
+      const posterTexture = posterStaging.tex;
+      const tvTexture = tvStaging.tex;
 
-      const monitorMesh = new THREE.Mesh(
-        new THREE.PlaneGeometry(2.4, 1.5),
-        new THREE.MeshBasicMaterial({ map: monitorTexture }),
-      );
-      monitorMesh.position.set(0, 1.85, -3.97);
-      scene.add(monitorMesh);
-
-      /* Monitor bezel */
+      /* Monitor bezel — sits flat against the back wall */
       const bezelMat = new THREE.MeshStandardMaterial({
         color: 0x1a1a25,
         roughness: 0.3,
@@ -1350,8 +1361,18 @@
         new THREE.BoxGeometry(2.55, 1.65, 0.06),
         bezelMat,
       );
-      monitorBezel.position.set(0, 1.85, -3.99);
+      monitorBezel.position.set(0, 1.85, -3.97);
       scene.add(monitorBezel);
+
+      /* Monitor screen — positioned IN FRONT of the bezel's front
+       * face (which is at z = -3.97 + 0.03 = -3.94) so it isn't
+       * occluded by the bezel box. */
+      const monitorMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(2.4, 1.5),
+        new THREE.MeshBasicMaterial({ map: monitorTexture }),
+      );
+      monitorMesh.position.set(0, 1.85, -3.93);
+      scene.add(monitorMesh);
 
       /* Monitor stand */
       const standMesh = new THREE.Mesh(
@@ -1368,16 +1389,8 @@
       standBase.position.set(0, 0.84, -3.6);
       scene.add(standBase);
 
-      /* --- Poster --- */
-      const posterMesh = new THREE.Mesh(
-        new THREE.PlaneGeometry(1.4, 2.0),
-        new THREE.MeshBasicMaterial({ map: posterTexture }),
-      );
-      posterMesh.position.set(-4.97, 1.8, 0);
-      posterMesh.rotation.y = Math.PI / 2;
-      scene.add(posterMesh);
-
-      /* Poster frame */
+      /* --- Poster (left wall) --- */
+      /* Frame first; poster mesh in front of the frame's interior face */
       const frameMat = new THREE.MeshStandardMaterial({
         color: 0x2a2a3e,
         roughness: 0.5,
@@ -1387,25 +1400,33 @@
         new THREE.BoxGeometry(0.04, 2.1, 1.5),
         frameMat,
       );
-      posterFrame.position.set(-4.98, 1.8, 0);
+      posterFrame.position.set(-4.97, 1.8, 0);
       scene.add(posterFrame);
 
-      /* --- TV --- */
-      const tvMesh = new THREE.Mesh(
-        new THREE.PlaneGeometry(2.8, 1.575),
-        new THREE.MeshBasicMaterial({ map: tvTexture }),
+      const posterMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(1.4, 2.0),
+        new THREE.MeshBasicMaterial({ map: posterTexture }),
       );
-      tvMesh.position.set(4.97, 2.1, -1);
-      tvMesh.rotation.y = -Math.PI / 2;
-      scene.add(tvMesh);
+      posterMesh.position.set(-4.93, 1.8, 0);
+      posterMesh.rotation.y = Math.PI / 2;
+      scene.add(posterMesh);
 
-      /* TV frame */
+      /* --- TV (right wall) --- */
+      /* Frame first; TV mesh in front of the frame's interior face */
       const tvFrame = new THREE.Mesh(
         new THREE.BoxGeometry(0.06, 1.7, 2.95),
         bezelMat.clone(),
       );
-      tvFrame.position.set(4.98, 2.1, -1);
+      tvFrame.position.set(4.97, 2.1, -1);
       scene.add(tvFrame);
+
+      const tvMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(2.8, 1.575),
+        new THREE.MeshBasicMaterial({ map: tvTexture }),
+      );
+      tvMesh.position.set(4.93, 2.1, -1);
+      tvMesh.rotation.y = -Math.PI / 2;
+      scene.add(tvMesh);
 
       /* ==============================================================
          Lighting — the room reads as moody-but-legible. Bright enough
@@ -1646,11 +1667,8 @@
       let prevTime = performance.now();
       let lastTvPaint = 0;
 
-      let animFrames = 0;
-      window.__animFrames = () => animFrames;
       function animate() {
         requestAnimationFrame(animate);
-        animFrames++;
 
         const now = performance.now();
         const dt = Math.min((now - prevTime) / 1000, 0.1);
@@ -1665,11 +1683,13 @@
           lastTvPaint = now;
         }
 
-        /* Sync each layoutsubtree staging canvas into its plain
-         * mirror canvas, then mark the texture for upload. */
-        monitorMirror.sync();
-        posterMirror.sync();
-        tvMirror.sync();
+        /* Upload each staging canvas's pixels to its WebGL texture
+         * via raw gl.texImage2D — bypassing Three.js's CanvasTexture
+         * upload pipeline. The render call below is when those
+         * texture binds actually take effect. */
+        monitorStaging.sync();
+        posterStaging.sync();
+        tvStaging.sync();
 
         renderer.render(scene, camera);
       }
