@@ -1,0 +1,231 @@
+---
+/**
+ * Demo gallery page — /demos/
+ * Lists all demos with filterable grid.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import DemoCard from '../../components/DemoCard.astro';
+import { getCollection } from 'astro:content';
+
+const demos = await getCollection('demos');
+
+// Derive unique values for filter options
+const allContexts = [...new Set(demos.map((d) => d.data.context))].sort();
+const allDifficulties = ['beginner', 'intermediate', 'advanced'] as const;
+const allTags = [...new Set(demos.flatMap((d) => d.data.tags))].sort();
+---
+
+<BaseLayout title="Demos" description="Interactive HTML-in-Canvas demos showcasing the spec in action.">
+  <div class="gallery-header">
+    <h1>Demos</h1>
+    <p>Interactive examples showcasing the HTML-in-Canvas specification.</p>
+  </div>
+
+  <div class="gallery-filters" role="search" aria-label="Filter demos">
+    <div class="filter-group">
+      <label for="filter-context">Context</label>
+      <select id="filter-context">
+        <option value="">All</option>
+        {allContexts.map((ctx) => (
+          <option value={ctx}>{ctx === '2d' ? '2D' : ctx === 'webgl' ? 'WebGL' : 'WebGPU'}</option>
+        ))}
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="filter-difficulty">Difficulty</label>
+      <select id="filter-difficulty">
+        <option value="">All</option>
+        {allDifficulties.map((d) => (
+          <option value={d}>{d.charAt(0).toUpperCase() + d.slice(1)}</option>
+        ))}
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="filter-tag">Tag</label>
+      <select id="filter-tag">
+        <option value="">All</option>
+        {allTags.map((tag) => (
+          <option value={tag}>{tag}</option>
+        ))}
+      </select>
+    </div>
+
+    <button class="filter-reset" type="button" id="filter-reset">Reset</button>
+  </div>
+
+  <div class="demo-grid" id="demo-grid">
+    {demos.map((demo) => (
+      <DemoCard
+        slug={demo.id}
+        title={demo.data.title}
+        description={demo.data.description}
+        context={demo.data.context}
+        difficulty={demo.data.difficulty}
+        tags={demo.data.tags}
+      />
+    ))}
+  </div>
+
+  <p class="gallery-empty" id="gallery-empty" hidden>
+    No demos match the current filters.
+  </p>
+</BaseLayout>
+
+<script>
+  function initFilters() {
+    const contextSelect = document.getElementById('filter-context') as HTMLSelectElement | null;
+    const difficultySelect = document.getElementById('filter-difficulty') as HTMLSelectElement | null;
+    const tagSelect = document.getElementById('filter-tag') as HTMLSelectElement | null;
+    const resetBtn = document.getElementById('filter-reset');
+    const grid = document.getElementById('demo-grid');
+    const emptyMsg = document.getElementById('gallery-empty');
+
+    if (!contextSelect || !difficultySelect || !tagSelect || !grid || !emptyMsg) return;
+
+    function applyFilters() {
+      const ctx = contextSelect!.value;
+      const diff = difficultySelect!.value;
+      const tag = tagSelect!.value;
+      const cards = grid!.querySelectorAll<HTMLElement>('.demo-card');
+      let visible = 0;
+
+      cards.forEach((card) => {
+        const cardCtx = card.dataset.context ?? '';
+        const cardDiff = card.dataset.difficulty ?? '';
+        const cardTags = card.dataset.tags ?? '';
+
+        const matchCtx = !ctx || cardCtx === ctx;
+        const matchDiff = !diff || cardDiff === diff;
+        const matchTag = !tag || cardTags.split(',').includes(tag);
+
+        const show = matchCtx && matchDiff && matchTag;
+        card.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+
+      emptyMsg!.hidden = visible > 0;
+    }
+
+    contextSelect.addEventListener('change', applyFilters);
+    difficultySelect.addEventListener('change', applyFilters);
+    tagSelect.addEventListener('change', applyFilters);
+
+    resetBtn?.addEventListener('click', () => {
+      contextSelect.value = '';
+      difficultySelect.value = '';
+      tagSelect.value = '';
+      applyFilters();
+    });
+  }
+
+  initFilters();
+  document.addEventListener('astro:after-swap', initFilters);
+</script>
+
+<style>
+  .gallery-header {
+    margin-bottom: 2rem;
+  }
+
+  .gallery-header h1 {
+    margin-bottom: 0.5rem;
+  }
+
+  .gallery-header p {
+    margin: 0;
+  }
+
+  /* --- Filters --- */
+  .gallery-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+  }
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .filter-group label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+  }
+
+  .filter-group select {
+    padding: 0.375rem 0.625rem;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    min-width: 8rem;
+  }
+
+  .filter-group select:focus-visible {
+    outline: 2px solid var(--color-purple);
+    outline-offset: 1px;
+  }
+
+  .filter-reset {
+    padding: 0.375rem 0.75rem;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: color 0.15s ease, background-color 0.15s ease;
+  }
+
+  .filter-reset:hover {
+    color: var(--text-primary);
+    background: var(--bg-surface);
+  }
+
+  /* --- Demo grid --- */
+  .demo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+    gap: 1.25rem;
+  }
+
+  .gallery-empty {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 3rem 1rem;
+    font-style: italic;
+  }
+
+  @media (max-width: 640px) {
+    .gallery-filters {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .filter-group select {
+      min-width: 0;
+      width: 100%;
+    }
+
+    .demo-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

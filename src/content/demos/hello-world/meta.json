@@ -4,6 +4,7 @@
   "tags": ["basics", "text"],
   "author": "En Dash Consulting",
   "dateCreated": "2026-04-10",
+  "context": "2d",
   "difficulty": "beginner",
   "features": ["layoutsubtree", "drawElement"],
   "browserSupport": {

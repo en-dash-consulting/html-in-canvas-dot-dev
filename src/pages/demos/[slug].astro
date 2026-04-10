@@ -1,0 +1,468 @@
+---
+/**
+ * Individual demo page — /demos/{slug}/
+ * Embeds the live demo in an iframe with syntax-highlighted source viewer
+ * and metadata sidebar.
+ */
+import { getCollection } from 'astro:content';
+import { readdir, readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SourceViewer from '../../components/SourceViewer.astro';
+
+/**
+ * GitHub repository base URL.
+ * Update when the repo is created and pushed.
+ */
+const GITHUB_REPO = 'https://github.com/nicholasgasior/html-in-canvas-dot-dev';
+
+export async function getStaticPaths() {
+  const demos = await getCollection('demos');
+  return demos.map((demo) => ({
+    params: { slug: demo.id },
+    props: { demo },
+  }));
+}
+
+const { demo } = Astro.props;
+const {
+  title,
+  description,
+  context,
+  difficulty,
+  tags,
+  author,
+  dateCreated,
+  dateUpdated,
+  features,
+  browserSupport,
+} = demo.data;
+
+// ---------------------------------------------------------------------------
+// Read source files from the demo directory for the SourceViewer
+// ---------------------------------------------------------------------------
+const demoDir = join(process.cwd(), 'src/content/demos', demo.id);
+const entries = await readdir(demoDir, { withFileTypes: true });
+
+/** File extensions we display as source code in the viewer */
+const textExtensions = new Set([
+  'html', 'css', 'js', 'ts', 'json', 'svg', 'glsl', 'wgsl',
+]);
+
+const sourceFiles: { filename: string; code: string; lang: string }[] = [];
+
+for (const entry of entries) {
+  if (!entry.isFile() || entry.name === 'meta.json') continue;
+  const ext = entry.name.split('.').pop()?.toLowerCase() ?? '';
+  if (!textExtensions.has(ext)) continue;
+  const content = await readFile(join(demoDir, entry.name), 'utf-8');
+  sourceFiles.push({ filename: entry.name, code: content, lang: ext });
+}
+
+// demo.html first, then alphabetical
+sourceFiles.sort((a, b) => {
+  if (a.filename === 'demo.html') return -1;
+  if (b.filename === 'demo.html') return 1;
+  return a.filename.localeCompare(b.filename);
+});
+
+// ---------------------------------------------------------------------------
+// Display helpers
+// ---------------------------------------------------------------------------
+const contextLabels: Record<string, string> = {
+  '2d': '2D',
+  webgl: 'WebGL',
+  webgpu: 'WebGPU',
+};
+
+const difficultyLabels: Record<string, string> = {
+  beginner: 'Beginner',
+  intermediate: 'Intermediate',
+  advanced: 'Advanced',
+};
+
+const demoUrl = `/demos/${demo.id}/demo.html`;
+const githubUrl = `${GITHUB_REPO}/tree/main/src/content/demos/${demo.id}`;
+---
+
+<BaseLayout title={title} description={description}>
+  <div class="demo-page">
+    {/* ------- Header ------- */}
+    <div class="demo-header">
+      <a href="/demos/" class="back-link">&larr; Back to Demos</a>
+
+      <div class="demo-badges">
+        <span class={`context-badge context-${context}`}>
+          {contextLabels[context]}
+        </span>
+        <span class={`difficulty-badge difficulty-${difficulty}`}>
+          {difficultyLabels[difficulty]}
+        </span>
+      </div>
+
+      <h1>{title}</h1>
+      <p class="demo-description">{description}</p>
+    </div>
+
+    {/* ------- Action links ------- */}
+    <div class="demo-actions">
+      <a
+        href={demoUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="action-btn action-primary"
+      >
+        Open in new tab
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </a>
+      <a
+        href={githubUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="action-btn"
+      >
+        View on GitHub
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+      </a>
+    </div>
+
+    {/* ------- Demo + Sidebar ------- */}
+    <div class="demo-content">
+      <div class="demo-iframe-wrapper">
+        <iframe
+          src={demoUrl}
+          title={`${title} demo`}
+          class="demo-iframe"
+          loading="lazy"
+        />
+      </div>
+
+      <aside class="demo-sidebar">
+        <h2 class="sidebar-heading">Details</h2>
+
+        {author && (
+          <div class="sidebar-field">
+            <span class="field-label">Author</span>
+            <span class="field-value">{author}</span>
+          </div>
+        )}
+
+        {dateCreated && (
+          <div class="sidebar-field">
+            <span class="field-label">Created</span>
+            <span class="field-value">{dateCreated}</span>
+          </div>
+        )}
+
+        {dateUpdated && (
+          <div class="sidebar-field">
+            <span class="field-label">Updated</span>
+            <span class="field-value">{dateUpdated}</span>
+          </div>
+        )}
+
+        {features.length > 0 && (
+          <div class="sidebar-field">
+            <span class="field-label">API Features</span>
+            <div class="feature-list">
+              {features.map((f: string) => (
+                <code class="feature-tag">{f}</code>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div class="sidebar-field">
+          <span class="field-label">Browser Support</span>
+          <div class="browser-list">
+            <span class={`browser-badge ${browserSupport.chrome ? 'supported' : 'unsupported'}`}>
+              Chrome
+            </span>
+            <span class={`browser-badge ${browserSupport.firefox ? 'supported' : 'unsupported'}`}>
+              Firefox
+            </span>
+            <span class={`browser-badge ${browserSupport.safari ? 'supported' : 'unsupported'}`}>
+              Safari
+            </span>
+          </div>
+        </div>
+
+        {tags.length > 0 && (
+          <div class="sidebar-field">
+            <span class="field-label">Tags</span>
+            <div class="tag-list">
+              {tags.map((tag: string) => (
+                <span class="demo-tag">{tag}</span>
+              ))}
+            </div>
+          </div>
+        )}
+      </aside>
+    </div>
+
+    {/* ------- Source code ------- */}
+    <section class="demo-source">
+      <h2>Source Code</h2>
+      <SourceViewer files={sourceFiles} />
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  /* ------- Page ------- */
+  .demo-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  /* ------- Header ------- */
+  .back-link {
+    display: inline-block;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+    transition: color 0.15s ease;
+  }
+
+  .back-link:hover {
+    color: var(--text-primary);
+    text-decoration: none;
+  }
+
+  .demo-badges {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .demo-header h1 {
+    margin-bottom: 0.25rem;
+  }
+
+  .demo-description {
+    margin: 0;
+    color: var(--text-secondary);
+    max-width: 52rem;
+  }
+
+  /* ------- Badges (shared palette with DemoCard) ------- */
+  .context-badge,
+  .difficulty-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.175rem 0.5rem;
+    border-radius: 4px;
+    line-height: 1.4;
+  }
+
+  .context-2d {
+    background: rgba(0, 229, 185, 0.15);
+    color: var(--color-teal);
+  }
+
+  .context-webgl {
+    background: rgba(255, 89, 38, 0.15);
+    color: var(--color-orange);
+  }
+
+  .context-webgpu {
+    background: rgba(108, 65, 240, 0.15);
+    color: var(--color-purple);
+  }
+
+  .difficulty-beginner {
+    background: rgba(0, 189, 129, 0.12);
+    color: var(--color-green);
+  }
+
+  .difficulty-intermediate {
+    background: rgba(255, 89, 38, 0.12);
+    color: var(--color-orange);
+  }
+
+  .difficulty-advanced {
+    background: rgba(213, 46, 102, 0.12);
+    color: var(--color-pink);
+  }
+
+  /* ------- Action buttons ------- */
+  .demo-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.625rem;
+  }
+
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0.875rem;
+    font-family: var(--font-body);
+    font-size: 0.825rem;
+    font-weight: 500;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.15s ease, background-color 0.15s ease,
+      border-color 0.15s ease;
+  }
+
+  .action-btn:hover {
+    color: var(--text-primary);
+    background: var(--bg-elevated);
+    text-decoration: none;
+  }
+
+  .action-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--color-white);
+  }
+
+  .action-primary:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+    color: var(--color-white);
+  }
+
+  /* ------- Demo + Sidebar layout ------- */
+  .demo-content {
+    display: grid;
+    grid-template-columns: 1fr 16rem;
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  /* ------- iframe ------- */
+  .demo-iframe-wrapper {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    background: #0a0a0a;
+  }
+
+  .demo-iframe {
+    display: block;
+    width: 100%;
+    min-height: 24rem;
+    border: none;
+  }
+
+  /* ------- Sidebar ------- */
+  .demo-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+  }
+
+  .sidebar-heading {
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  .sidebar-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .field-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+  }
+
+  .field-value {
+    font-size: 0.85rem;
+    color: var(--text-primary);
+  }
+
+  .feature-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  }
+
+  .feature-tag {
+    font-size: 0.75rem;
+    padding: 0.125rem 0.4rem;
+    background: var(--bg-elevated);
+    border-radius: 3px;
+    color: var(--accent);
+  }
+
+  .browser-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  }
+
+  .browser-badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.125rem 0.4rem;
+    border-radius: 3px;
+  }
+
+  .browser-badge.supported {
+    background: rgba(0, 189, 129, 0.12);
+    color: var(--color-green);
+  }
+
+  .browser-badge.unsupported {
+    background: var(--bg-elevated);
+    color: var(--text-muted);
+  }
+
+  .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  }
+
+  .demo-tag {
+    font-size: 0.7rem;
+    padding: 0.125rem 0.4rem;
+    background: var(--bg-elevated);
+    color: var(--text-muted);
+    border-radius: 3px;
+  }
+
+  /* ------- Source section ------- */
+  .demo-source h2 {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+  }
+
+  /* ------- Responsive ------- */
+  @media (max-width: 768px) {
+    .demo-content {
+      grid-template-columns: 1fr;
+    }
+
+    .demo-sidebar {
+      order: -1;
+    }
+
+    .demo-iframe {
+      min-height: 18rem;
+    }
+  }
+</style>

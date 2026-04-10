@@ -1,0 +1,150 @@
+---
+/**
+ * Tabbed source code viewer with syntax highlighting.
+ * Displays demo source files with Shiki-powered highlighting via Astro's Code component.
+ */
+import { Code } from 'astro:components';
+
+interface SourceFile {
+  filename: string;
+  code: string;
+  lang: string;
+}
+
+interface Props {
+  files: SourceFile[];
+}
+
+const { files } = Astro.props;
+
+const langMap: Record<string, string> = {
+  html: 'html',
+  css: 'css',
+  js: 'javascript',
+  ts: 'typescript',
+  json: 'json',
+};
+
+function getLang(filename: string): string {
+  const ext = filename.split('.').pop()?.toLowerCase() ?? '';
+  return langMap[ext] ?? 'text';
+}
+---
+
+<div class="source-viewer">
+  {files.length > 1 && (
+    <div class="source-tabs" role="tablist" aria-label="Source files">
+      {files.map((file, i) => (
+        <button
+          class={`source-tab ${i === 0 ? 'active' : ''}`}
+          role="tab"
+          aria-selected={i === 0 ? 'true' : 'false'}
+          aria-controls={`source-panel-${i}`}
+          data-tab-index={i}
+        >
+          {file.filename}
+        </button>
+      ))}
+    </div>
+  )}
+
+  {files.map((file, i) => (
+    <div
+      class={`source-panel ${i === 0 ? 'active' : ''}`}
+      role="tabpanel"
+      id={`source-panel-${i}`}
+      data-panel-index={i}
+    >
+      <Code code={file.code} lang={getLang(file.filename)} theme="github-dark" />
+    </div>
+  ))}
+</div>
+
+<script>
+  function initSourceViewer() {
+    document.querySelectorAll('.source-viewer').forEach((viewer) => {
+      const tabs = viewer.querySelectorAll<HTMLButtonElement>('.source-tab');
+      const panels = viewer.querySelectorAll<HTMLElement>('.source-panel');
+
+      tabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+          const index = tab.dataset.tabIndex;
+
+          tabs.forEach((t) => {
+            t.classList.remove('active');
+            t.setAttribute('aria-selected', 'false');
+          });
+          panels.forEach((p) => p.classList.remove('active'));
+
+          tab.classList.add('active');
+          tab.setAttribute('aria-selected', 'true');
+
+          const panel = viewer.querySelector<HTMLElement>(
+            `[data-panel-index="${index}"]`,
+          );
+          panel?.classList.add('active');
+        });
+      });
+    });
+  }
+
+  initSourceViewer();
+  document.addEventListener('astro:after-swap', initSourceViewer);
+</script>
+
+<style>
+  .source-viewer {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg-surface);
+  }
+
+  .source-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    overflow-x: auto;
+  }
+
+  .source-tab {
+    padding: 0.5rem 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .source-tab:hover {
+    color: var(--text-secondary);
+  }
+
+  .source-tab.active {
+    color: var(--text-primary);
+    border-bottom-color: var(--accent);
+  }
+
+  .source-panel {
+    display: none;
+    overflow-x: auto;
+  }
+
+  .source-panel.active {
+    display: block;
+  }
+
+  .source-panel :global(pre) {
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    max-height: 32rem;
+    overflow: auto;
+  }
+</style>

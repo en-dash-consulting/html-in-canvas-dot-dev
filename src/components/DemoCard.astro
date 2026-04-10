@@ -1,0 +1,143 @@
+---
+/**
+ * Card component for the demo gallery.
+ * Displays title, description, context badge, difficulty, and tags.
+ */
+
+interface Props {
+  slug: string;
+  title: string;
+  description: string;
+  context: '2d' | 'webgl' | 'webgpu';
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  tags: string[];
+}
+
+const { slug, title, description, context, difficulty, tags } = Astro.props;
+
+const contextLabels: Record<string, string> = {
+  '2d': '2D',
+  webgl: 'WebGL',
+  webgpu: 'WebGPU',
+};
+
+const difficultyLabels: Record<string, string> = {
+  beginner: 'Beginner',
+  intermediate: 'Intermediate',
+  advanced: 'Advanced',
+};
+---
+
+<a href={`/demos/${slug}/`} class="demo-card" data-context={context} data-difficulty={difficulty} data-tags={tags.join(',')}>
+  <div class="demo-card-header">
+    <span class={`context-badge context-${context}`}>{contextLabels[context]}</span>
+    <span class={`difficulty-badge difficulty-${difficulty}`}>{difficultyLabels[difficulty]}</span>
+  </div>
+  <h3 class="demo-card-title">{title}</h3>
+  <p class="demo-card-desc">{description}</p>
+  {tags.length > 0 && (
+    <div class="demo-card-tags">
+      {tags.map((tag) => (
+        <span class="demo-tag">{tag}</span>
+      ))}
+    </div>
+  )}
+</a>
+
+<style>
+  .demo-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    padding: 1.25rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .demo-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    text-decoration: none;
+  }
+
+  .demo-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .context-badge,
+  .difficulty-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.175rem 0.5rem;
+    border-radius: 4px;
+    line-height: 1.4;
+  }
+
+  .context-2d {
+    background: rgba(0, 229, 185, 0.15);
+    color: var(--color-teal);
+  }
+
+  .context-webgl {
+    background: rgba(255, 89, 38, 0.15);
+    color: var(--color-orange);
+  }
+
+  .context-webgpu {
+    background: rgba(108, 65, 240, 0.15);
+    color: var(--color-purple);
+  }
+
+  .difficulty-beginner {
+    background: rgba(0, 189, 129, 0.12);
+    color: var(--color-green);
+  }
+
+  .difficulty-intermediate {
+    background: rgba(255, 89, 38, 0.12);
+    color: var(--color-orange);
+  }
+
+  .difficulty-advanced {
+    background: rgba(213, 46, 102, 0.12);
+    color: var(--color-pink);
+  }
+
+  .demo-card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .demo-card-desc {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .demo-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin-top: auto;
+  }
+
+  .demo-tag {
+    font-size: 0.7rem;
+    padding: 0.125rem 0.4rem;
+    background: var(--bg-elevated);
+    color: var(--text-muted);
+    border-radius: 3px;
+  }
+</style>

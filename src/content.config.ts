@@ -16,6 +16,8 @@ const demos = defineCollection({
     author: z.string().optional(),
     dateCreated: z.string().optional(),
     dateUpdated: z.string().optional(),
+    /** Canvas API context used by this demo */
+    context: z.enum(['2d', 'webgl', 'webgpu']).default('2d'),
     difficulty: z
       .enum(['beginner', 'intermediate', 'advanced'])
       .default('beginner'),

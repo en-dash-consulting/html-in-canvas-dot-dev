@@ -3,6 +3,7 @@
   "description": "A brief description of what this demo shows.",
   "tags": ["example"],
   "author": "",
+  "context": "2d",
   "difficulty": "beginner",
   "features": ["layoutsubtree", "drawElement"],
   "browserSupport": {

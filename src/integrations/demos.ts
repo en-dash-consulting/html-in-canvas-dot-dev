@@ -89,7 +89,12 @@ export function demosIntegration(): AstroIntegration {
         server.middlewares.use((req, res, next) => {
           if (!req.url?.startsWith('/demos/')) return next();
 
-          const relPath = req.url.slice('/demos/'.length);
+          const relPath = req.url.split('?')[0].slice('/demos/'.length);
+
+          // Only serve requests for actual files (with an extension).
+          // Bare paths like /demos/hello-world/ are Astro page routes.
+          if (!/\.\w+$/.test(relPath)) return next();
+
           const filePath = join(srcBase, relPath);
 
           // Only serve files inside demo directories, skip _template
