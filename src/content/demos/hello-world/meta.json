@@ -1,12 +1,13 @@
 {
   "title": "Hello World",
-  "description": "Minimal HTML-in-Canvas example rendering styled text inside a canvas element.",
-  "tags": ["basics", "text"],
+  "description": "The simplest HTML-in-Canvas demo — a styled div drawn into canvas with drawElementImage, showing the minimal boilerplate with annotated code.",
+  "tags": ["basics", "beginner", "boilerplate"],
   "author": "En Dash Consulting",
   "dateCreated": "2026-04-10",
+  "dateUpdated": "2026-04-10",
   "context": "2d",
   "difficulty": "beginner",
-  "features": ["layoutsubtree", "drawElement"],
+  "features": ["layoutsubtree", "drawElementImage", "onpaint"],
   "browserSupport": {
     "chrome": true,
     "firefox": false,

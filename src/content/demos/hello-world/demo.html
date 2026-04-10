@@ -11,44 +11,298 @@
       }
 
       body {
-        display: grid;
-        place-items: center;
         min-height: 100vh;
-        background: #0a0a0a;
+        background: #0a0a0f;
         color: #f0f0f0;
-        font-family: system-ui, sans-serif;
+        font-family: system-ui, -apple-system, sans-serif;
+        padding: 2rem;
+      }
+
+      h1 {
+        text-align: center;
+        font-size: 1.25rem;
+        font-weight: 400;
+        color: #a0a0b8;
+        margin-bottom: 2rem;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        max-width: 1100px;
+        margin: 0 auto;
+        align-items: start;
+      }
+
+      @media (max-width: 800px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* ── Live demo panel ─────────────────────────────── */
+      .demo-panel {
+        background: #14141f;
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid #282840;
+      }
+
+      .demo-panel h2 {
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #6a6a80;
+        margin-bottom: 1rem;
       }
 
       canvas {
-        border: 1px solid #333;
+        width: 100%;
+        aspect-ratio: 4 / 1.4;
+        display: block;
         border-radius: 8px;
+        border: 1px solid #282840;
+        background: #0a0a0f;
       }
 
+      /*
+       * Style the element that will be drawn into the canvas.
+       * This is a real DOM element — it participates in layout,
+       * accessibility, and hit testing.
+       */
       #content {
-        padding: 2rem 3rem;
+        padding: 2rem 2.5rem;
         font-size: 2rem;
-        font-weight: 600;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        font-weight: 700;
+        text-align: center;
+        background: linear-gradient(135deg, #6c41f0 0%, #00e5b9 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
+        line-height: 1.3;
+      }
+
+      /* ── Annotated code panel ────────────────────────── */
+      .code-panel {
+        background: #14141f;
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid #282840;
+      }
+
+      .code-panel h2 {
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #6a6a80;
+        margin-bottom: 1rem;
+      }
+
+      .code-block {
+        background: #0d0d18;
+        border-radius: 8px;
+        padding: 1.25rem;
+        overflow-x: auto;
+        border: 1px solid #1e1e30;
+      }
+
+      .code-block pre {
+        font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+        font-size: 0.8rem;
+        line-height: 1.7;
+        white-space: pre;
+        color: #c0c0d0;
+      }
+
+      /* Syntax highlighting */
+      .kw { color: #c792ea; }  /* keywords & tags */
+      .at { color: #ffcb6b; }  /* attributes */
+      .st { color: #c3e88d; }  /* strings */
+      .cm { color: #546e7a; }  /* comments */
+      .fn { color: #82aaff; }  /* functions */
+      .op { color: #89ddff; }  /* operators & punctuation */
+      .nb { color: #f78c6c; }  /* numbers */
+
+      /* Annotation callouts */
+      .annotation {
+        display: block;
+        background: #1a1a2e;
+        border-left: 3px solid #6c41f0;
+        border-radius: 0 6px 6px 0;
+        padding: 0.5rem 0.75rem;
+        margin: 0.5rem 0;
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 0.78rem;
+        line-height: 1.5;
+        color: #a0a0b8;
+      }
+
+      .annotation strong {
+        color: #e0e0f0;
+        font-weight: 600;
+      }
+
+      .annotation code {
+        background: #282840;
+        padding: 0.1em 0.35em;
+        border-radius: 3px;
+        font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+        font-size: 0.75rem;
+        color: #c3e88d;
+      }
+
+      /* ── Concepts list ───────────────────────────────── */
+      .concepts {
+        margin-top: 1.5rem;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+      }
+
+      @media (max-width: 500px) {
+        .concepts {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .concept {
+        background: #1a1a2e;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        border: 1px solid #282840;
+      }
+
+      .concept-name {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #6c41f0;
+        margin-bottom: 0.25rem;
+        font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+      }
+
+      .concept-desc {
+        font-size: 0.75rem;
+        color: #8080a0;
+        line-height: 1.4;
       }
     </style>
   </head>
   <body>
-    <canvas id="canvas" width="800" height="200" layoutsubtree>
-      <div id="content">Hello from HTML-in-Canvas!</div>
-    </canvas>
+    <h1>Minimal drawElementImage Demo</h1>
+
+    <div class="layout">
+      <!-- ── Live demo ─────────────────────────────────── -->
+      <div class="demo-panel">
+        <h2>Live Result</h2>
+
+        <canvas id="canvas" layoutsubtree>
+          <div id="content">Hello from HTML&#8209;in&#8209;Canvas!</div>
+        </canvas>
+
+        <div class="concepts">
+          <div class="concept">
+            <div class="concept-name">layoutsubtree</div>
+            <div class="concept-desc">
+              Canvas attribute that enables child element layout and painting.
+            </div>
+          </div>
+          <div class="concept">
+            <div class="concept-name">onpaint</div>
+            <div class="concept-desc">
+              Callback fired when child content changes and the canvas needs
+              re-rendering.
+            </div>
+          </div>
+          <div class="concept">
+            <div class="concept-name">drawElementImage()</div>
+            <div class="concept-desc">
+              Draws a child element into the canvas. Returns a DOMMatrix for
+              position sync.
+            </div>
+          </div>
+          <div class="concept">
+            <div class="concept-name">ResizeObserver</div>
+            <div class="concept-desc">
+              Keeps the canvas pixel resolution matched to its CSS layout size.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Annotated source ──────────────────────────── -->
+      <div class="code-panel">
+        <h2>Annotated Source</h2>
+
+        <div class="code-block"><pre>
+<span class="cm">&lt;!-- 1. The HTML --&gt;</span>
+<span class="op">&lt;</span><span class="kw">canvas</span> <span class="at">id</span><span class="op">=</span><span class="st">"canvas"</span> <span class="at">layoutsubtree</span><span class="op">&gt;</span>
+  <span class="op">&lt;</span><span class="kw">div</span> <span class="at">id</span><span class="op">=</span><span class="st">"content"</span><span class="op">&gt;</span>Hello!<span class="op">&lt;/</span><span class="kw">div</span><span class="op">&gt;</span>
+<span class="op">&lt;/</span><span class="kw">canvas</span><span class="op">&gt;</span>
+<span class="annotation"><strong>layoutsubtree</strong> tells the browser to lay out children inside the canvas. They participate in accessibility and hit testing but are only visible when drawn.</span>
+
+<span class="cm">// 2. Get references</span>
+<span class="kw">const</span> canvas <span class="op">=</span> document.<span class="fn">getElementById</span>(<span class="st">"canvas"</span>);
+<span class="kw">const</span> ctx <span class="op">=</span> canvas.<span class="fn">getContext</span>(<span class="st">"2d"</span>);
+<span class="kw">const</span> content <span class="op">=</span> document.<span class="fn">getElementById</span>(<span class="st">"content"</span>);
+
+<span class="cm">// 3. Paint callback</span>
+canvas.<span class="at">onpaint</span> <span class="op">=</span> () <span class="op">=&gt;</span> {
+  ctx.<span class="fn">reset</span>();
+  <span class="kw">const</span> t <span class="op">=</span> ctx.<span class="fn">drawElementImage</span>(content, <span class="nb">0</span>, <span class="nb">0</span>);
+  content.style.<span class="at">transform</span> <span class="op">=</span> t.<span class="fn">toString</span>();
+};
+<span class="annotation"><strong>drawElementImage()</strong> composites the element onto the canvas and returns a <code>DOMMatrix</code>. Applying it as a CSS transform keeps the DOM position in sync with the drawn position &mdash; essential for hit testing and accessibility.</span>
+
+<span class="cm">// 4. ResizeObserver for crisp rendering</span>
+<span class="kw">new</span> <span class="fn">ResizeObserver</span>(([entry]) <span class="op">=&gt;</span> {
+  <span class="kw">const</span> dp <span class="op">=</span> devicePixelRatio;
+  <span class="kw">const</span> { width, height } <span class="op">=</span> entry.contentRect;
+  canvas.<span class="at">width</span>  <span class="op">=</span> Math.<span class="fn">round</span>(width <span class="op">*</span> dp);
+  canvas.<span class="at">height</span> <span class="op">=</span> Math.<span class="fn">round</span>(height <span class="op">*</span> dp);
+  ctx.<span class="fn">scale</span>(dp, dp);
+  <span class="kw">if</span> (canvas.<span class="at">onpaint</span>) canvas.<span class="fn">onpaint</span>();
+}).<span class="fn">observe</span>(canvas);
+<span class="annotation"><strong>ResizeObserver</strong> keeps the canvas backing store sized to device pixels. After resizing, <code>ctx.scale(dp, dp)</code> adjusts the transform so drawing coordinates stay in CSS pixels.</span>
+</pre></div>
+      </div>
+    </div>
 
     <script>
+      /* ── Canvas setup ──────────────────────────────── */
       const canvas = document.getElementById("canvas");
       const ctx = canvas.getContext("2d");
       const content = document.getElementById("content");
 
+      /*
+       * Paint callback — fires when child rendering changes.
+       * ctx.reset() clears the canvas AND resets the transform.
+       * drawElementImage() draws the element and returns a
+       * DOMMatrix for synchronizing DOM position with the
+       * drawn position (needed for hit testing & a11y).
+       */
       canvas.onpaint = () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawElement(content, 0, 0);
+        ctx.reset();
+        const t = ctx.drawElementImage(content, 0, 0);
+        content.style.transform = t.toString();
       };
+
+      /*
+       * ResizeObserver — keeps the canvas resolution in sync
+       * with its CSS layout size for crisp rendering on all
+       * displays. We scale the context by devicePixelRatio
+       * so drawing coordinates remain in CSS pixels.
+       */
+      new ResizeObserver(([entry]) => {
+        const dp = devicePixelRatio;
+        const { width, height } = entry.contentRect;
+        canvas.width = Math.round(width * dp);
+        canvas.height = Math.round(height * dp);
+        ctx.scale(dp, dp);
+        if (canvas.onpaint) canvas.onpaint();
+      }).observe(canvas);
     </script>
   </body>
 </html>
