@@ -1,0 +1,15 @@
+{
+  "title": "3D Room with Live Web Content",
+  "description": "A Three.js first-person 3D room where live HTML elements are rendered as textures on surfaces — a monitor dashboard, a styled poster, and a TV playing CSS animations.",
+  "tags": ["demo", "webgl", "three-js", "3d", "interactive", "dom-rendering"],
+  "author": "En Dash Consulting",
+  "dateCreated": "2026-04-10",
+  "context": "webgl",
+  "difficulty": "advanced",
+  "features": ["layoutsubtree", "drawElementImage", "onpaint", "requestPaint"],
+  "browserSupport": {
+    "chrome": true,
+    "firefox": false,
+    "safari": false
+  }
+}

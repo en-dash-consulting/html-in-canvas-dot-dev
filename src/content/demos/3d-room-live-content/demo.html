@@ -1,0 +1,1491 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>3D Room with Live Web Content — HTML-in-Canvas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        background: #0a0a0f;
+        color: #f0f0f0;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        overflow: hidden;
+      }
+
+      /* ============================================================
+         Three.js viewport
+         ============================================================ */
+      #viewport {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+      }
+
+      /* ============================================================
+         Entry overlay
+         ============================================================ */
+      #overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(10, 10, 15, 0.92);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        cursor: pointer;
+        transition: opacity 0.4s;
+      }
+
+      #overlay.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      #overlay h1 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        margin-bottom: 0.35rem;
+        letter-spacing: -0.02em;
+      }
+
+      .overlay-subtitle {
+        font-size: 0.85rem;
+        color: #6a6a80;
+        margin-bottom: 2rem;
+        max-width: 400px;
+        text-align: center;
+        line-height: 1.5;
+      }
+
+      .key-hints {
+        display: flex;
+        gap: 1.25rem;
+        margin-bottom: 2rem;
+        font-size: 0.78rem;
+        color: #6a6a80;
+      }
+
+      .key-hint {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+      }
+
+      .key-hint kbd {
+        display: inline-block;
+        padding: 0.15rem 0.45rem;
+        background: #1a1a30;
+        border: 1px solid #333355;
+        border-radius: 4px;
+        font-family: "Inter", sans-serif;
+        font-size: 0.7rem;
+        color: #8a8aaf;
+        font-weight: 600;
+      }
+
+      .enter-btn {
+        padding: 0.7rem 1.8rem;
+        background: #6c41f0;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+        margin-bottom: 2.5rem;
+      }
+
+      .enter-btn:hover {
+        background: #7b52ff;
+      }
+
+      .technique-info {
+        max-width: 420px;
+        padding: 1rem 1.25rem;
+        background: #14141f;
+        border: 1px solid #282840;
+        border-radius: 10px;
+        font-size: 0.72rem;
+        color: #6a6a80;
+        line-height: 1.55;
+      }
+
+      .technique-info p {
+        margin-bottom: 0.3rem;
+      }
+
+      .technique-info p:last-child {
+        margin-bottom: 0;
+      }
+
+      .technique-info strong {
+        color: #8a8aaf;
+      }
+
+      .technique-info .hl {
+        color: #00e5b9;
+      }
+
+      .technique-info code {
+        color: #6c41f0;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.68rem;
+      }
+
+      .technique-info .note {
+        color: #3a3a50;
+        font-size: 0.65rem;
+        margin-top: 0.4rem;
+      }
+
+      /* ============================================================
+         Crosshair
+         ============================================================ */
+      #crosshair {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        width: 4px;
+        height: 4px;
+        margin: -2px 0 0 -2px;
+        background: rgba(255, 255, 255, 0.45);
+        border-radius: 50%;
+        z-index: 5;
+        pointer-events: none;
+        display: none;
+      }
+
+      #crosshair.visible {
+        display: block;
+      }
+
+      /* ============================================================
+         Off-screen staging canvases
+         ============================================================ */
+      .staging {
+        position: absolute;
+        left: -9999px;
+        top: -9999px;
+      }
+
+      #monitor-canvas {
+        width: 800px;
+        height: 500px;
+      }
+
+      #poster-canvas {
+        width: 500px;
+        height: 700px;
+      }
+
+      #tv-canvas {
+        width: 800px;
+        height: 450px;
+      }
+
+      /* ============================================================
+         Monitor dashboard content
+         ============================================================ */
+      #monitor-content {
+        width: 800px;
+        height: 500px;
+        background: linear-gradient(160deg, #0d1117 0%, #161b22 100%);
+        color: #e6edf3;
+        font-family: "Inter", sans-serif;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.9rem;
+      }
+
+      .dash-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #30363d;
+        padding-bottom: 0.75rem;
+      }
+
+      .dash-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .dash-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #00e5b9;
+        display: inline-block;
+      }
+
+      .clock {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #00e5b9;
+      }
+
+      .dash-metrics {
+        display: flex;
+        flex-direction: column;
+        gap: 0.55rem;
+      }
+
+      .metric {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .metric-label {
+        width: 72px;
+        font-size: 0.8rem;
+        color: #8b949e;
+        font-weight: 500;
+      }
+
+      .metric-bar {
+        flex: 1;
+        height: 8px;
+        background: #21262d;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .metric-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.6s ease;
+      }
+
+      .cpu-fill {
+        background: linear-gradient(90deg, #6c41f0, #a78bfa);
+      }
+
+      .mem-fill {
+        background: linear-gradient(90deg, #00e5b9, #34d399);
+      }
+
+      .net-fill {
+        background: linear-gradient(90deg, #f0416c, #fb7185);
+      }
+
+      .disk-fill {
+        background: linear-gradient(90deg, #f59e0b, #fbbf24);
+      }
+
+      .metric-val {
+        width: 48px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.8rem;
+        color: #e6edf3;
+        text-align: right;
+      }
+
+      .dash-status {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.78rem;
+        color: #8b949e;
+        padding: 0.5rem 0.75rem;
+        background: #0d1117;
+        border: 1px solid #21262d;
+        border-radius: 6px;
+      }
+
+      .status-led {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #00e5b9;
+      }
+
+      .dash-logs {
+        flex: 1;
+        background: #0d1117;
+        border: 1px solid #21262d;
+        border-radius: 6px;
+        padding: 0.6rem 0.75rem;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.68rem;
+        color: #8b949e;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+      }
+
+      .log-entry {
+        line-height: 1.5;
+      }
+
+      .log-time {
+        color: #484f58;
+      }
+
+      .log-ok {
+        color: #00e5b9;
+      }
+
+      /* ============================================================
+         Poster content
+         ============================================================ */
+      #poster-content {
+        width: 500px;
+        height: 700px;
+        background: linear-gradient(160deg, #1a0a2e 0%, #0a0a1a 50%, #0a1a2e 100%);
+        color: #f0f0f0;
+        font-family: "Inter", sans-serif;
+        padding: 2.5rem 2rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .poster-circle-1 {
+        position: absolute;
+        top: -100px;
+        right: -100px;
+        width: 300px;
+        height: 300px;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle,
+          rgba(108, 65, 240, 0.2),
+          transparent 70%
+        );
+      }
+
+      .poster-circle-2 {
+        position: absolute;
+        bottom: -80px;
+        left: -80px;
+        width: 250px;
+        height: 250px;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle,
+          rgba(0, 229, 185, 0.15),
+          transparent 70%
+        );
+      }
+
+      .poster-inner {
+        position: relative;
+        z-index: 1;
+      }
+
+      .poster-badge {
+        display: inline-block;
+        padding: 0.3rem 0.8rem;
+        background: rgba(108, 65, 240, 0.2);
+        border: 1px solid rgba(108, 65, 240, 0.3);
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.15em;
+        color: #a78bfa;
+        margin-bottom: 1.5rem;
+      }
+
+      .poster-title {
+        font-size: 3.8rem;
+        font-weight: 800;
+        line-height: 1.05;
+        margin-bottom: 1.25rem;
+        background: linear-gradient(
+          135deg,
+          #6c41f0 0%,
+          #00e5b9 50%,
+          #f0416c 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .poster-desc {
+        font-size: 1rem;
+        color: #8a8aaf;
+        line-height: 1.5;
+        margin-bottom: 2rem;
+        max-width: 30ch;
+      }
+
+      .poster-features {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        justify-content: center;
+        margin-bottom: 2rem;
+      }
+
+      .poster-tag {
+        padding: 0.3rem 0.7rem;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.75rem;
+        color: #00e5b9;
+      }
+
+      .poster-url {
+        font-size: 0.85rem;
+        color: #4a4a60;
+        font-weight: 500;
+        letter-spacing: 0.05em;
+      }
+
+      /* ============================================================
+         TV content — CSS animation showcase
+         ============================================================ */
+      #tv-content {
+        width: 800px;
+        height: 450px;
+        background: #050510;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .tv-gradient {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          45deg,
+          #0f0c29,
+          #302b63,
+          #24243e,
+          #0f0c29
+        );
+        background-size: 400% 400%;
+        animation: tvGradient 8s ease infinite;
+      }
+
+      @keyframes tvGradient {
+        0% {
+          background-position: 0% 50%;
+        }
+        25% {
+          background-position: 100% 0%;
+        }
+        50% {
+          background-position: 100% 100%;
+        }
+        75% {
+          background-position: 0% 100%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+
+      .tv-orb {
+        position: absolute;
+        border-radius: 50%;
+        opacity: 0.6;
+      }
+
+      .tv-orb-1 {
+        width: 200px;
+        height: 200px;
+        background: radial-gradient(circle, #6c41f0, transparent 70%);
+        animation: orb1 7s ease-in-out infinite;
+      }
+
+      .tv-orb-2 {
+        width: 160px;
+        height: 160px;
+        background: radial-gradient(circle, #00e5b9, transparent 70%);
+        animation: orb2 9s ease-in-out infinite;
+      }
+
+      .tv-orb-3 {
+        width: 180px;
+        height: 180px;
+        background: radial-gradient(circle, #f0416c, transparent 70%);
+        animation: orb3 11s ease-in-out infinite;
+      }
+
+      @keyframes orb1 {
+        0%,
+        100% {
+          transform: translate(-100px, -50px);
+        }
+        33% {
+          transform: translate(250px, 100px);
+        }
+        66% {
+          transform: translate(80px, -80px);
+        }
+      }
+
+      @keyframes orb2 {
+        0%,
+        100% {
+          transform: translate(300px, 120px);
+        }
+        33% {
+          transform: translate(-30px, -40px);
+        }
+        66% {
+          transform: translate(350px, 40px);
+        }
+      }
+
+      @keyframes orb3 {
+        0%,
+        100% {
+          transform: translate(120px, 200px);
+        }
+        33% {
+          transform: translate(400px, -30px);
+        }
+        66% {
+          transform: translate(-60px, 130px);
+        }
+      }
+
+      .tv-center {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .tv-live-badge {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.5);
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+      }
+
+      .tv-live-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #f0416c;
+        animation: livePulse 1.5s ease-in-out infinite;
+      }
+
+      @keyframes livePulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+
+      .tv-time {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 3.5rem;
+        font-weight: 700;
+        color: #fff;
+        text-shadow: 0 0 40px rgba(108, 65, 240, 0.5),
+          0 0 80px rgba(108, 65, 240, 0.2);
+        letter-spacing: 0.05em;
+      }
+
+      .tv-date {
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.35);
+        font-weight: 500;
+        letter-spacing: 0.1em;
+      }
+
+      .tv-bars {
+        display: flex;
+        align-items: flex-end;
+        gap: 4px;
+        margin-top: 1.25rem;
+        height: 30px;
+      }
+
+      .tv-bar {
+        width: 4px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 2px;
+        animation: barBounce 1.2s ease-in-out infinite;
+      }
+
+      .tv-bar:nth-child(1) {
+        animation-delay: 0s;
+      }
+      .tv-bar:nth-child(2) {
+        animation-delay: 0.1s;
+      }
+      .tv-bar:nth-child(3) {
+        animation-delay: 0.2s;
+      }
+      .tv-bar:nth-child(4) {
+        animation-delay: 0.3s;
+      }
+      .tv-bar:nth-child(5) {
+        animation-delay: 0.4s;
+      }
+      .tv-bar:nth-child(6) {
+        animation-delay: 0.5s;
+      }
+      .tv-bar:nth-child(7) {
+        animation-delay: 0.6s;
+      }
+      .tv-bar:nth-child(8) {
+        animation-delay: 0.7s;
+      }
+      .tv-bar:nth-child(9) {
+        animation-delay: 0.15s;
+      }
+      .tv-bar:nth-child(10) {
+        animation-delay: 0.35s;
+      }
+      .tv-bar:nth-child(11) {
+        animation-delay: 0.55s;
+      }
+      .tv-bar:nth-child(12) {
+        animation-delay: 0.25s;
+      }
+
+      @keyframes barBounce {
+        0%,
+        100% {
+          height: 6px;
+        }
+        50% {
+          height: 28px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ============================================================
+         Three.js viewport
+         ============================================================ -->
+    <canvas id="viewport"></canvas>
+
+    <!-- ============================================================
+         Entry overlay
+         ============================================================ -->
+    <div id="overlay">
+      <h1>3D Room with Live Web Content</h1>
+      <p class="overlay-subtitle">
+        Walk through a room where HTML elements are rendered as live textures on
+        3D surfaces using the HTML-in-Canvas API
+      </p>
+
+      <div class="key-hints">
+        <div class="key-hint"><kbd>W A S D</kbd> Move</div>
+        <div class="key-hint"><kbd>Mouse</kbd> Look</div>
+        <div class="key-hint"><kbd>ESC</kbd> Exit</div>
+      </div>
+
+      <button class="enter-btn">Click to Enter</button>
+
+      <div class="technique-info">
+        <p>
+          <strong>1.</strong> HTML elements live inside
+          <code>&lt;canvas layoutsubtree&gt;</code> elements
+        </p>
+        <p>
+          <strong>2.</strong>
+          <span class="hl">drawElementImage()</span> captures live DOM into
+          canvas bitmaps
+        </p>
+        <p>
+          <strong>3.</strong> Canvas bitmaps become
+          <span class="hl">WebGL textures</span> via Three.js CanvasTexture
+        </p>
+        <p>
+          <strong>4.</strong> Walk around and see
+          <span class="hl">live-updating HTML</span> on 3D surfaces
+        </p>
+        <p class="note">
+          This pipeline is impossible without HTML-in-Canvas — previously you
+          needed html2canvas or dom-to-image, which are slow, lossy, and cannot
+          update at 60 fps.
+        </p>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         Crosshair (visible during pointer lock)
+         ============================================================ -->
+    <div id="crosshair"></div>
+
+    <!-- ============================================================
+         Off-screen staging canvases — HTML content rendered here
+         ============================================================ -->
+
+    <!-- Monitor: live dashboard -->
+    <canvas
+      id="monitor-canvas"
+      class="staging"
+      width="800"
+      height="500"
+      layoutsubtree
+    >
+      <div id="monitor-content">
+        <div class="dash-header">
+          <div class="dash-title">
+            <span class="dash-dot"></span>
+            System Dashboard
+          </div>
+          <div id="clock" class="clock">00:00:00</div>
+        </div>
+        <div class="dash-metrics">
+          <div class="metric">
+            <div class="metric-label">CPU</div>
+            <div class="metric-bar">
+              <div class="metric-fill cpu-fill" id="cpu-bar" style="width: 64%"></div>
+            </div>
+            <div class="metric-val" id="cpu-val">64%</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Memory</div>
+            <div class="metric-bar">
+              <div class="metric-fill mem-fill" id="mem-bar" style="width: 42%"></div>
+            </div>
+            <div class="metric-val" id="mem-val">42%</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Network</div>
+            <div class="metric-bar">
+              <div class="metric-fill net-fill" id="net-bar" style="width: 78%"></div>
+            </div>
+            <div class="metric-val" id="net-val">78%</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Disk I/O</div>
+            <div class="metric-bar">
+              <div
+                class="metric-fill disk-fill"
+                id="disk-bar"
+                style="width: 31%"
+              ></div>
+            </div>
+            <div class="metric-val" id="disk-val">31%</div>
+          </div>
+        </div>
+        <div class="dash-status">
+          <span class="status-led"></span>
+          Connected — All systems nominal
+        </div>
+        <div class="dash-logs">
+          <div class="log-entry" id="log-1">
+            <span class="log-time">[--:--:--]</span>
+            <span class="log-ok">OK</span> Canvas texture sync complete
+          </div>
+          <div class="log-entry" id="log-2">
+            <span class="log-time">[--:--:--]</span>
+            <span class="log-ok">OK</span> WebGL context acquired
+          </div>
+          <div class="log-entry" id="log-3">
+            <span class="log-time">[--:--:--]</span>
+            <span class="log-ok">OK</span> All surfaces rendering
+          </div>
+          <div class="log-entry" id="log-4">
+            <span class="log-time">[--:--:--]</span>
+            <span class="log-ok">OK</span> Awaiting input&hellip;
+          </div>
+        </div>
+      </div>
+    </canvas>
+
+    <!-- Poster: styled typographic poster -->
+    <canvas
+      id="poster-canvas"
+      class="staging"
+      width="500"
+      height="700"
+      layoutsubtree
+    >
+      <div id="poster-content">
+        <div class="poster-circle-1"></div>
+        <div class="poster-circle-2"></div>
+        <div class="poster-inner">
+          <div class="poster-badge">WICG SPEC</div>
+          <h1 class="poster-title">HTML<br />in<br />Canvas</h1>
+          <p class="poster-desc">
+            Render styled DOM elements directly into canvas bitmaps at 60 fps
+          </p>
+          <div class="poster-features">
+            <span class="poster-tag">layoutsubtree</span>
+            <span class="poster-tag">drawElementImage</span>
+            <span class="poster-tag">onpaint</span>
+          </div>
+          <div class="poster-url">html-in-canvas.dev</div>
+        </div>
+      </div>
+    </canvas>
+
+    <!-- TV: CSS animation showcase -->
+    <canvas
+      id="tv-canvas"
+      class="staging"
+      width="800"
+      height="450"
+      layoutsubtree
+    >
+      <div id="tv-content">
+        <div class="tv-gradient"></div>
+        <div class="tv-orb tv-orb-1"></div>
+        <div class="tv-orb tv-orb-2"></div>
+        <div class="tv-orb tv-orb-3"></div>
+        <div class="tv-center">
+          <div class="tv-live-badge">
+            <span class="tv-live-dot"></span>
+            Live CSS Animation
+          </div>
+          <div class="tv-time" id="tv-time">00:00</div>
+          <div class="tv-date" id="tv-date">Thursday, April 10</div>
+          <div class="tv-bars">
+            <div class="tv-bar"></div>
+            <div class="tv-bar"></div>
+            <div class="tv-bar"></div>
+            <div class="tv-bar"></div>
+            <div class="tv-bar"></div>
+            <div class="tv-bar"></div>
+            <div class="tv-bar"></div>
+            <div class="tv-bar"></div>
+            <div class="tv-bar"></div>
+            <div class="tv-bar"></div>
+            <div class="tv-bar"></div>
+            <div class="tv-bar"></div>
+          </div>
+        </div>
+      </div>
+    </canvas>
+
+    <!-- ============================================================
+         Three.js (loaded via CDN, no build step)
+         ============================================================ -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.min.js"></script>
+    <script>
+      /* ==============================================================
+         DOM references
+         ============================================================== */
+      const viewport = document.getElementById("viewport");
+      const overlay = document.getElementById("overlay");
+      const crosshair = document.getElementById("crosshair");
+
+      const monitorCanvas = document.getElementById("monitor-canvas");
+      const posterCanvas = document.getElementById("poster-canvas");
+      const tvCanvas = document.getElementById("tv-canvas");
+
+      const monitorContent = document.getElementById("monitor-content");
+      const posterContent = document.getElementById("poster-content");
+      const tvContent = document.getElementById("tv-content");
+
+      const clockEl = document.getElementById("clock");
+      const cpuBar = document.getElementById("cpu-bar");
+      const memBar = document.getElementById("mem-bar");
+      const netBar = document.getElementById("net-bar");
+      const diskBar = document.getElementById("disk-bar");
+      const cpuVal = document.getElementById("cpu-val");
+      const memVal = document.getElementById("mem-val");
+      const netVal = document.getElementById("net-val");
+      const diskVal = document.getElementById("disk-val");
+      const tvTime = document.getElementById("tv-time");
+      const tvDate = document.getElementById("tv-date");
+
+      const logEntries = [
+        document.getElementById("log-1"),
+        document.getElementById("log-2"),
+        document.getElementById("log-3"),
+        document.getElementById("log-4"),
+      ];
+
+      /* ==============================================================
+         2D contexts for staging canvases
+         ============================================================== */
+      const monitorCtx = monitorCanvas.getContext("2d");
+      const posterCtx = posterCanvas.getContext("2d");
+      const tvCtx = tvCanvas.getContext("2d");
+
+      /* ==============================================================
+         Paint callbacks — capture HTML into canvas bitmaps
+         ============================================================== */
+      let monitorDirty = true;
+      let posterDirty = true;
+      let tvDirty = true;
+
+      monitorCanvas.onpaint = () => {
+        monitorCtx.clearRect(0, 0, monitorCanvas.width, monitorCanvas.height);
+        monitorCtx.drawElementImage(monitorContent, 0, 0);
+        monitorDirty = true;
+      };
+
+      posterCanvas.onpaint = () => {
+        posterCtx.clearRect(0, 0, posterCanvas.width, posterCanvas.height);
+        posterCtx.drawElementImage(posterContent, 0, 0);
+        posterDirty = true;
+      };
+
+      tvCanvas.onpaint = () => {
+        tvCtx.clearRect(0, 0, tvCanvas.width, tvCanvas.height);
+        tvCtx.drawElementImage(tvContent, 0, 0);
+        tvDirty = true;
+      };
+
+      /* Trigger initial paints */
+      monitorCanvas.requestPaint();
+      posterCanvas.requestPaint();
+      tvCanvas.requestPaint();
+
+      /* ==============================================================
+         Three.js scene
+         ============================================================== */
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0a0a0f);
+
+      const camera = new THREE.PerspectiveCamera(
+        70,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        100,
+      );
+      camera.position.set(0, 1.7, 2.5);
+
+      const renderer = new THREE.WebGLRenderer({
+        canvas: viewport,
+        antialias: true,
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.0;
+
+      /* ==============================================================
+         Room geometry
+         ============================================================== */
+      const ROOM_W = 10;
+      const ROOM_H = 3.5;
+      const ROOM_D = 8;
+      const HALF_W = ROOM_W / 2;
+      const HALF_D = ROOM_D / 2;
+
+      /* Floor */
+      const floorGeo = new THREE.PlaneGeometry(ROOM_W, ROOM_D);
+      const floorMat = new THREE.MeshStandardMaterial({
+        color: 0x1a1a2e,
+        roughness: 0.85,
+        metalness: 0.1,
+      });
+      const floor = new THREE.Mesh(floorGeo, floorMat);
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.y = 0;
+      scene.add(floor);
+
+      /* Rug */
+      const rugGeo = new THREE.PlaneGeometry(4.5, 3.5);
+      const rugMat = new THREE.MeshStandardMaterial({
+        color: 0x1e1e38,
+        roughness: 0.95,
+      });
+      const rug = new THREE.Mesh(rugGeo, rugMat);
+      rug.rotation.x = -Math.PI / 2;
+      rug.position.set(0, 0.005, 0.5);
+      scene.add(rug);
+
+      /* Ceiling */
+      const ceilingGeo = new THREE.PlaneGeometry(ROOM_W, ROOM_D);
+      const ceilingMat = new THREE.MeshStandardMaterial({
+        color: 0x0d0d15,
+        roughness: 0.95,
+      });
+      const ceiling = new THREE.Mesh(ceilingGeo, ceilingMat);
+      ceiling.rotation.x = Math.PI / 2;
+      ceiling.position.y = ROOM_H;
+      scene.add(ceiling);
+
+      /* Walls */
+      const wallMat = new THREE.MeshStandardMaterial({
+        color: 0x14141f,
+        roughness: 0.9,
+        metalness: 0.05,
+      });
+
+      const backWall = new THREE.Mesh(
+        new THREE.PlaneGeometry(ROOM_W, ROOM_H),
+        wallMat,
+      );
+      backWall.position.set(0, ROOM_H / 2, -HALF_D);
+      scene.add(backWall);
+
+      const frontWall = new THREE.Mesh(
+        new THREE.PlaneGeometry(ROOM_W, ROOM_H),
+        wallMat.clone(),
+      );
+      frontWall.position.set(0, ROOM_H / 2, HALF_D);
+      frontWall.rotation.y = Math.PI;
+      scene.add(frontWall);
+
+      const leftWall = new THREE.Mesh(
+        new THREE.PlaneGeometry(ROOM_D, ROOM_H),
+        wallMat.clone(),
+      );
+      leftWall.position.set(-HALF_W, ROOM_H / 2, 0);
+      leftWall.rotation.y = Math.PI / 2;
+      scene.add(leftWall);
+
+      const rightWall = new THREE.Mesh(
+        new THREE.PlaneGeometry(ROOM_D, ROOM_H),
+        wallMat.clone(),
+      );
+      rightWall.position.set(HALF_W, ROOM_H / 2, 0);
+      rightWall.rotation.y = -Math.PI / 2;
+      scene.add(rightWall);
+
+      /* Baseboards */
+      const baseMat = new THREE.MeshStandardMaterial({ color: 0x222233 });
+
+      function addBaseboard(width, x, z, rotY) {
+        const geo = new THREE.BoxGeometry(width, 0.1, 0.03);
+        const mesh = new THREE.Mesh(geo, baseMat);
+        mesh.position.set(x, 0.05, z);
+        mesh.rotation.y = rotY;
+        scene.add(mesh);
+      }
+
+      addBaseboard(ROOM_W, 0, -HALF_D + 0.015, 0);
+      addBaseboard(ROOM_W, 0, HALF_D - 0.015, 0);
+      addBaseboard(ROOM_D, -HALF_W + 0.015, 0, Math.PI / 2);
+      addBaseboard(ROOM_D, HALF_W - 0.015, 0, Math.PI / 2);
+
+      /* ==============================================================
+         Desk (under monitor)
+         ============================================================== */
+      const deskMat = new THREE.MeshStandardMaterial({
+        color: 0x2a2a3e,
+        roughness: 0.6,
+        metalness: 0.3,
+      });
+
+      /* Desktop surface */
+      const deskTop = new THREE.Mesh(
+        new THREE.BoxGeometry(3, 0.08, 0.9),
+        deskMat,
+      );
+      deskTop.position.set(0, 0.8, -3.55);
+      scene.add(deskTop);
+
+      /* Desk legs */
+      const legGeo = new THREE.BoxGeometry(0.06, 0.8, 0.06);
+      const legMat = new THREE.MeshStandardMaterial({ color: 0x222233 });
+      const legPositions = [
+        [-1.4, 0.4, -3.9],
+        [1.4, 0.4, -3.9],
+        [-1.4, 0.4, -3.2],
+        [1.4, 0.4, -3.2],
+      ];
+      for (const pos of legPositions) {
+        const leg = new THREE.Mesh(legGeo, legMat);
+        leg.position.set(pos[0], pos[1], pos[2]);
+        scene.add(leg);
+      }
+
+      /* ==============================================================
+         Content surfaces with HTML-in-Canvas textures
+         ============================================================== */
+
+      /* --- Monitor screen --- */
+      const monitorTexture = new THREE.CanvasTexture(monitorCanvas);
+      monitorTexture.minFilter = THREE.LinearFilter;
+      monitorTexture.magFilter = THREE.LinearFilter;
+
+      const monitorMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(2.4, 1.5),
+        new THREE.MeshBasicMaterial({ map: monitorTexture }),
+      );
+      monitorMesh.position.set(0, 1.85, -3.97);
+      scene.add(monitorMesh);
+
+      /* Monitor bezel */
+      const bezelMat = new THREE.MeshStandardMaterial({
+        color: 0x1a1a25,
+        roughness: 0.3,
+        metalness: 0.8,
+      });
+      const monitorBezel = new THREE.Mesh(
+        new THREE.BoxGeometry(2.55, 1.65, 0.06),
+        bezelMat,
+      );
+      monitorBezel.position.set(0, 1.85, -3.99);
+      scene.add(monitorBezel);
+
+      /* Monitor stand */
+      const standMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(0.15, 0.2, 0.15),
+        bezelMat,
+      );
+      standMesh.position.set(0, 0.94, -3.7);
+      scene.add(standMesh);
+
+      const standBase = new THREE.Mesh(
+        new THREE.BoxGeometry(0.5, 0.04, 0.3),
+        bezelMat,
+      );
+      standBase.position.set(0, 0.84, -3.6);
+      scene.add(standBase);
+
+      /* --- Poster --- */
+      const posterTexture = new THREE.CanvasTexture(posterCanvas);
+      posterTexture.minFilter = THREE.LinearFilter;
+      posterTexture.magFilter = THREE.LinearFilter;
+
+      const posterMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(1.4, 2.0),
+        new THREE.MeshBasicMaterial({ map: posterTexture }),
+      );
+      posterMesh.position.set(-4.97, 1.8, 0);
+      posterMesh.rotation.y = Math.PI / 2;
+      scene.add(posterMesh);
+
+      /* Poster frame */
+      const frameMat = new THREE.MeshStandardMaterial({
+        color: 0x2a2a3e,
+        roughness: 0.5,
+        metalness: 0.5,
+      });
+      const posterFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(0.04, 2.1, 1.5),
+        frameMat,
+      );
+      posterFrame.position.set(-4.98, 1.8, 0);
+      scene.add(posterFrame);
+
+      /* --- TV --- */
+      const tvTexture = new THREE.CanvasTexture(tvCanvas);
+      tvTexture.minFilter = THREE.LinearFilter;
+      tvTexture.magFilter = THREE.LinearFilter;
+
+      const tvMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(2.8, 1.575),
+        new THREE.MeshBasicMaterial({ map: tvTexture }),
+      );
+      tvMesh.position.set(4.97, 2.1, -1);
+      tvMesh.rotation.y = -Math.PI / 2;
+      scene.add(tvMesh);
+
+      /* TV frame */
+      const tvFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(0.06, 1.7, 2.95),
+        bezelMat.clone(),
+      );
+      tvFrame.position.set(4.98, 2.1, -1);
+      scene.add(tvFrame);
+
+      /* ==============================================================
+         Lighting
+         ============================================================== */
+      /* Dim ambient fill */
+      scene.add(new THREE.AmbientLight(0x1a1a2e, 0.5));
+
+      /* Warm ceiling light */
+      const ceilingLight = new THREE.PointLight(0xffe4c4, 0.35, 12);
+      ceilingLight.position.set(0, 3.3, 0);
+      scene.add(ceilingLight);
+
+      /* Monitor glow — cool blue wash on desk and nearby walls */
+      const monitorLight = new THREE.PointLight(0x4a9eff, 0.6, 5);
+      monitorLight.position.set(0, 1.8, -3.0);
+      scene.add(monitorLight);
+
+      /* TV glow — purple tint on right side of room */
+      const tvLight = new THREE.PointLight(0x6c41f0, 0.45, 5);
+      tvLight.position.set(4.0, 2.1, -1);
+      scene.add(tvLight);
+
+      /* Poster accent — teal highlight on left wall area */
+      const posterLight = new THREE.PointLight(0x00e5b9, 0.3, 4);
+      posterLight.position.set(-4.0, 1.8, 0);
+      scene.add(posterLight);
+
+      /* ==============================================================
+         First-person controls (Pointer Lock + WASD)
+         ============================================================== */
+      let isLocked = false;
+      const euler = new THREE.Euler(0, 0, 0, "YXZ");
+      const moveSpeed = 3.0;
+      const lookSpeed = 0.002;
+      const keys = {};
+
+      document.addEventListener("keydown", (e) => {
+        keys[e.code] = true;
+      });
+      document.addEventListener("keyup", (e) => {
+        keys[e.code] = false;
+      });
+
+      document.addEventListener("pointerlockchange", () => {
+        isLocked = document.pointerLockElement === viewport;
+        overlay.classList.toggle("hidden", isLocked);
+        crosshair.classList.toggle("visible", isLocked);
+      });
+
+      overlay.addEventListener("click", () => {
+        viewport.requestPointerLock();
+      });
+
+      document.addEventListener("mousemove", (e) => {
+        if (!isLocked) return;
+        euler.setFromQuaternion(camera.quaternion);
+        euler.y -= e.movementX * lookSpeed;
+        euler.x -= e.movementY * lookSpeed;
+        euler.x = Math.max(
+          -Math.PI / 2 + 0.05,
+          Math.min(Math.PI / 2 - 0.05, euler.x),
+        );
+        camera.quaternion.setFromEuler(euler);
+      });
+
+      function updateMovement(dt) {
+        if (!isLocked) return;
+
+        const forward = new THREE.Vector3(0, 0, -1);
+        forward.applyQuaternion(camera.quaternion);
+        forward.y = 0;
+        forward.normalize();
+
+        const right = new THREE.Vector3(1, 0, 0);
+        right.applyQuaternion(camera.quaternion);
+        right.y = 0;
+        right.normalize();
+
+        const velocity = new THREE.Vector3();
+
+        if (keys["KeyW"] || keys["ArrowUp"]) velocity.add(forward);
+        if (keys["KeyS"] || keys["ArrowDown"]) velocity.sub(forward);
+        if (keys["KeyD"] || keys["ArrowRight"]) velocity.add(right);
+        if (keys["KeyA"] || keys["ArrowLeft"]) velocity.sub(right);
+
+        if (velocity.lengthSq() > 0) {
+          velocity.normalize().multiplyScalar(moveSpeed * dt);
+          const newPos = camera.position.clone().add(velocity);
+
+          /* Keep inside room bounds */
+          const margin = 0.4;
+          newPos.x = Math.max(
+            -HALF_W + margin,
+            Math.min(HALF_W - margin, newPos.x),
+          );
+          newPos.z = Math.max(
+            -HALF_D + margin,
+            Math.min(HALF_D - margin, newPos.z),
+          );
+
+          /* Desk collision: don't walk into the desk */
+          if (newPos.z < -3.0 && Math.abs(newPos.x) < 1.7) {
+            newPos.z = Math.max(newPos.z, -3.0);
+          }
+
+          camera.position.copy(newPos);
+        }
+      }
+
+      /* ==============================================================
+         Content update intervals
+         ============================================================== */
+      const LOG_MESSAGES = [
+        "Canvas texture sync complete",
+        "WebGL context acquired",
+        "All surfaces rendering at 60fps",
+        "drawElementImage() captured DOM",
+        "HTML element rendered to texture",
+        "layoutsubtree children updated",
+        "Texture uploaded to GPU: 0.3ms",
+        "Frame budget: 16.6ms \u2014 on target",
+        "Three.js scene rendered",
+        "Room navigation active",
+        "CanvasTexture.needsUpdate fired",
+        "requestPaint() scheduled",
+      ];
+      let logIndex = 0;
+
+      function formatTime(date) {
+        const h = String(date.getHours()).padStart(2, "0");
+        const m = String(date.getMinutes()).padStart(2, "0");
+        const s = String(date.getSeconds()).padStart(2, "0");
+        return h + ":" + m + ":" + s;
+      }
+
+      function updateMonitorContent() {
+        const now = new Date();
+
+        /* Clock */
+        clockEl.textContent = formatTime(now);
+
+        /* Animated metrics */
+        const t = Date.now() / 1000;
+        const cpu = 50 + Math.sin(t / 2) * 25 + Math.random() * 8;
+        const mem = 35 + Math.sin(t / 3 + 1) * 20 + Math.random() * 5;
+        const net = 55 + Math.cos(t / 1.5) * 30 + Math.random() * 8;
+        const disk = 25 + Math.sin(t / 4 + 2) * 15 + Math.random() * 4;
+
+        cpuBar.style.width = cpu + "%";
+        memBar.style.width = mem + "%";
+        netBar.style.width = net + "%";
+        diskBar.style.width = disk + "%";
+        cpuVal.textContent = Math.round(cpu) + "%";
+        memVal.textContent = Math.round(mem) + "%";
+        netVal.textContent = Math.round(net) + "%";
+        diskVal.textContent = Math.round(disk) + "%";
+
+        /* Rolling log entries */
+        const time = formatTime(now);
+        for (let i = 0; i < logEntries.length - 1; i++) {
+          logEntries[i].innerHTML = logEntries[i + 1].innerHTML;
+        }
+        const msg = LOG_MESSAGES[logIndex % LOG_MESSAGES.length];
+        logEntries[logEntries.length - 1].innerHTML =
+          '<span class="log-time">[' +
+          time +
+          ']</span> <span class="log-ok">OK</span> ' +
+          msg;
+        logIndex++;
+
+        monitorCanvas.requestPaint();
+      }
+
+      function updateTvContent() {
+        const now = new Date();
+        const h = String(now.getHours()).padStart(2, "0");
+        const m = String(now.getMinutes()).padStart(2, "0");
+        tvTime.textContent = h + ":" + m;
+
+        const days = [
+          "Sunday",
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+        ];
+        const months = [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
+        ];
+        tvDate.textContent =
+          days[now.getDay()] +
+          ", " +
+          months[now.getMonth()] +
+          " " +
+          now.getDate();
+      }
+
+      /* Initial content population */
+      updateMonitorContent();
+      updateTvContent();
+
+      /* Update monitor every second */
+      setInterval(updateMonitorContent, 1000);
+
+      /* Update TV time every 10 seconds (animations update via requestPaint in render loop) */
+      setInterval(updateTvContent, 10000);
+
+      /* Poster is mostly static; refresh occasionally for the gradient orbs */
+      setInterval(() => {
+        posterCanvas.requestPaint();
+      }, 2000);
+
+      /* ==============================================================
+         Render loop
+         ============================================================== */
+      let prevTime = performance.now();
+      let lastTvPaint = 0;
+
+      function animate() {
+        requestAnimationFrame(animate);
+
+        const now = performance.now();
+        const dt = Math.min((now - prevTime) / 1000, 0.1);
+        prevTime = now;
+
+        /* Movement */
+        updateMovement(dt);
+
+        /* Request TV repaint frequently to capture CSS animations */
+        if (now - lastTvPaint > 33) {
+          tvCanvas.requestPaint();
+          lastTvPaint = now;
+        }
+
+        /* Upload dirty textures to GPU */
+        if (monitorDirty) {
+          monitorTexture.needsUpdate = true;
+          monitorDirty = false;
+        }
+        if (posterDirty) {
+          posterTexture.needsUpdate = true;
+          posterDirty = false;
+        }
+        if (tvDirty) {
+          tvTexture.needsUpdate = true;
+          tvDirty = false;
+        }
+
+        renderer.render(scene, camera);
+      }
+
+      /* ==============================================================
+         Resize handler
+         ============================================================== */
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      });
+
+      /* ==============================================================
+         Start
+         ============================================================== */
+      animate();
+    </script>
+  </body>
+</html>
