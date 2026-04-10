@@ -1,0 +1,890 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CSS-to-Shader Pipeline — HTML-in-Canvas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        background: #0a0a0f;
+        color: #f0f0f0;
+        font-family: system-ui, -apple-system, sans-serif;
+        padding: 1rem;
+      }
+
+      h1 {
+        text-align: center;
+        font-size: 1.15rem;
+        margin-bottom: 0.2rem;
+        font-weight: 600;
+      }
+
+      .page-subtitle {
+        text-align: center;
+        font-size: 0.8rem;
+        color: #6a6a80;
+        margin-bottom: 1rem;
+      }
+
+      /* ============================================================
+         Layout: 3-panel split
+         ============================================================ */
+      .pipeline {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto 1fr;
+        gap: 0.75rem;
+        height: calc(100vh - 5rem);
+        min-height: 500px;
+      }
+
+      .panel {
+        background: #14141f;
+        border: 1px solid #282840;
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.5rem 0.75rem;
+        background: #1a1a2e;
+        border-bottom: 1px solid #282840;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #8a8aaf;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        flex-shrink: 0;
+      }
+
+      .panel-body {
+        flex: 1;
+        overflow: hidden;
+        position: relative;
+      }
+
+      /* Left column spans both rows */
+      .editor-panel {
+        grid-row: 1 / -1;
+      }
+
+      /* ============================================================
+         Code editors
+         ============================================================ */
+      .editor-tabs {
+        display: flex;
+        gap: 0;
+        flex-shrink: 0;
+      }
+
+      .editor-tab {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.7rem;
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 600;
+        color: #6a6a80;
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        cursor: pointer;
+        transition: color 0.15s, border-color 0.15s;
+      }
+
+      .editor-tab:hover {
+        color: #aaa;
+      }
+
+      .editor-tab.active {
+        color: #00e5b9;
+        border-bottom-color: #00e5b9;
+      }
+
+      .editor-area {
+        display: none;
+        width: 100%;
+        height: 100%;
+      }
+
+      .editor-area.active {
+        display: block;
+      }
+
+      textarea {
+        width: 100%;
+        height: 100%;
+        background: #0d0d18;
+        color: #d4d4e8;
+        border: none;
+        padding: 0.75rem;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.78rem;
+        line-height: 1.6;
+        resize: none;
+        tab-size: 2;
+        outline: none;
+      }
+
+      textarea::selection {
+        background: #6c41f044;
+      }
+
+      textarea:focus {
+        box-shadow: inset 0 0 0 1px #6c41f066;
+      }
+
+      /* ============================================================
+         Preview canvas
+         ============================================================ */
+      .preview-canvas-wrap {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.5rem;
+        height: 100%;
+      }
+
+      #preview-canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        border-radius: 6px;
+        background: #000;
+      }
+
+      /* ============================================================
+         Shader controls
+         ============================================================ */
+      .shader-presets {
+        display: flex;
+        gap: 0.35rem;
+        flex-wrap: wrap;
+      }
+
+      .preset-btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.65rem;
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 600;
+        background: #1e1e35;
+        color: #8a8aaf;
+        border: 1px solid #333355;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .preset-btn:hover {
+        background: #282850;
+        color: #ccc;
+      }
+
+      .preset-btn.active {
+        background: #6c41f0;
+        color: #fff;
+        border-color: #6c41f0;
+      }
+
+      /* ============================================================
+         Off-screen staging canvas for HTML-in-Canvas capture
+         ============================================================ */
+      #staging-canvas {
+        position: absolute;
+        left: -9999px;
+        top: -9999px;
+        width: 600px;
+        height: 400px;
+      }
+
+      #staging-content {
+        width: 600px;
+        height: 400px;
+        overflow: hidden;
+        font-family: system-ui, sans-serif;
+        background: #1a1a2e;
+        color: #f0f0f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+      }
+
+      /* ============================================================
+         Responsive
+         ============================================================ */
+      @media (max-width: 700px) {
+        .pipeline {
+          grid-template-columns: 1fr;
+          grid-template-rows: 1fr auto auto;
+          height: auto;
+          min-height: 0;
+        }
+
+        .editor-panel {
+          grid-row: auto;
+          height: 300px;
+        }
+
+        .panel {
+          height: 300px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>CSS-to-Shader Pipeline</h1>
+    <p class="page-subtitle">
+      Style HTML with CSS, capture it into a canvas, then apply real-time GLSL
+      fragment shaders
+    </p>
+
+    <div class="pipeline">
+      <!-- ============================================================
+           Left: Code editors (CSS + GLSL tabs)
+           ============================================================ -->
+      <div class="panel editor-panel">
+        <div class="panel-header">
+          <div class="editor-tabs">
+            <button class="editor-tab active" data-tab="css">style.css</button>
+            <button class="editor-tab" data-tab="glsl">shader.frag</button>
+          </div>
+          <div class="shader-presets">
+            <button class="preset-btn active" data-preset="passthrough">
+              None
+            </button>
+            <button class="preset-btn" data-preset="chromatic">Chromatic</button>
+            <button class="preset-btn" data-preset="crt">CRT</button>
+            <button class="preset-btn" data-preset="glitch">Glitch</button>
+            <button class="preset-btn" data-preset="vhs">VHS</button>
+            <button class="preset-btn" data-preset="halftone">Halftone</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="editor-area active" data-editor="css">
+            <textarea id="css-editor" spellcheck="false" autocomplete="off"></textarea>
+          </div>
+          <div class="editor-area" data-editor="glsl">
+            <textarea
+              id="glsl-editor"
+              spellcheck="false"
+              autocomplete="off"
+            ></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================
+           Right top: Live preview (WebGL output)
+           ============================================================ -->
+      <div class="panel">
+        <div class="panel-header">
+          <span>Preview</span>
+          <span id="fps-counter" style="color: #00e5b9">-- fps</span>
+        </div>
+        <div class="panel-body preview-canvas-wrap">
+          <canvas id="preview-canvas"></canvas>
+        </div>
+      </div>
+
+      <!-- ============================================================
+           Right bottom: Pipeline info
+           ============================================================ -->
+      <div class="panel">
+        <div class="panel-header"><span>Pipeline</span></div>
+        <div
+          class="panel-body"
+          style="
+            padding: 0.6rem 0.75rem;
+            font-size: 0.72rem;
+            color: #6a6a80;
+            line-height: 1.5;
+            overflow-y: auto;
+          "
+        >
+          <p style="margin-bottom: 0.4rem">
+            <strong style="color: #8a8aaf">1.</strong>
+            <span style="color: #00e5b9">CSS</span> styles an HTML element
+            living inside a
+            <code style="color: #6c41f0">&lt;canvas layoutsubtree&gt;</code>
+          </p>
+          <p style="margin-bottom: 0.4rem">
+            <strong style="color: #8a8aaf">2.</strong>
+            <span style="color: #00e5b9">drawElementImage()</span> renders the
+            styled DOM into the 2D canvas
+          </p>
+          <p style="margin-bottom: 0.4rem">
+            <strong style="color: #8a8aaf">3.</strong> The 2D canvas becomes a
+            <span style="color: #00e5b9">WebGL texture</span>
+          </p>
+          <p style="margin-bottom: 0.4rem">
+            <strong style="color: #8a8aaf">4.</strong> A
+            <span style="color: #00e5b9">fragment shader</span> processes every
+            pixel in real-time
+          </p>
+          <p style="color: #555; font-size: 0.65rem; margin-top: 0.3rem">
+            This pipeline is impossible without HTML-in-Canvas — previously you
+            needed html2canvas or dom-to-image, which are slow, lossy, and
+            cannot keep up with 60 fps.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         Off-screen: 2D staging canvas + HTML content
+         The HTML element inside this canvas is styled by the CSS editor.
+         drawElementImage() captures it; the result feeds WebGL.
+         ============================================================ -->
+    <canvas id="staging-canvas" width="600" height="400" layoutsubtree>
+      <div id="staging-content">
+        <div id="user-content">
+          <h2 style="margin-bottom: 0.5rem">Hello, Shaders</h2>
+          <p>Edit the CSS on the left to style this element.</p>
+        </div>
+      </div>
+    </canvas>
+
+    <script>
+      /* ==============================================================
+         Shader presets — each is a complete fragment shader
+         ============================================================== */
+      const SHADERS = {
+        passthrough: `precision mediump float;
+uniform sampler2D u_texture;
+uniform vec2 u_resolution;
+varying vec2 v_texCoord;
+
+void main() {
+  gl_FragColor = texture2D(u_texture, v_texCoord);
+}`,
+
+        chromatic: `precision mediump float;
+uniform sampler2D u_texture;
+uniform vec2 u_resolution;
+uniform float u_time;
+varying vec2 v_texCoord;
+
+void main() {
+  float amount = 0.006 + 0.002 * sin(u_time * 1.5);
+  vec2 dir = v_texCoord - 0.5;
+  float d = length(dir);
+
+  float r = texture2D(u_texture, v_texCoord + dir * amount).r;
+  float g = texture2D(u_texture, v_texCoord).g;
+  float b = texture2D(u_texture, v_texCoord - dir * amount).b;
+  float a = texture2D(u_texture, v_texCoord).a;
+
+  gl_FragColor = vec4(r, g, b, a);
+}`,
+
+        crt: `precision mediump float;
+uniform sampler2D u_texture;
+uniform vec2 u_resolution;
+uniform float u_time;
+varying vec2 v_texCoord;
+
+void main() {
+  vec2 uv = v_texCoord;
+
+  // Barrel distortion
+  vec2 dc = uv - 0.5;
+  float d2 = dot(dc, dc);
+  uv = uv + dc * d2 * 0.15;
+
+  vec4 col = texture2D(u_texture, uv);
+
+  // Scanlines
+  float scan = sin(uv.y * u_resolution.y * 1.5) * 0.06;
+  col.rgb -= scan;
+
+  // Flicker
+  col.rgb *= 0.97 + 0.03 * sin(u_time * 8.0);
+
+  // Vignette
+  float vig = 1.0 - d2 * 1.5;
+  col.rgb *= vig;
+
+  // Phosphor tint
+  col.r *= 1.05;
+  col.g *= 1.02;
+
+  // Clamp if outside barrel
+  if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0)
+    col = vec4(0.0);
+
+  gl_FragColor = col;
+}`,
+
+        glitch: `precision mediump float;
+uniform sampler2D u_texture;
+uniform vec2 u_resolution;
+uniform float u_time;
+varying vec2 v_texCoord;
+
+float rand(float s) {
+  return fract(sin(s * 12.9898) * 43758.5453);
+}
+
+void main() {
+  vec2 uv = v_texCoord;
+  float t = floor(u_time * 6.0);
+
+  // Horizontal block displacement
+  float block = floor(uv.y * 12.0);
+  float shift = (rand(block + t) - 0.5) * 0.06;
+  shift *= step(0.92, rand(t + 0.1));
+
+  uv.x += shift;
+
+  // RGB split on glitch
+  float r = texture2D(u_texture, uv + vec2(shift * 0.5, 0.0)).r;
+  float g = texture2D(u_texture, uv).g;
+  float b = texture2D(u_texture, uv - vec2(shift * 0.5, 0.0)).b;
+
+  vec4 col = vec4(r, g, b, 1.0);
+
+  // Scanline noise
+  col.rgb += (rand(uv.y * 100.0 + t) - 0.5) * 0.04;
+
+  gl_FragColor = col;
+}`,
+
+        vhs: `precision mediump float;
+uniform sampler2D u_texture;
+uniform vec2 u_resolution;
+uniform float u_time;
+varying vec2 v_texCoord;
+
+float rand(vec2 co) {
+  return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+void main() {
+  vec2 uv = v_texCoord;
+
+  // Tracking wobble
+  float wobble = sin(uv.y * 40.0 + u_time * 3.0) * 0.002;
+  wobble += sin(uv.y * 120.0 - u_time * 1.7) * 0.001;
+  uv.x += wobble;
+
+  // Vertical jitter (occasional)
+  float jitter = step(0.97, rand(vec2(floor(u_time * 4.0), 0.0)));
+  uv.y += jitter * 0.01 * sin(u_time * 50.0);
+
+  // Color bleed
+  float r = texture2D(u_texture, uv + vec2(0.002, 0.0)).r;
+  float g = texture2D(u_texture, uv).g;
+  float b = texture2D(u_texture, uv - vec2(0.002, 0.0)).b;
+
+  vec3 col = vec3(r, g, b);
+
+  // Tape noise band
+  float bandY = fract(u_time * 0.1);
+  float band = smoothstep(0.0, 0.02, abs(uv.y - bandY));
+  col = mix(vec3(rand(uv + u_time)), col, band);
+
+  // Reduce saturation slightly
+  float luma = dot(col, vec3(0.299, 0.587, 0.114));
+  col = mix(vec3(luma), col, 0.85);
+
+  // Noise grain
+  col += (rand(uv * u_resolution + u_time) - 0.5) * 0.06;
+
+  gl_FragColor = vec4(col, 1.0);
+}`,
+
+        halftone: `precision mediump float;
+uniform sampler2D u_texture;
+uniform vec2 u_resolution;
+uniform float u_time;
+varying vec2 v_texCoord;
+
+void main() {
+  float dotSize = 5.0 + sin(u_time * 0.5) * 1.0;
+  vec2 pixel = v_texCoord * u_resolution;
+
+  // Grid cell
+  vec2 cell = floor(pixel / dotSize) * dotSize + dotSize * 0.5;
+  vec2 cellUV = cell / u_resolution;
+
+  vec4 col = texture2D(u_texture, cellUV);
+  float luma = dot(col.rgb, vec3(0.299, 0.587, 0.114));
+
+  // Distance from cell center
+  float dist = length(pixel - cell) / (dotSize * 0.5);
+
+  // Dot radius proportional to darkness
+  float radius = (1.0 - luma) * 1.1;
+  float dot = 1.0 - smoothstep(radius - 0.1, radius + 0.1, dist);
+
+  // Tint with original hue
+  vec3 tinted = col.rgb * dot;
+
+  // Dark background where no dot
+  vec3 bg = vec3(0.06);
+  vec3 result = mix(bg, tinted, dot);
+
+  gl_FragColor = vec4(result, 1.0);
+}`
+      };
+
+      /* ==============================================================
+         Default CSS for the element
+         ============================================================== */
+      const DEFAULT_CSS = `/* Style the HTML element that becomes the shader texture */
+
+#user-content {
+  text-align: center;
+}
+
+#user-content h2 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #6c41f0, #00e5b9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.75rem;
+}
+
+#user-content p {
+  font-size: 1.1rem;
+  color: #8a8aaf;
+  max-width: 28ch;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+#staging-content {
+  background: radial-gradient(ellipse at 30% 20%, #1e1e3a, #0a0a1a);
+}`;
+
+      /* ==============================================================
+         DOM references
+         ============================================================== */
+      const cssEditor = document.getElementById("css-editor");
+      const glslEditor = document.getElementById("glsl-editor");
+      const previewCanvas = document.getElementById("preview-canvas");
+      const stagingCanvas = document.getElementById("staging-canvas");
+      const stagingContent = document.getElementById("staging-content");
+      const fpsCounter = document.getElementById("fps-counter");
+      const tabs = document.querySelectorAll(".editor-tab");
+      const editorAreas = document.querySelectorAll(".editor-area");
+      const presetBtns = document.querySelectorAll(".preset-btn");
+
+      /* ==============================================================
+         2D staging context — captures HTML via drawElementImage
+         ============================================================== */
+      const ctx2d = stagingCanvas.getContext("2d");
+      const styleEl = document.createElement("style");
+      document.head.appendChild(styleEl);
+
+      /* ==============================================================
+         Initialise editors
+         ============================================================== */
+      cssEditor.value = DEFAULT_CSS;
+      glslEditor.value = SHADERS.passthrough;
+      styleEl.textContent = DEFAULT_CSS;
+
+      /* ==============================================================
+         Tab switching
+         ============================================================== */
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          const target = tab.dataset.tab;
+          tabs.forEach((t) => t.classList.toggle("active", t === tab));
+          editorAreas.forEach((ea) =>
+            ea.classList.toggle("active", ea.dataset.editor === target)
+          );
+        });
+      });
+
+      /* ==============================================================
+         CSS editor → live style injection
+         ============================================================== */
+      let cssDebounce = 0;
+      cssEditor.addEventListener("input", () => {
+        clearTimeout(cssDebounce);
+        cssDebounce = setTimeout(() => {
+          styleEl.textContent = cssEditor.value;
+          stagingCanvas.requestPaint();
+        }, 120);
+      });
+
+      /* ==============================================================
+         Tab key inserts spaces in textareas
+         ============================================================== */
+      function handleTab(e) {
+        if (e.key === "Tab") {
+          e.preventDefault();
+          const ta = e.target;
+          const start = ta.selectionStart;
+          const end = ta.selectionEnd;
+          ta.value =
+            ta.value.substring(0, start) + "  " + ta.value.substring(end);
+          ta.selectionStart = ta.selectionEnd = start + 2;
+          ta.dispatchEvent(new Event("input"));
+        }
+      }
+      cssEditor.addEventListener("keydown", handleTab);
+      glslEditor.addEventListener("keydown", handleTab);
+
+      /* ==============================================================
+         Shader preset buttons
+         ============================================================== */
+      let currentPreset = "passthrough";
+
+      presetBtns.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const preset = btn.dataset.preset;
+          currentPreset = preset;
+          presetBtns.forEach((b) =>
+            b.classList.toggle("active", b === btn)
+          );
+
+          glslEditor.value = SHADERS[preset];
+
+          // Switch to shader tab to show the code
+          tabs.forEach((t) =>
+            t.classList.toggle("active", t.dataset.tab === "glsl")
+          );
+          editorAreas.forEach((ea) =>
+            ea.classList.toggle("active", ea.dataset.editor === "glsl")
+          );
+
+          compileShader();
+        });
+      });
+
+      /* ==============================================================
+         GLSL editor → recompile on edit
+         ============================================================== */
+      let glslDebounce = 0;
+      glslEditor.addEventListener("input", () => {
+        clearTimeout(glslDebounce);
+        glslDebounce = setTimeout(compileShader, 250);
+      });
+
+      /* ==============================================================
+         WebGL setup
+         ============================================================== */
+      const gl = previewCanvas.getContext("webgl", {
+        premultipliedAlpha: false,
+        preserveDrawingBuffer: false,
+      });
+
+      if (!gl) {
+        document.body.innerHTML =
+          '<p style="padding:2rem;color:#f44">WebGL is not available in this browser.</p>';
+        throw new Error("WebGL unavailable");
+      }
+
+      /* Vertex shader — full-screen quad */
+      const VERT_SRC = `
+attribute vec2 a_position;
+varying vec2 v_texCoord;
+void main() {
+  v_texCoord = a_position * 0.5 + 0.5;
+  v_texCoord.y = 1.0 - v_texCoord.y;
+  gl_Position = vec4(a_position, 0.0, 1.0);
+}`;
+
+      /* Compile helper */
+      function createShader(type, source) {
+        const s = gl.createShader(type);
+        gl.shaderSource(s, source);
+        gl.compileShader(s);
+        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+          const log = gl.getShaderInfoLog(s);
+          gl.deleteShader(s);
+          return { shader: null, error: log };
+        }
+        return { shader: s, error: null };
+      }
+
+      function createProgram(vert, frag) {
+        const p = gl.createProgram();
+        gl.attachShader(p, vert);
+        gl.attachShader(p, frag);
+        gl.linkProgram(p);
+        if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+          const log = gl.getProgramInfoLog(p);
+          gl.deleteProgram(p);
+          return { program: null, error: log };
+        }
+        return { program: p, error: null };
+      }
+
+      /* Full-screen quad geometry */
+      const quadBuf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+      gl.bufferData(
+        gl.ARRAY_BUFFER,
+        new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
+        gl.STATIC_DRAW
+      );
+
+      /* Texture for the HTML-in-Canvas capture */
+      const tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+      /* Current GL program + uniform locations */
+      let glProgram = null;
+      let uTexture = null;
+      let uResolution = null;
+      let uTime = null;
+      let aPosition = null;
+      let compileError = null;
+
+      /* ==============================================================
+         Compile the current fragment shader
+         ============================================================== */
+      function compileShader() {
+        const fragSrc = glslEditor.value;
+        compileError = null;
+
+        const vert = createShader(gl.VERTEX_SHADER, VERT_SRC);
+        if (vert.error) {
+          compileError = "Vertex: " + vert.error;
+          return;
+        }
+
+        const frag = createShader(gl.FRAGMENT_SHADER, fragSrc);
+        if (frag.error) {
+          compileError = frag.error;
+          gl.deleteShader(vert.shader);
+          return;
+        }
+
+        const prog = createProgram(vert.shader, frag.shader);
+        gl.deleteShader(vert.shader);
+        gl.deleteShader(frag.shader);
+
+        if (prog.error) {
+          compileError = prog.error;
+          return;
+        }
+
+        if (glProgram) gl.deleteProgram(glProgram);
+        glProgram = prog.program;
+
+        aPosition = gl.getAttribLocation(glProgram, "a_position");
+        uTexture = gl.getUniformLocation(glProgram, "u_texture");
+        uResolution = gl.getUniformLocation(glProgram, "u_resolution");
+        uTime = gl.getUniformLocation(glProgram, "u_time");
+      }
+
+      /* Initial compile */
+      compileShader();
+
+      /* ==============================================================
+         Paint callback — captures HTML element into 2D staging canvas
+         ============================================================== */
+      let needsCapture = true;
+
+      stagingCanvas.onpaint = () => {
+        ctx2d.clearRect(0, 0, stagingCanvas.width, stagingCanvas.height);
+        ctx2d.drawElementImage(stagingContent, 0, 0);
+        needsCapture = true;
+      };
+
+      /* Trigger initial paint */
+      stagingCanvas.requestPaint();
+
+      /* ==============================================================
+         Render loop
+         ============================================================== */
+      let startTime = performance.now();
+      let frameCount = 0;
+      let lastFpsUpdate = startTime;
+
+      function resizePreview() {
+        const rect = previewCanvas.getBoundingClientRect();
+        const dpr = devicePixelRatio;
+        const w = Math.round(rect.width * dpr);
+        const h = Math.round(rect.height * dpr);
+        if (previewCanvas.width !== w || previewCanvas.height !== h) {
+          previewCanvas.width = w;
+          previewCanvas.height = h;
+        }
+      }
+
+      function render() {
+        requestAnimationFrame(render);
+        resizePreview();
+
+        if (!glProgram) return;
+
+        const now = performance.now();
+        const time = (now - startTime) / 1000;
+
+        /* FPS counter */
+        frameCount++;
+        if (now - lastFpsUpdate > 500) {
+          const fps = Math.round(
+            (frameCount * 1000) / (now - lastFpsUpdate)
+          );
+          fpsCounter.textContent = fps + " fps";
+          frameCount = 0;
+          lastFpsUpdate = now;
+        }
+
+        /* Upload the 2D canvas as a texture */
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texImage2D(
+          gl.TEXTURE_2D,
+          0,
+          gl.RGBA,
+          gl.RGBA,
+          gl.UNSIGNED_BYTE,
+          stagingCanvas
+        );
+
+        /* Draw */
+        gl.viewport(0, 0, previewCanvas.width, previewCanvas.height);
+        gl.useProgram(glProgram);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+        gl.enableVertexAttribArray(aPosition);
+        gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.uniform1i(uTexture, 0);
+
+        if (uResolution) {
+          gl.uniform2f(uResolution, previewCanvas.width, previewCanvas.height);
+        }
+        if (uTime) {
+          gl.uniform1f(uTime, time);
+        }
+
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      }
+
+      requestAnimationFrame(render);
+    </script>
+  </body>
+</html>
