@@ -1,8 +1,9 @@
 {
   "title": "Demo Title",
-  "description": "A brief description of what this demo shows.",
+  "description": "A one-sentence description of what this demo shows.",
   "tags": ["example"],
-  "author": "",
+  "author": "Your Name",
+  "dateCreated": "YYYY-MM-DD",
   "context": "2d",
   "difficulty": "beginner",
   "features": ["layoutsubtree", "drawElement"],
@@ -10,5 +11,19 @@
     "chrome": true,
     "firefox": false,
     "safari": false
+  },
+
+  "_field_docs": {
+    "title":          "Required. Human-readable name shown in gallery and detail page.",
+    "description":    "Required. Brief summary shown on the demo card and in meta tags.",
+    "tags":           "Array of lowercase kebab-case tags for filtering (e.g. 'animation', 'text').",
+    "author":         "Optional. Your name or handle.",
+    "dateCreated":    "Optional. ISO date string (YYYY-MM-DD) when the demo was first written.",
+    "dateUpdated":    "Optional. ISO date string (YYYY-MM-DD) of the last significant update.",
+    "context":        "Canvas API: '2d' (default) | 'webgl' | 'webgpu'.",
+    "difficulty":     "'beginner' (default) | 'intermediate' | 'advanced'.",
+    "features":       "HTML-in-Canvas spec features used: 'layoutsubtree', 'drawElement', 'onpaint', etc.",
+    "browserSupport": "Which browsers currently run this demo. Set to true once verified.",
+    "_field_docs":    "DELETE THIS BLOCK before submitting — it is only for reference."
   }
 }

@@ -21,10 +21,15 @@
 
       canvas {
         border: 1px solid #333;
+        max-width: 100%;
       }
     </style>
   </head>
   <body>
+    <!--
+      The `layoutsubtree` attribute tells the browser to lay out
+      the canvas's child elements so they can be painted onto it.
+    -->
     <canvas id="canvas" width="800" height="600" layoutsubtree>
       <div id="content" style="padding: 2rem; font-size: 1.5rem">
         Hello from HTML-in-Canvas!
@@ -36,11 +41,30 @@
       const ctx = canvas.getContext("2d");
       const content = document.getElementById("content");
 
-      // The onpaint callback fires when canvas children need re-rendering
+      // ---------------------------------------------------------------
+      // Paint callback
+      // Fires whenever the browser needs to re-render canvas children.
+      // Use ctx.drawElement() to composite laid-out DOM into the canvas.
+      // ---------------------------------------------------------------
       canvas.onpaint = () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawElement(content, 0, 0);
       };
+
+      // ---------------------------------------------------------------
+      // ResizeObserver
+      // Keeps the canvas resolution in sync with its CSS layout size
+      // so the output stays crisp at any viewport width.
+      // ---------------------------------------------------------------
+      const ro = new ResizeObserver(([entry]) => {
+        const { width, height } = entry.contentRect;
+        canvas.width = Math.round(width * devicePixelRatio);
+        canvas.height = Math.round(height * devicePixelRatio);
+        ctx.scale(devicePixelRatio, devicePixelRatio);
+        // Re-paint after resize
+        if (canvas.onpaint) canvas.onpaint();
+      });
+      ro.observe(canvas);
     </script>
   </body>
 </html>

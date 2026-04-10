@@ -1,0 +1,444 @@
+---
+/**
+ * Contributing guide — /contributing/
+ * Step-by-step instructions for adding a new demo to the site.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const GITHUB_REPO = 'https://github.com/nicholasgasior/html-in-canvas-dot-dev';
+---
+
+<BaseLayout
+  title="Contributing"
+  description="How to contribute a demo to html-in-canvas.dev."
+>
+  <article class="contributing">
+    <h1>Contributing a Demo</h1>
+    <p class="lead">
+      Every demo on this site lives in a single directory under
+      <code>src/content/demos/</code>. Drop in a folder with two files and it
+      appears automatically — no routing or config changes required.
+    </p>
+
+    {/* ------------------------------------------------------------------ */}
+    <section>
+      <h2><span class="step-number">1</span> Fork &amp; clone</h2>
+      <p>
+        Fork <a href={GITHUB_REPO} target="_blank" rel="noopener noreferrer">the repository</a> on
+        GitHub, then clone your fork locally:
+      </p>
+      <pre><code>git clone https://github.com/YOUR-USERNAME/html-in-canvas-dot-dev.git
+cd html-in-canvas-dot-dev
+npm install</code></pre>
+    </section>
+
+    {/* ------------------------------------------------------------------ */}
+    <section>
+      <h2><span class="step-number">2</span> Create your demo directory</h2>
+      <p>
+        The fastest way is to run the scaffold script. It copies the starter
+        template and pre-fills your slug:
+      </p>
+      <pre><code>./scripts/new-demo.sh my-cool-demo</code></pre>
+      <p>
+        This creates <code>src/content/demos/my-cool-demo/</code> with a
+        ready-to-edit <code>meta.json</code> and <code>demo.html</code>.
+      </p>
+      <p>
+        Prefer to do it by hand? Copy the template directory:
+      </p>
+      <pre><code>cp -r src/content/demos/_template src/content/demos/my-cool-demo</code></pre>
+    </section>
+
+    {/* ------------------------------------------------------------------ */}
+    <section>
+      <h2><span class="step-number">3</span> Edit <code>meta.json</code></h2>
+      <p>
+        Open <code>meta.json</code> and fill in your demo's metadata. Every
+        field is documented below.
+      </p>
+
+      <div class="field-table-wrapper">
+        <table class="field-table">
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Required</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>title</code></td>
+              <td>Yes</td>
+              <td>Human-readable name shown in the gallery and detail page.</td>
+            </tr>
+            <tr>
+              <td><code>description</code></td>
+              <td>Yes</td>
+              <td>One-sentence summary shown on the demo card and in meta tags.</td>
+            </tr>
+            <tr>
+              <td><code>tags</code></td>
+              <td></td>
+              <td>
+                Array of lowercase tags for filtering.
+                Example: <code>["animation", "text"]</code>
+              </td>
+            </tr>
+            <tr>
+              <td><code>author</code></td>
+              <td></td>
+              <td>Your name or handle.</td>
+            </tr>
+            <tr>
+              <td><code>dateCreated</code></td>
+              <td></td>
+              <td>ISO date (<code>YYYY-MM-DD</code>) when the demo was first written.</td>
+            </tr>
+            <tr>
+              <td><code>dateUpdated</code></td>
+              <td></td>
+              <td>ISO date of the last significant update.</td>
+            </tr>
+            <tr>
+              <td><code>context</code></td>
+              <td></td>
+              <td>
+                Canvas API context: <code>"2d"</code> (default),
+                <code>"webgl"</code>, or <code>"webgpu"</code>.
+              </td>
+            </tr>
+            <tr>
+              <td><code>difficulty</code></td>
+              <td></td>
+              <td>
+                <code>"beginner"</code> (default),
+                <code>"intermediate"</code>, or
+                <code>"advanced"</code>.
+              </td>
+            </tr>
+            <tr>
+              <td><code>features</code></td>
+              <td></td>
+              <td>
+                Spec features exercised:
+                <code>"layoutsubtree"</code>,
+                <code>"drawElement"</code>,
+                <code>"onpaint"</code>, etc.
+              </td>
+            </tr>
+            <tr>
+              <td><code>browserSupport</code></td>
+              <td></td>
+              <td>
+                Object with <code>chrome</code>, <code>firefox</code>,
+                <code>safari</code> booleans. Set to <code>true</code> once
+                verified in that browser.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Delete the <code>_field_docs</code> block from the template before
+        committing — it's only there for reference.
+      </p>
+    </section>
+
+    {/* ------------------------------------------------------------------ */}
+    <section>
+      <h2><span class="step-number">4</span> Build your <code>demo.html</code></h2>
+      <p>
+        This is a standalone HTML file that runs inside an iframe. The template
+        includes working boilerplate with the three key patterns:
+      </p>
+
+      <div class="pattern-grid">
+        <div class="pattern-card">
+          <h3><code>layoutsubtree</code></h3>
+          <p>
+            Add the <code>layoutsubtree</code> attribute to your
+            <code>&lt;canvas&gt;</code> element. This tells the browser to lay
+            out the canvas's child elements so they can be painted.
+          </p>
+          <pre><code>&lt;canvas id="canvas" layoutsubtree&gt;
+  &lt;div id="content"&gt;...&lt;/div&gt;
+&lt;/canvas&gt;</code></pre>
+        </div>
+
+        <div class="pattern-card">
+          <h3><code>onpaint</code> callback</h3>
+          <p>
+            Set <code>canvas.onpaint</code> to a function that clears and
+            redraws. The browser calls it whenever children need re-rendering.
+          </p>
+          <pre><code>canvas.onpaint = () =&gt; {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawElement(content, 0, 0);
+};</code></pre>
+        </div>
+
+        <div class="pattern-card">
+          <h3><code>ResizeObserver</code></h3>
+          <p>
+            Keep the canvas resolution in sync with its CSS size so the output
+            stays sharp on high-DPI displays.
+          </p>
+          <pre><code>new ResizeObserver(([entry]) =&gt; {
+  const { width, height } = entry.contentRect;
+  canvas.width = Math.round(width * devicePixelRatio);
+  canvas.height = Math.round(height * devicePixelRatio);
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+});</code></pre>
+        </div>
+      </div>
+
+      <p>
+        You can add extra <code>.css</code>, <code>.js</code>, or other files
+        alongside <code>demo.html</code> — they'll show up in the Source
+        Viewer automatically.
+      </p>
+    </section>
+
+    {/* ------------------------------------------------------------------ */}
+    <section>
+      <h2><span class="step-number">5</span> Test locally</h2>
+      <p>Start the dev server and visit your demo:</p>
+      <pre><code>npm run dev
+# Open http://localhost:4321/demos/my-cool-demo/</code></pre>
+      <p>
+        The dev server watches for file changes and reloads automatically.
+        Verify your demo appears in the <a href="/demos/">gallery</a> and that
+        the metadata renders correctly on the detail page.
+      </p>
+      <p>
+        <strong>Note:</strong> The HTML-in-Canvas API requires
+        <strong>Chrome Canary</strong> with the
+        <code>canvas-draw-element</code> flag enabled. Other browsers will
+        show the fallback overlay.
+      </p>
+    </section>
+
+    {/* ------------------------------------------------------------------ */}
+    <section>
+      <h2><span class="step-number">6</span> Submit a PR</h2>
+      <p>
+        Commit your demo directory, push to your fork, and open a pull request
+        against <code>main</code>:
+      </p>
+      <pre><code>git add src/content/demos/my-cool-demo
+git commit -m "Add my-cool-demo demo"
+git push origin my-branch
+# Open a PR on GitHub</code></pre>
+      <p>
+        In your PR description, briefly explain what the demo shows and which
+        spec features it exercises.
+      </p>
+    </section>
+
+    {/* ------------------------------------------------------------------ */}
+    <section class="section-tips">
+      <h2>Tips</h2>
+      <ul>
+        <li>
+          Use <strong>kebab-case</strong> for your directory slug
+          (e.g. <code>gradient-text</code>, not <code>GradientText</code>).
+        </li>
+        <li>
+          Keep demos self-contained — no external CDN scripts or images from
+          third-party hosts.
+        </li>
+        <li>
+          The iframe has a dark background (<code>#111</code>) by default;
+          match it in your <code>demo.html</code> for a seamless look.
+        </li>
+        <li>
+          Text files (<code>.html</code>, <code>.css</code>, <code>.js</code>,
+          <code>.ts</code>, <code>.json</code>, <code>.svg</code>,
+          <code>.glsl</code>, <code>.wgsl</code>) are displayed in the Source
+          Viewer automatically. Binary files are excluded.
+        </li>
+        <li>
+          Use the <code>hello-world</code> demo as a minimal reference and the
+          <code>_template</code> directory as your starting point.
+        </li>
+      </ul>
+    </section>
+  </article>
+</BaseLayout>
+
+<style>
+  .contributing {
+    max-width: 52rem;
+    margin: 0 auto;
+  }
+
+  .contributing h1 {
+    margin-bottom: 0.5rem;
+  }
+
+  .lead {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin-bottom: 2.5rem;
+    line-height: 1.65;
+  }
+
+  /* --- Sections --- */
+  section {
+    margin-bottom: 2.5rem;
+  }
+
+  section h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    font-size: 1.35rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    background: var(--accent);
+    color: var(--color-white);
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  section h3 {
+    font-size: 1rem;
+    margin-bottom: 0.375rem;
+  }
+
+  section p {
+    margin-block: 0.5em;
+  }
+
+  /* --- Code blocks --- */
+  pre {
+    margin-block: 0.75rem;
+    font-size: 0.85rem;
+    line-height: 1.55;
+  }
+
+  /* --- Field table --- */
+  .field-table-wrapper {
+    overflow-x: auto;
+    margin-block: 1rem;
+  }
+
+  .field-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+
+  .field-table th,
+  .field-table td {
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .field-table th {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    background: var(--bg-surface);
+  }
+
+  .field-table td:first-child {
+    white-space: nowrap;
+  }
+
+  .field-table td:nth-child(2) {
+    text-align: center;
+    color: var(--color-green);
+    font-weight: 600;
+    font-size: 0.8rem;
+  }
+
+  .field-table td:last-child {
+    color: var(--text-secondary);
+  }
+
+  /* --- Pattern cards --- */
+  .pattern-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+    gap: 1rem;
+    margin-block: 1rem;
+  }
+
+  .pattern-card {
+    padding: 1rem 1.25rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+  }
+
+  .pattern-card h3 {
+    margin-bottom: 0.5rem;
+  }
+
+  .pattern-card p {
+    font-size: 0.85rem;
+    margin-block: 0.375em;
+    color: var(--text-secondary);
+  }
+
+  .pattern-card pre {
+    font-size: 0.78rem;
+    margin-top: 0.5rem;
+    margin-bottom: 0;
+  }
+
+  /* --- Tips --- */
+  .section-tips ul {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+  }
+
+  .section-tips li {
+    position: relative;
+    padding-left: 1.25rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.55;
+  }
+
+  .section-tips li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.6em;
+    width: 6px;
+    height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+  }
+
+  /* --- Responsive --- */
+  @media (max-width: 640px) {
+    .pattern-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .field-table {
+      font-size: 0.8rem;
+    }
+  }
+</style>
