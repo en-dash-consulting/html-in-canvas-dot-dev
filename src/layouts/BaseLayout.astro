@@ -1,7 +1,9 @@
 ---
 /**
  * Base layout for all pages.
- * Renders nav, footer, and global styles.
+ * Renders nav, footer, global styles, and the full SEO/social meta
+ * stack: title, description, canonical URL, Open Graph, Twitter Card,
+ * theme color, author, and a JSON-LD WebSite/Organization graph.
  */
 import Nav from '../components/Nav.astro';
 import BrowserSupportBanner from '../components/BrowserSupportBanner.astro';
@@ -11,25 +13,95 @@ import '../styles/global.css';
 interface Props {
   title?: string;
   description?: string;
+  /** Path to a per-page social card image (relative to /). */
+  ogImage?: string;
+  /** Override the default page type for Open Graph. */
+  ogType?: 'website' | 'article';
 }
 
+const SITE_NAME = 'HTML-in-Canvas';
+const SITE_URL = 'https://html-in-canvas.dev';
+const DEFAULT_DESCRIPTION =
+  'Interactive demos and documentation for the WICG HTML-in-Canvas specification — render real DOM elements directly into a <canvas> via drawElementImage().';
+const DEFAULT_OG_IMAGE = '/og-image.png';
+
 const {
-  title = 'HTML-in-Canvas',
-  description = 'Interactive demos and documentation for the WICG HTML-in-Canvas specification.',
+  title = SITE_NAME,
+  description = DEFAULT_DESCRIPTION,
+  ogImage = DEFAULT_OG_IMAGE,
+  ogType = 'website',
 } = Astro.props;
 
-const pageTitle = title === 'HTML-in-Canvas' ? title : `${title} | HTML-in-Canvas`;
+const pageTitle =
+  title === SITE_NAME ? SITE_NAME : `${title} | ${SITE_NAME}`;
+
+// Canonical URL — falls back to the site root for the home page.
+const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? SITE_URL).href;
+const ogImageURL = new URL(ogImage, Astro.site ?? SITE_URL).href;
+
+// JSON-LD only included on the home page; demo pages emit their own
+// CreativeWork JSON-LD via a slot.
+const isHome = Astro.url.pathname === '/' || Astro.url.pathname === '';
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: SITE_NAME,
+  url: SITE_URL,
+  description: DEFAULT_DESCRIPTION,
+  inLanguage: 'en',
+  publisher: {
+    '@type': 'Organization',
+    name: 'En Dash Consulting',
+    url: 'https://endash.us',
+  },
+};
 ---
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    {/* Core SEO */}
+    <title>{pageTitle}</title>
     <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalURL} />
     <meta name="generator" content={Astro.generator} />
+    <meta name="author" content="En Dash Consulting" />
+    <meta name="theme-color" content="#0a0a0f" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)" />
+
+    {/* Favicons */}
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="icon" href="/favicon.ico" />
-    <title>{pageTitle}</title>
+
+    {/* Open Graph */}
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:image" content={ogImageURL} />
+    <meta property="og:locale" content="en_US" />
+
+    {/* Twitter Card */}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageURL} />
+
+    {/* JSON-LD on the home page */}
+    {isHome && (
+      <script
+        is:inline
+        type="application/ld+json"
+        set:html={JSON.stringify(websiteJsonLd)}
+      />
+    )}
+
+    {/* Per-page slot for additional <link>, <meta>, or JSON-LD */}
+    <slot name="head" />
+
     {/* Prevent FOUC: apply saved theme before first paint */}
     <script is:inline>
       (function() {

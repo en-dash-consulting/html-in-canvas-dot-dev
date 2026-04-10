@@ -1,0 +1,99 @@
+# HTML-in-Canvas Demo Showcase
+
+> Interactive demos and documentation for the WICG HTML-in-Canvas
+> specification — render real, styled, accessible DOM elements
+> directly into a `<canvas>` via `drawElementImage()`.
+
+This site is a community resource maintained by En Dash Consulting that
+shows what becomes possible when the browser can paint live HTML into a
+canvas: real text editing, native i18n, accessible chart labels, video
+recording from HTML scenes, GPU shader effects on DOM content, and 3D
+scenes that use HTML elements as textures. The relevant Chromium feature
+ships behind `chrome://flags/#canvas-draw-element` in Chrome Canary.
+
+## Spec primitives
+
+- `<canvas layoutsubtree>` — opts the canvas's direct child elements
+  into layout, hit testing, and accessibility while keeping their
+  rendering invisible until explicitly drawn.
+- `ctx.drawElementImage(element, x, y, ...)` — paints a direct child of
+  the canvas into the canvas. Returns a `DOMMatrix` that can be applied
+  back to the source element as a CSS transform to keep DOM hit testing
+  in sync with the painted pixels.
+- `canvas.onpaint` / `canvas.requestPaint()` — paint event lifecycle
+  for canvas children. The browser's paint pipeline runs and generates
+  the cached paint records that `drawElementImage` depends on.
+- `canvas.captureElementImage(element)` — produces a transferable
+  `ElementImage` snapshot for use in `OffscreenCanvas` workers.
+- WebGL equivalent: `gl.texElementImage2D(...)`
+- WebGPU equivalent: `queue.copyElementImageToTexture(...)`
+
+## Browser support
+
+This is a dev-trial Chromium feature. Other browsers have not announced
+implementations yet.
+
+- Chrome Canary, behind `chrome://flags/#canvas-draw-element`
+- Firefox: not implemented
+- Safari/WebKit: not implemented
+
+## Important URLs
+
+- Home: https://html-in-canvas.dev/
+- Demo gallery: https://html-in-canvas.dev/demos/
+- Spec docs: https://html-in-canvas.dev/docs/
+- Browser support / setup: https://html-in-canvas.dev/docs/browser-support/
+- Contributing a demo: https://html-in-canvas.dev/contributing/
+- WICG spec repository: https://github.com/WICG/html-in-canvas
+- This site's source: https://github.com/en-dash-consulting/html-in-canvas-dot-dev
+
+## Demos
+
+Every demo lives at `/demos/{slug}/` (wrapped page with description,
+metadata, and source viewer) and `/demos/{slug}/demo.html` (standalone
+HTML file you can fork). The demo source is in
+`src/content/demos/{slug}/demo.html` of the repository above.
+
+- /demos/hello-world/ — minimal `drawElementImage` example: one DOM
+  element painted many times in an animated ring with motion trails
+- /demos/accessible-charts/ — bar + pie charts whose labels are real
+  HTML with ARIA, focus rings via `drawFocusIfNeeded`
+- /demos/interactive-form/ — sign-up form whose every input, select,
+  slider, checkbox, and button is a real DOM element
+- /demos/multi-element-composition/ — drag-and-drop cards with
+  per-element transforms and z-order shuffling
+- /demos/internationalized-text/ — `fillText()` vs `drawElementImage()`
+  for RTL, vertical CJK, Thai, mixed-direction, emoji, and ruby
+- /demos/rich-text-canvas-editor/ — contenteditable text inside a
+  canvas with multi-pass canvas effects (glow, shadow, outline)
+- /demos/html-to-image/ — replace `html2canvas` with one native API
+  call: render a styled card and download as PNG/JPEG
+- /demos/html-video-recording/ — `captureStream()` + MediaRecorder on a
+  canvas painting live HTML, output as WebM
+- /demos/offscreen-canvas-worker/ — `captureElementImage()` +
+  `OffscreenCanvas` transfer to a Web Worker
+- /demos/3d-room-live-content/ — Three.js scene with HTML elements
+  used as textures on planes; first-person walkthrough
+- /demos/css-to-shader/ — live CSS editor whose output is captured
+  via `drawElementImage` and post-processed by a WebGL fragment shader
+- /demos/frosted-glass-backdrop/ — multi-layer compositing with custom
+  WebGL blur kernels (gaussian, directional, tilt-shift)
+- /demos/liquid-glass/ — refraction distortion via WebGL applied to
+  HTML content captured into the canvas
+- /demos/pixel-disintegration/ — `getImageData()` on rendered HTML
+  drives a particle scatter / reassemble effect
+- /demos/morphing-text-transitions/ — pixel-level blends between two
+  entirely different HTML layouts (crossfade, dissolve, wave, sort)
+- /demos/page-curl-book-turn/ — cylindrical WebGL deformation that
+  curls a captured HTML page like a turning book
+- /demos/css-to-shader/ — see above
+
+## Project
+
+- License: MIT
+- Built with Astro 6, vanilla TypeScript, and Playwright
+- Maintainer: En Dash Consulting (https://endash.us)
+- Contributing: open a PR with a new folder under `src/content/demos/`
+  containing `meta.json` + `demo.html`. The site picks it up
+  automatically. See https://html-in-canvas.dev/contributing/ for the
+  full guide.

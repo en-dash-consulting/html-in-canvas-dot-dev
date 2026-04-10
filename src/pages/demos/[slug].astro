@@ -19,7 +19,7 @@ import { parseDemoHtml } from '../../lib/parseDemoHtml';
  * GitHub repository base URL.
  * Update when the repo is created and pushed.
  */
-const GITHUB_REPO = 'https://github.com/nicholasgasior/html-in-canvas-dot-dev';
+const GITHUB_REPO = 'https://github.com/en-dash-consulting/html-in-canvas-dot-dev';
 
 export async function getStaticPaths() {
   const demos = await getCollection('demos');
@@ -94,9 +94,55 @@ const difficultyLabels: Record<string, string> = {
 
 const demoUrl = `/demos/${demo.id}/demo.html`;
 const githubUrl = `${GITHUB_REPO}/tree/main/src/content/demos/${demo.id}`;
+
+// JSON-LD structured data — TechArticle + SoftwareSourceCode hybrid
+// for each demo so search engines and LLMs can cite it correctly.
+const SITE_URL = 'https://html-in-canvas.dev';
+const demoJsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'TechArticle',
+      headline: title,
+      description,
+      url: `${SITE_URL}/demos/${demo.id}/`,
+      datePublished: dateCreated,
+      dateModified: dateUpdated ?? dateCreated,
+      author: {
+        '@type': 'Organization',
+        name: author ?? 'En Dash Consulting',
+        url: 'https://endash.us',
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: 'En Dash Consulting',
+        url: 'https://endash.us',
+      },
+      keywords: tags,
+      proficiencyLevel: difficulty,
+    },
+    {
+      '@type': 'SoftwareSourceCode',
+      name: title,
+      description,
+      url: githubUrl,
+      codeRepository: GITHUB_REPO,
+      programmingLanguage: ['HTML', 'CSS', 'JavaScript'],
+      runtimePlatform: 'Web browser (Chrome Canary, canvas-draw-element flag)',
+      license: 'https://opensource.org/licenses/MIT',
+    },
+  ],
+};
 ---
 
 <BaseLayout title={title} description={description}>
+  <Fragment slot="head">
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify(demoJsonLd)}
+    />
+  </Fragment>
   <div class="demo-page">
     {/* ------- Slim title bar ------- */}
     <div class="demo-bar">
@@ -137,60 +183,67 @@ const githubUrl = `${GITHUB_REPO}/tree/main/src/content/demos/${demo.id}`;
     </div>
 
     {/* ------- Live demo (shadow DOM mount, full-bleed) ------- */}
+    {/*
+      The fullscreen button and fallback overlay are SIBLINGS of the
+      stage, not children. Children of an element with a shadow root
+      don't render unless there's a <slot>, so anything that needs to
+      stay visible while a demo is mounted has to live outside the
+      host. The wrapper is position:relative so absolute siblings
+      position correctly over the stage.
+    */}
     <div class="demo-stage-wrapper">
-      <div class="demo-stage" id="demo-stage" data-demo-slug={demo.id}>
-        <button
-          type="button"
-          id="demo-fullscreen-btn"
-          class="demo-fullscreen-btn"
-          aria-label="Toggle fullscreen"
-          title="Toggle fullscreen"
+      <div class="demo-stage" id="demo-stage" data-demo-slug={demo.id}></div>
+      <button
+        type="button"
+        id="demo-fullscreen-btn"
+        class="demo-fullscreen-btn"
+        aria-label="Toggle fullscreen"
+        title="Toggle fullscreen"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
         >
+          <path d="M3 9V5a2 2 0 0 1 2-2h4" />
+          <path d="M21 9V5a2 2 0 0 0-2-2h-4" />
+          <path d="M3 15v4a2 2 0 0 0 2 2h4" />
+          <path d="M21 15v4a2 2 0 0 1-2 2h-4" />
+        </svg>
+      </button>
+      <div class="demo-fallback" id="demo-fallback" hidden>
+        <div class="fallback-content">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
+            width="32"
+            height="32"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            stroke-width="2"
+            stroke-width="1.5"
             stroke-linecap="round"
             stroke-linejoin="round"
             aria-hidden="true"
           >
-            <path d="M3 9V5a2 2 0 0 1 2-2h4" />
-            <path d="M21 9V5a2 2 0 0 0-2-2h-4" />
-            <path d="M3 15v4a2 2 0 0 0 2 2h4" />
-            <path d="M21 15v4a2 2 0 0 1-2 2h-4" />
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
-        </button>
-        <div class="demo-fallback" id="demo-fallback" hidden>
-          <div class="fallback-content">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="32"
-              height="32"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-              <line x1="12" y1="9" x2="12" y2="13" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
-            <p class="fallback-title">API Unavailable</p>
-            <p class="fallback-text">
-              This demo requires <strong>Chrome Canary</strong> with the
-              <code>canvas-draw-element</code> flag enabled.
-            </p>
-            <a href="/docs/browser-support/" class="fallback-link">
-              Setup instructions &rarr;
-            </a>
-          </div>
+          <p class="fallback-title">API Unavailable</p>
+          <p class="fallback-text">
+            This demo requires <strong>Chrome Canary</strong> with the
+            <code>canvas-draw-element</code> flag enabled.
+          </p>
+          <a href="/docs/browser-support/" class="fallback-link">
+            Setup instructions &rarr;
+          </a>
         </div>
       </div>
       {/*
@@ -540,23 +593,33 @@ const githubUrl = `${GITHUB_REPO}/tree/main/src/content/demos/${demo.id}`;
     position: relative;
     width: 100vw;
     margin-left: calc(50% - 50vw);
+    margin-bottom: 1.5rem;
   }
 
   .demo-stage {
     position: relative;
-    display: block;
     width: 100%;
-    height: min(78vh, 820px);
-    min-height: 32rem;
+    /*
+     * The stage has an immersive minimum height (78vh, capped at
+     * 820px) but is allowed to grow taller when the demo's content
+     * needs more room. Demos that fill an area should use the same
+     * `min-height` baseline (or matching viewport units).
+     *
+     * No `overflow` is set: we want demo content to flow naturally
+     * into the page rather than scroll inside a fixed-height box.
+     * No `display` is set either, so the shadow root's :host display
+     * rule wins (equal-specificity :host rules beat the document on
+     * the host element).
+     */
+    min-height: min(78vh, 820px);
     border-block: 1px solid var(--border-color);
     background: #0a0a0a;
-    overflow: hidden;
   }
 
   .demo-stage:fullscreen {
     width: 100vw;
     height: 100vh;
-    max-height: none;
+    min-height: 100vh;
     border: none;
   }
 
