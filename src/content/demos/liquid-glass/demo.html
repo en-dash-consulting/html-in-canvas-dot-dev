@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Liquid Glass Distortion — HTML-in-Canvas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        background: #0a0a0f;
+        color: #f0f0f0;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 1.5rem 1rem;
+        overflow-x: hidden;
+      }
+
+      h1 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 0.25rem;
+      }
+
+      .page-subtitle {
+        text-align: center;
+        font-size: 0.8rem;
+        color: #6a6a80;
+        margin-bottom: 1.5rem;
+        max-width: 420px;
+        line-height: 1.4;
+      }
+
+      /* ============================================================
+         Scene: positions the source canvas and WebGL overlay
+         ============================================================ */
+      .scene {
+        position: relative;
+        width: 420px;
+        max-width: 100%;
+      }
+
+      #source-canvas {
+        width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 20px;
+      }
+
+      #glass-canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 20px;
+        pointer-events: none;
+      }
+
+      /* ============================================================
+         Card styles (rendered inside the source canvas)
+         ============================================================ */
+      .card {
+        width: 420px;
+        padding: 2rem;
+        background: linear-gradient(160deg, #16162a 0%, #0d0d1a 100%);
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        color: #f0f0f0;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .card-glow {
+        position: absolute;
+        border-radius: 50%;
+        pointer-events: none;
+      }
+
+      .card-glow-1 {
+        top: -80px;
+        right: -60px;
+        width: 280px;
+        height: 280px;
+        background: radial-gradient(
+          circle,
+          rgba(108, 65, 240, 0.18) 0%,
+          transparent 70%
+        );
+      }
+
+      .card-glow-2 {
+        bottom: -50px;
+        left: -40px;
+        width: 220px;
+        height: 220px;
+        background: radial-gradient(
+          circle,
+          rgba(0, 229, 185, 0.12) 0%,
+          transparent 70%
+        );
+      }
+
+      .card-inner {
+        position: relative;
+        z-index: 1;
+      }
+
+      .avatar-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+      }
+
+      .avatar {
+        width: 68px;
+        height: 68px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #6c41f0 0%, #00e5b9 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        flex-shrink: 0;
+        box-shadow: 0 4px 24px rgba(108, 65, 240, 0.35);
+      }
+
+      .avatar-info h2 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 0.1rem;
+        letter-spacing: -0.01em;
+      }
+
+      .avatar-info .role {
+        font-size: 0.78rem;
+        color: #00e5b9;
+        font-weight: 500;
+      }
+
+      .bio {
+        font-size: 0.82rem;
+        color: #8a8aaf;
+        line-height: 1.55;
+        margin-bottom: 1.25rem;
+      }
+
+      .stats {
+        display: flex;
+        gap: 1px;
+        margin-bottom: 1.25rem;
+        background: #282840;
+        border-radius: 12px;
+        overflow: hidden;
+      }
+
+      .stat {
+        flex: 1;
+        padding: 0.7rem 0.5rem;
+        text-align: center;
+        background: #1a1a30;
+      }
+
+      .stat-num {
+        display: block;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #f0f0f0;
+      }
+
+      .stat-label {
+        display: block;
+        font-size: 0.6rem;
+        color: #6a6a80;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-top: 0.1rem;
+      }
+
+      .actions {
+        display: flex;
+        gap: 0.6rem;
+        margin-bottom: 1.25rem;
+      }
+
+      .btn {
+        flex: 1;
+        padding: 0.65rem;
+        border: none;
+        border-radius: 10px;
+        font-family: "Inter", system-ui, sans-serif;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #6c41f0, #8b5cf6);
+        color: #fff;
+        box-shadow: 0 4px 16px rgba(108, 65, 240, 0.3);
+      }
+
+      .btn-primary:hover {
+        box-shadow: 0 6px 24px rgba(108, 65, 240, 0.45);
+      }
+
+      .btn-primary.following {
+        background: linear-gradient(135deg, #00bd81, #00e5b9);
+        box-shadow: 0 4px 16px rgba(0, 189, 129, 0.3);
+      }
+
+      .btn-secondary {
+        background: #252540;
+        color: #a0a0b8;
+        border: 1px solid #333355;
+      }
+
+      .btn-secondary:hover {
+        background: #333355;
+        color: #f0f0f0;
+      }
+
+      .btn-secondary.sent {
+        color: #00e5b9;
+        border-color: rgba(0, 229, 185, 0.3);
+      }
+
+      .tags {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+      }
+
+      .tag {
+        padding: 0.3rem 0.65rem;
+        background: rgba(108, 65, 240, 0.1);
+        border: 1px solid rgba(108, 65, 240, 0.2);
+        border-radius: 20px;
+        font-size: 0.68rem;
+        color: #a78bfa;
+        font-weight: 500;
+      }
+
+      /* ============================================================
+         Hint + pipeline info below the card
+         ============================================================ */
+      .hint {
+        margin-top: 1rem;
+        font-size: 0.7rem;
+        color: #4a4a60;
+        text-align: center;
+      }
+
+      .hint kbd {
+        display: inline-block;
+        padding: 0.1rem 0.35rem;
+        background: #1a1a30;
+        border: 1px solid #333;
+        border-radius: 3px;
+        font-family: inherit;
+        font-size: 0.65rem;
+        color: #6a6a80;
+      }
+
+      .pipeline-info {
+        margin-top: 1.25rem;
+        max-width: 420px;
+        width: 100%;
+        padding: 0.85rem 1rem;
+        background: #14141f;
+        border: 1px solid #282840;
+        border-radius: 10px;
+        font-size: 0.72rem;
+        color: #6a6a80;
+        line-height: 1.55;
+      }
+
+      .pipeline-info p {
+        margin-bottom: 0.3rem;
+      }
+
+      .pipeline-info p:last-child {
+        margin-bottom: 0;
+      }
+
+      .pipeline-info strong {
+        color: #8a8aaf;
+      }
+
+      .pipeline-info .hl {
+        color: #00e5b9;
+      }
+
+      .pipeline-info code {
+        color: #6c41f0;
+        font-family: "Courier New", monospace;
+        font-size: 0.68rem;
+      }
+
+      .pipeline-info .note {
+        color: #3a3a50;
+        font-size: 0.65rem;
+        margin-top: 0.4rem;
+      }
+
+      @media (max-width: 480px) {
+        body {
+          padding: 1rem 0.75rem;
+        }
+
+        .card {
+          width: 100%;
+          padding: 1.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Liquid Glass Distortion</h1>
+    <p class="page-subtitle">
+      Move your mouse over the card — a liquid glass refraction shader warps the
+      live HTML content. Click through the distortion to interact.
+    </p>
+
+    <div class="scene" id="scene">
+      <!-- 2D source canvas: HTML card rendered via drawElementImage -->
+      <canvas id="source-canvas" width="840" height="1120" layoutsubtree>
+        <div class="card" id="card">
+          <div class="card-glow card-glow-1"></div>
+          <div class="card-glow card-glow-2"></div>
+          <div class="card-inner">
+            <div class="avatar-row">
+              <div class="avatar">&#10022;</div>
+              <div class="avatar-info">
+                <h2>Sarah Chen</h2>
+                <div class="role">Design Systems Lead</div>
+              </div>
+            </div>
+            <p class="bio">
+              Crafting interfaces that feel as natural as glass — transparent,
+              responsive, and alive. Pushing the boundaries of what's possible
+              on the web.
+            </p>
+            <div class="stats">
+              <div class="stat">
+                <span class="stat-num">847</span>
+                <span class="stat-label">Projects</span>
+              </div>
+              <div class="stat">
+                <span class="stat-num" id="follower-count">12.4k</span>
+                <span class="stat-label">Followers</span>
+              </div>
+              <div class="stat">
+                <span class="stat-num">99%</span>
+                <span class="stat-label">Quality</span>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn btn-primary" id="follow-btn">Follow</button>
+              <button class="btn btn-secondary" id="msg-btn">Message</button>
+            </div>
+            <div class="tags">
+              <span class="tag">Design</span>
+              <span class="tag">WebGL</span>
+              <span class="tag">Glass UI</span>
+              <span class="tag">Motion</span>
+            </div>
+          </div>
+        </div>
+      </canvas>
+
+      <!-- WebGL overlay: liquid glass distortion shader -->
+      <canvas id="glass-canvas"></canvas>
+    </div>
+
+    <p class="hint">
+      <kbd>click</kbd> the buttons through the glass — the HTML is live
+    </p>
+
+    <div class="pipeline-info">
+      <p>
+        <strong>1.</strong> HTML card lives inside a
+        <code>&lt;canvas layoutsubtree&gt;</code> — fully styled with CSS
+      </p>
+      <p>
+        <strong>2.</strong>
+        <span class="hl">drawElementImage()</span> captures the styled DOM into
+        a 2D canvas
+      </p>
+      <p>
+        <strong>3.</strong> The 2D canvas becomes a
+        <span class="hl">WebGL texture</span> fed to a fragment shader
+      </p>
+      <p>
+        <strong>4.</strong> A <span class="hl">refraction shader</span> applies
+        liquid glass distortion following the mouse in real-time
+      </p>
+      <p class="note">
+        Pointer events pass through the glass to the live HTML underneath. This
+        is impossible without HTML-in-Canvas.
+      </p>
+    </div>
+
+    <script>
+      /* ==============================================================
+         DOM references
+         ============================================================== */
+      const scene = document.getElementById("scene");
+      const sourceCanvas = document.getElementById("source-canvas");
+      const glassCanvas = document.getElementById("glass-canvas");
+      const card = document.getElementById("card");
+      const followBtn = document.getElementById("follow-btn");
+      const msgBtn = document.getElementById("msg-btn");
+      const followerCount = document.getElementById("follower-count");
+
+      /* ==============================================================
+         2D context — renders the HTML card via drawElementImage
+         ============================================================== */
+      const ctx2d = sourceCanvas.getContext("2d");
+
+      sourceCanvas.onpaint = () => {
+        ctx2d.clearRect(0, 0, sourceCanvas.width, sourceCanvas.height);
+        ctx2d.drawElementImage(card, 0, 0, sourceCanvas.width, sourceCanvas.height);
+      };
+
+      /* ==============================================================
+         Resize: keep both canvases matched to CSS size at device DPR
+         ============================================================== */
+      function syncCanvasSize() {
+        const rect = scene.getBoundingClientRect();
+        const dpr = devicePixelRatio;
+        const w = Math.round(rect.width * dpr);
+        const h = Math.round(rect.height * dpr);
+
+        if (sourceCanvas.width !== w || sourceCanvas.height !== h) {
+          sourceCanvas.width = w;
+          sourceCanvas.height = h;
+          glassCanvas.width = w;
+          glassCanvas.height = h;
+          requestRepaint();
+        }
+      }
+
+      function requestRepaint() {
+        if (sourceCanvas.requestPaint) sourceCanvas.requestPaint();
+        else if (sourceCanvas.onpaint) sourceCanvas.onpaint();
+      }
+
+      const ro = new ResizeObserver(() => syncCanvasSize());
+      ro.observe(scene);
+
+      /* ==============================================================
+         Mouse tracking with smooth interpolation
+         ============================================================== */
+      let targetX = 0.5;
+      let targetY = 0.5;
+      let smoothX = 0.5;
+      let smoothY = 0.5;
+      let isHovering = false;
+      let hoverAmount = 0;
+
+      scene.addEventListener("mousemove", (e) => {
+        const rect = scene.getBoundingClientRect();
+        targetX = (e.clientX - rect.left) / rect.width;
+        targetY = (e.clientY - rect.top) / rect.height;
+        isHovering = true;
+      });
+
+      scene.addEventListener("mouseleave", () => {
+        isHovering = false;
+      });
+
+      scene.addEventListener(
+        "touchmove",
+        (e) => {
+          const touch = e.touches[0];
+          const rect = scene.getBoundingClientRect();
+          targetX = (touch.clientX - rect.left) / rect.width;
+          targetY = (touch.clientY - rect.top) / rect.height;
+          isHovering = true;
+        },
+        { passive: true },
+      );
+
+      scene.addEventListener("touchend", () => {
+        isHovering = false;
+      });
+
+      /* ==============================================================
+         Interactive card elements — clicks pass through the glass
+         ============================================================== */
+      let following = false;
+
+      followBtn.addEventListener("click", () => {
+        following = !following;
+        followBtn.textContent = following ? "Following \u2713" : "Follow";
+        followBtn.classList.toggle("following", following);
+        followerCount.textContent = following ? "12.5k" : "12.4k";
+        requestRepaint();
+      });
+
+      let msgTimeout = 0;
+
+      msgBtn.addEventListener("click", () => {
+        clearTimeout(msgTimeout);
+        msgBtn.textContent = "Sent! \u2713";
+        msgBtn.classList.add("sent");
+        requestRepaint();
+
+        msgTimeout = setTimeout(() => {
+          msgBtn.textContent = "Message";
+          msgBtn.classList.remove("sent");
+          requestRepaint();
+        }, 1500);
+      });
+
+      /* ==============================================================
+         WebGL setup
+         ============================================================== */
+      const gl = glassCanvas.getContext("webgl", {
+        premultipliedAlpha: false,
+        preserveDrawingBuffer: false,
+        alpha: true,
+      });
+
+      if (!gl) {
+        document.body.innerHTML =
+          '<p style="padding:2rem;color:#f44">WebGL is not available in this browser.</p>';
+        throw new Error("WebGL unavailable");
+      }
+
+      /* ----------------------------------------------------------
+         Vertex shader — full-screen quad
+         ---------------------------------------------------------- */
+      const VERT_SRC = `
+attribute vec2 a_position;
+varying vec2 v_texCoord;
+
+void main() {
+  v_texCoord = a_position * 0.5 + 0.5;
+  v_texCoord.y = 1.0 - v_texCoord.y;
+  gl_Position = vec4(a_position, 0.0, 1.0);
+}`;
+
+      /* ----------------------------------------------------------
+         Fragment shader — liquid glass refraction
+         ---------------------------------------------------------- */
+      const FRAG_SRC = `
+precision highp float;
+
+uniform sampler2D u_texture;
+uniform vec2  u_resolution;
+uniform vec2  u_mouse;
+uniform float u_time;
+uniform float u_hover;
+
+varying vec2 v_texCoord;
+
+/* ---- Noise utilities for organic movement ---- */
+vec2 hash2(vec2 p) {
+  p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
+  return fract(sin(p) * 43758.5453) * 2.0 - 1.0;
+}
+
+float simplex(vec2 p) {
+  const float K1 = 0.366025404;
+  const float K2 = 0.211324865;
+
+  vec2 i  = floor(p + (p.x + p.y) * K1);
+  vec2 a  = p - i + (i.x + i.y) * K2;
+  float m = step(a.y, a.x);
+  vec2 o  = vec2(m, 1.0 - m);
+  vec2 b  = a - o + K2;
+  vec2 c  = a - 1.0 + 2.0 * K2;
+
+  vec3 h = max(0.5 - vec3(dot(a, a), dot(b, b), dot(c, c)), 0.0);
+  vec3 n = h * h * h * h *
+           vec3(dot(a, hash2(i)), dot(b, hash2(i + o)), dot(c, hash2(i + 1.0)));
+
+  return dot(n, vec3(70.0));
+}
+
+void main() {
+  vec2 uv = v_texCoord;
+  float aspect = u_resolution.x / u_resolution.y;
+
+  /* Aspect-corrected vector from mouse to current pixel */
+  vec2 mouse = u_mouse;
+  vec2 diff  = uv - mouse;
+  diff.x    *= aspect;
+  float dist = length(diff);
+  vec2 dir   = normalize(diff + 1e-6);
+
+  /* --- Glass lens geometry --- */
+  float radius = 0.30 * u_hover;
+  float dome   = smoothstep(radius, radius * 0.08, dist);
+
+  /* --- Organic liquid noise --- */
+  float t  = u_time * 0.55;
+  float n1 = simplex(uv * 6.0 + vec2(t, -t * 0.7));
+  float n2 = simplex(uv * 8.0 + vec2(-t * 0.5, t * 0.8));
+  vec2 organicWarp = vec2(n1, n2) * 0.012 * dome;
+
+  /* --- Refraction displacement (convex lens, pushes inward) --- */
+  float refractStr = 0.06 * dome;
+  vec2 refractOffset = -dir * refractStr;
+
+  /* --- Ripple rings radiating from center --- */
+  float ripple = sin(dist * 35.0 - u_time * 2.5) * 0.003 * dome;
+  vec2 rippleOffset = dir * ripple;
+
+  /* --- Total displacement --- */
+  vec2 offset = refractOffset + organicWarp + rippleOffset;
+
+  /* --- Chromatic aberration (stronger at lens edge) --- */
+  float edge = smoothstep(radius * 0.2, radius, dist) * dome;
+  float aberr = 0.003 * dome + 0.007 * edge;
+
+  vec2 uvR = clamp(uv + offset * 1.07 + dir * aberr, 0.0, 1.0);
+  vec2 uvG = clamp(uv + offset, 0.0, 1.0);
+  vec2 uvB = clamp(uv + offset * 0.93 - dir * aberr, 0.0, 1.0);
+
+  float r = texture2D(u_texture, uvR).r;
+  float g = texture2D(u_texture, uvG).g;
+  float b = texture2D(u_texture, uvB).b;
+  vec3 color = vec3(r, g, b);
+
+  /* --- Specular highlight (light from upper-right) --- */
+  vec2 lightDir = normalize(vec2(0.6, -0.45));
+  float specAngle = dot(dir, lightDir);
+  float spec1 = pow(max(specAngle, 0.0), 28.0) * dome * 0.40;
+  float spec2 = pow(max(specAngle, 0.0), 6.0)  * dome * 0.08;
+
+  /* --- Fresnel: edges of lens are brighter --- */
+  float fresnel = pow(smoothstep(radius * 0.25, radius, dist), 0.55)
+                * dome * 0.10;
+
+  /* --- Thin bright ring at glass boundary --- */
+  float ring = smoothstep(radius, radius * 0.91, dist)
+             * smoothstep(radius * 0.82, radius * 0.91, dist)
+             * 0.22;
+
+  /* --- Subtle caustic shimmer inside the lens --- */
+  float caustic = simplex(uv * 22.0 + u_time * 0.35);
+  caustic = pow(max(caustic, 0.0), 3.5) * dome * 0.05;
+
+  /* --- Cool glass tint (Apple-inspired blue-shift) --- */
+  vec3 tint = vec3(0.93, 0.96, 1.06);
+  color = mix(color, color * tint, dome * 0.20);
+
+  /* --- Combine highlights --- */
+  color += spec1 + spec2 + fresnel + ring + caustic;
+
+  /* --- Gentle brightness lift inside the lens --- */
+  color *= 1.0 + dome * 0.04;
+
+  gl_FragColor = vec4(color, 1.0);
+}`;
+
+      /* ----------------------------------------------------------
+         Shader compilation helpers
+         ---------------------------------------------------------- */
+      function createShader(type, source) {
+        const s = gl.createShader(type);
+        gl.shaderSource(s, source);
+        gl.compileShader(s);
+        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+          const log = gl.getShaderInfoLog(s);
+          gl.deleteShader(s);
+          return { shader: null, error: log };
+        }
+        return { shader: s, error: null };
+      }
+
+      function createProgram(vert, frag) {
+        const p = gl.createProgram();
+        gl.attachShader(p, vert);
+        gl.attachShader(p, frag);
+        gl.linkProgram(p);
+        if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+          const log = gl.getProgramInfoLog(p);
+          gl.deleteProgram(p);
+          return { program: null, error: log };
+        }
+        return { program: p, error: null };
+      }
+
+      /* ----------------------------------------------------------
+         Build the shader program
+         ---------------------------------------------------------- */
+      const vs = createShader(gl.VERTEX_SHADER, VERT_SRC);
+      if (vs.error) throw new Error("Vertex shader: " + vs.error);
+
+      const fs = createShader(gl.FRAGMENT_SHADER, FRAG_SRC);
+      if (fs.error) throw new Error("Fragment shader: " + fs.error);
+
+      const prog = createProgram(vs.shader, fs.shader);
+      gl.deleteShader(vs.shader);
+      gl.deleteShader(fs.shader);
+      if (prog.error) throw new Error("Program link: " + prog.error);
+
+      const program = prog.program;
+
+      /* Locations */
+      const aPosition = gl.getAttribLocation(program, "a_position");
+      const uTexture = gl.getUniformLocation(program, "u_texture");
+      const uResolution = gl.getUniformLocation(program, "u_resolution");
+      const uMouse = gl.getUniformLocation(program, "u_mouse");
+      const uTime = gl.getUniformLocation(program, "u_time");
+      const uHover = gl.getUniformLocation(program, "u_hover");
+
+      /* Full-screen quad */
+      const quadBuf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+      gl.bufferData(
+        gl.ARRAY_BUFFER,
+        new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
+        gl.STATIC_DRAW,
+      );
+
+      /* Texture for the source canvas */
+      const tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+      /* ==============================================================
+         Initial paint
+         ============================================================== */
+      syncCanvasSize();
+      requestRepaint();
+
+      /* ==============================================================
+         Render loop
+         ============================================================== */
+      const startTime = performance.now();
+
+      function render() {
+        requestAnimationFrame(render);
+
+        const now = performance.now();
+        const time = (now - startTime) / 1000;
+
+        /* Smooth mouse interpolation (ease toward target) */
+        smoothX += (targetX - smoothX) * 0.09;
+        smoothY += (targetY - smoothY) * 0.09;
+
+        /* Smooth hover transition */
+        const hoverTarget = isHovering ? 1.0 : 0.0;
+        hoverAmount += (hoverTarget - hoverAmount) * 0.06;
+
+        /* Upload the source canvas as a WebGL texture */
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texImage2D(
+          gl.TEXTURE_2D,
+          0,
+          gl.RGBA,
+          gl.RGBA,
+          gl.UNSIGNED_BYTE,
+          sourceCanvas,
+        );
+
+        /* Draw the distorted quad */
+        gl.viewport(0, 0, glassCanvas.width, glassCanvas.height);
+        gl.useProgram(program);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+        gl.enableVertexAttribArray(aPosition);
+        gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.uniform1i(uTexture, 0);
+
+        gl.uniform2f(uResolution, glassCanvas.width, glassCanvas.height);
+        gl.uniform2f(uMouse, smoothX, smoothY);
+        gl.uniform1f(uTime, time);
+        gl.uniform1f(uHover, hoverAmount);
+
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      }
+
+      requestAnimationFrame(render);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "title": "Liquid Glass Distortion",
+  "description": "A richly styled HTML card rendered into a WebGL canvas with a real-time liquid glass refraction shader. Mouse movement warps the glass while the HTML content underneath stays live and interactive.",
+  "tags": ["webgl", "shader", "visual", "glass", "refraction", "interactive"],
+  "author": "En Dash Consulting",
+  "dateCreated": "2026-04-10",
+  "context": "webgl",
+  "difficulty": "advanced",
+  "features": ["layoutsubtree", "drawElementImage", "onpaint", "requestPaint"],
+  "browserSupport": {
+    "chrome": true,
+    "firefox": false,
+    "safari": false
+  }
+}
