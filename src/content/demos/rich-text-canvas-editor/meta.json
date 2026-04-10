@@ -1,0 +1,15 @@
+{
+  "title": "Rich Text Canvas Editor",
+  "description": "A contenteditable div rendered into canvas with real-time effects — drop shadow, neon glow, and outline — that go beyond CSS. Edit text with native browser selection, copy/paste, and undo.",
+  "tags": ["demo", "2d", "text", "editor", "creative-tool"],
+  "author": "En Dash Consulting",
+  "dateCreated": "2026-04-10",
+  "context": "2d",
+  "difficulty": "intermediate",
+  "features": ["layoutsubtree", "drawElementImage", "onpaint", "requestPaint"],
+  "browserSupport": {
+    "chrome": true,
+    "firefox": false,
+    "safari": false
+  }
+}
