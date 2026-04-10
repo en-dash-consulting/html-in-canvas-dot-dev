@@ -1,0 +1,15 @@
+{
+  "title": "Internationalized Text",
+  "description": "Side-by-side comparison of ctx.fillText() vs drawElementImage for complex scripts — RTL, vertical CJK, Thai diacritics, mixed-direction, emoji with skin tones, and ruby annotations.",
+  "tags": ["i18n", "text", "accessibility", "rtl", "cjk", "emoji"],
+  "author": "En Dash Consulting",
+  "dateCreated": "2026-04-10",
+  "context": "2d",
+  "difficulty": "intermediate",
+  "features": ["layoutsubtree", "drawElementImage", "onpaint", "requestPaint"],
+  "browserSupport": {
+    "chrome": true,
+    "firefox": false,
+    "safari": false
+  }
+}
