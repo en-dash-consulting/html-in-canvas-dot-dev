@@ -50,7 +50,14 @@ export function demosLoader(options: DemosLoaderOptions): Loader {
         }
 
         const raw = await readFile(metaPath, 'utf-8');
-        const data = JSON.parse(raw) as Record<string, unknown>;
+        let data: Record<string, unknown>;
+        try {
+          data = JSON.parse(raw) as Record<string, unknown>;
+        } catch {
+          logger.error(`Invalid JSON in demos/${slug}/meta.json, skipping`);
+          continue;
+        }
+
         const digest = generateDigest(data);
         const filePath = relative(fileURLToPath(config.root), metaPath);
 

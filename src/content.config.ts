@@ -27,7 +27,7 @@ const demos = defineCollection({
         firefox: z.boolean().default(false),
         safari: z.boolean().default(false),
       })
-      .default({}),
+      .default({ chrome: false, firefox: false, safari: false }),
   }),
 });
 
