@@ -1,0 +1,995 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HTML Video Recording — HTML-in-Canvas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        background: #0a0a0f;
+        color: #f0f0f0;
+        font-family: system-ui, -apple-system, sans-serif;
+        padding: 1.5rem;
+      }
+
+      h1 {
+        text-align: center;
+        font-size: 1.25rem;
+        margin-bottom: 0.25rem;
+        color: #f0f0f0;
+        font-weight: 600;
+      }
+
+      .page-subtitle {
+        text-align: center;
+        font-size: 0.85rem;
+        color: #6a6a80;
+        margin-bottom: 1.5rem;
+      }
+
+      .recorder {
+        max-width: 720px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      /* ==========================================================
+         Canvas preview wrapper
+         ========================================================== */
+      .preview {
+        background: #14141f;
+        border-radius: 12px;
+        padding: 1rem;
+        border: 1px solid #282840;
+        position: relative;
+      }
+
+      canvas {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        display: block;
+        border-radius: 6px;
+      }
+
+      /* Recording indicator — red dot in corner */
+      .rec-badge {
+        position: absolute;
+        top: 1.5rem;
+        right: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.3rem 0.7rem;
+        background: rgba(0, 0, 0, 0.6);
+        border-radius: 100px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #ff4444;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+      }
+
+      .rec-badge.active {
+        opacity: 1;
+      }
+
+      .rec-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #ff4444;
+        animation: rec-pulse 1s ease-in-out infinite;
+      }
+
+      @keyframes rec-pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+
+      /* ==========================================================
+         Animated scene — rendered inside canvas via layoutsubtree.
+         Continuous CSS animations prove the canvas faithfully
+         captures every frame of HTML animation to video.
+         ========================================================== */
+      #scene {
+        --hue-offset: 0;
+
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          135deg,
+          hsl(calc(260 + var(--hue-offset)), 70%, 25%),
+          hsl(calc(170 + var(--hue-offset)), 80%, 35%)
+        );
+        font-family: "Montserrat", system-ui, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 8%;
+        position: relative;
+        overflow: hidden;
+        text-align: center;
+      }
+
+      /* Floating shapes — continuous CSS animation in the canvas */
+      .shape {
+        position: absolute;
+        border-radius: 50%;
+        pointer-events: none;
+        opacity: 0.12;
+        background: #fff;
+      }
+
+      .shape-1 {
+        width: 30%;
+        aspect-ratio: 1;
+        top: -8%;
+        right: -8%;
+        animation: float-1 calc(8s / var(--anim-speed, 1)) ease-in-out infinite;
+      }
+
+      .shape-2 {
+        width: 20%;
+        aspect-ratio: 1;
+        bottom: -5%;
+        left: -5%;
+        animation: float-2 calc(10s / var(--anim-speed, 1)) ease-in-out infinite;
+      }
+
+      .shape-3 {
+        width: 12%;
+        aspect-ratio: 1;
+        top: 25%;
+        left: 15%;
+        animation: float-3 calc(6s / var(--anim-speed, 1)) ease-in-out infinite;
+      }
+
+      .shape-4 {
+        width: 8%;
+        aspect-ratio: 1;
+        bottom: 20%;
+        right: 18%;
+        animation: float-4 calc(7s / var(--anim-speed, 1)) ease-in-out infinite;
+      }
+
+      @keyframes float-1 {
+        0%,
+        100% {
+          transform: translate(0, 0) scale(1);
+        }
+        50% {
+          transform: translate(-15px, 20px) scale(1.08);
+        }
+      }
+
+      @keyframes float-2 {
+        0%,
+        100% {
+          transform: translate(0, 0) scale(1);
+        }
+        50% {
+          transform: translate(20px, -15px) scale(1.05);
+        }
+      }
+
+      @keyframes float-3 {
+        0%,
+        100% {
+          transform: translate(0, 0);
+        }
+        33% {
+          transform: translate(10px, -10px);
+        }
+        66% {
+          transform: translate(-8px, 5px);
+        }
+      }
+
+      @keyframes float-4 {
+        0%,
+        100% {
+          transform: translate(0, 0);
+        }
+        50% {
+          transform: translate(-12px, -8px);
+        }
+      }
+
+      /* Message display with entrance animation */
+      .message-display {
+        position: relative;
+        z-index: 1;
+        max-width: 85%;
+      }
+
+      .message-text {
+        font-size: clamp(18px, 3.5vw, 36px);
+        font-weight: 800;
+        color: #fff;
+        line-height: 1.3;
+        text-shadow: 0 2px 16px rgba(0, 0, 0, 0.2);
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+      }
+
+      .message-cursor {
+        display: inline-block;
+        width: 3px;
+        height: 0.9em;
+        background: rgba(255, 255, 255, 0.8);
+        margin-left: 2px;
+        vertical-align: text-bottom;
+        animation: cursor-blink 0.8s step-end infinite;
+      }
+
+      @keyframes cursor-blink {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0;
+        }
+      }
+
+      .message-author {
+        margin-top: 1em;
+        font-size: clamp(10px, 1.4vw, 14px);
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.6);
+        letter-spacing: 0.05em;
+      }
+
+      /* ==========================================================
+         Controls panel
+         ========================================================== */
+      .controls {
+        background: #14141f;
+        border-radius: 12px;
+        padding: 1.25rem;
+        border: 1px solid #282840;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .control-row {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+      }
+
+      .control-row label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #6a6a80;
+      }
+
+      .control-row input[type="text"],
+      .control-row textarea {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+        font-family: inherit;
+        background: #1e1e2e;
+        border: 1px solid #2a2a40;
+        border-radius: 6px;
+        color: #f0f0f0;
+        outline: none;
+        transition: border-color 0.15s ease;
+        resize: vertical;
+      }
+
+      .control-row input[type="text"]:focus,
+      .control-row textarea:focus {
+        border-color: #6c41f0;
+      }
+
+      .speed-row {
+        flex-direction: row;
+        align-items: flex-end;
+        gap: 0.75rem;
+      }
+
+      .speed-group {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+      }
+
+      input[type="range"] {
+        width: 100%;
+        accent-color: #6c41f0;
+      }
+
+      /* Recording controls row */
+      .rec-controls {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-top: 0.25rem;
+      }
+
+      .btn {
+        padding: 0.5rem 1.25rem;
+        border-radius: 6px;
+        border: 1px solid #282840;
+        font-family: inherit;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+        white-space: nowrap;
+      }
+
+      .btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .btn:focus-visible {
+        outline: 2px solid #6c41f0;
+        outline-offset: 2px;
+      }
+
+      .btn-record {
+        background: #d52e66;
+        color: #fff;
+        border-color: #d52e66;
+      }
+
+      .btn-record:hover:not(:disabled) {
+        background: #e84080;
+        border-color: #e84080;
+      }
+
+      .btn-stop {
+        background: #1a1a2e;
+        color: #f0f0f0;
+        border-color: #ff4444;
+      }
+
+      .btn-stop:hover:not(:disabled) {
+        background: #2a1a1e;
+      }
+
+      .btn-download {
+        background: #6c41f0;
+        color: #fff;
+        border-color: #6c41f0;
+      }
+
+      .btn-download:hover:not(:disabled) {
+        background: #8562ff;
+        border-color: #8562ff;
+      }
+
+      .btn-replay {
+        background: #1a1a2e;
+        color: #a0a0b8;
+        border-color: #282840;
+      }
+
+      .btn-replay:hover:not(:disabled) {
+        background: #242440;
+        border-color: #3a3a58;
+      }
+
+      /* Status readout */
+      .status {
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .status-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.1rem;
+      }
+
+      .status-label {
+        font-size: 0.6rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #6a6a80;
+      }
+
+      .status-value {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #a0a0b8;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .status-value.recording {
+        color: #ff4444;
+      }
+
+      /* ==========================================================
+         Before/after comparison
+         ========================================================== */
+      .comparison {
+        max-width: 720px;
+        margin: 1.25rem auto 0;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+      }
+
+      .compare-box {
+        background: #14141f;
+        border: 1px solid #282840;
+        border-radius: 8px;
+        padding: 1rem;
+      }
+
+      .compare-box h3 {
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.5rem;
+      }
+
+      .compare-box.before h3 {
+        color: #d52e66;
+      }
+
+      .compare-box.after h3 {
+        color: #00e5b9;
+      }
+
+      .compare-box pre {
+        font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+        font-size: 0.72rem;
+        line-height: 1.6;
+        color: #a0a0b8;
+        white-space: pre;
+        overflow-x: auto;
+      }
+
+      .compare-box pre .fn {
+        color: #6c41f0;
+      }
+
+      .compare-box pre .str {
+        color: #00e5b9;
+      }
+
+      .compare-box pre .kw {
+        color: #d52e66;
+      }
+
+      .compare-box pre .cmt {
+        color: #4a4a60;
+      }
+
+      .compare-box .lib-size {
+        display: inline-block;
+        margin-top: 0.5rem;
+        font-size: 0.65rem;
+        font-weight: 600;
+        padding: 0.15em 0.5em;
+        border-radius: 3px;
+      }
+
+      .before .lib-size {
+        background: rgba(213, 46, 102, 0.12);
+        color: #d52e66;
+      }
+
+      .after .lib-size {
+        background: rgba(0, 229, 185, 0.12);
+        color: #00e5b9;
+      }
+
+      /* ==========================================================
+         Instructions
+         ========================================================== */
+      .instructions {
+        text-align: center;
+        margin-top: 1.25rem;
+        font-size: 0.8rem;
+        color: #6a6a80;
+        line-height: 1.6;
+        max-width: 720px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .instructions code {
+        font-size: 0.78rem;
+        background: #282840;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: "JetBrains Mono", monospace;
+        color: #00e5b9;
+      }
+
+      @media (max-width: 540px) {
+        .speed-row {
+          flex-direction: column;
+        }
+
+        .rec-controls {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .comparison {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>HTML Video Recording</h1>
+    <p class="page-subtitle">
+      Type a message, watch it animate, hit record, download the video &mdash;
+      the media export use case.
+    </p>
+
+    <div class="recorder">
+      <!-- ============================================
+           CANVAS PREVIEW
+           The <canvas> with layoutsubtree renders its
+           child HTML — including live CSS animations.
+           captureStream() records every frame to WebM.
+           ============================================ -->
+      <div class="preview">
+        <canvas
+          id="canvas"
+          width="1280"
+          height="720"
+          layoutsubtree
+          aria-label="Animated message preview"
+        >
+          <!--
+            The entire animated scene is HTML + CSS.
+            Floating shapes, gradient background, and
+            the typed message are all rendered via
+            drawElementImage(). captureStream() captures
+            every painted frame as video.
+          -->
+          <div id="scene">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+            <div class="shape shape-4"></div>
+            <div class="message-display">
+              <div class="message-text" id="message-text">
+                Hello, world!
+              </div>
+              <div class="message-author" id="message-author">
+                html-in-canvas.dev
+              </div>
+            </div>
+          </div>
+        </canvas>
+
+        <div class="rec-badge" id="rec-badge">
+          <span class="rec-dot"></span>
+          <span id="rec-timer">0:00</span>
+        </div>
+      </div>
+
+      <!-- ============================================
+           CONTROLS
+           Text input updates the scene's message in
+           real time. Recording controls manage the
+           captureStream/MediaRecorder pipeline.
+           ============================================ -->
+      <div class="controls">
+        <div class="control-row">
+          <label for="input-message">Message</label>
+          <textarea
+            id="input-message"
+            rows="2"
+            placeholder="Type something to display..."
+          >Hello, world!</textarea>
+        </div>
+
+        <div class="control-row">
+          <label for="input-author">Attribution</label>
+          <input
+            type="text"
+            id="input-author"
+            value="html-in-canvas.dev"
+          />
+        </div>
+
+        <div class="control-row speed-row">
+          <div class="speed-group">
+            <label for="input-speed">
+              Animation Speed <span id="speed-value">1.0</span>&times;
+            </label>
+            <input
+              type="range"
+              id="input-speed"
+              min="0.2"
+              max="3"
+              step="0.1"
+              value="1"
+            />
+          </div>
+        </div>
+
+        <div class="rec-controls">
+          <button class="btn btn-record" id="btn-record" type="button">
+            Record
+          </button>
+          <button class="btn btn-stop" id="btn-stop" type="button" disabled>
+            Stop
+          </button>
+          <button
+            class="btn btn-download"
+            id="btn-download"
+            type="button"
+            disabled
+          >
+            Download WebM
+          </button>
+          <button
+            class="btn btn-replay"
+            id="btn-replay"
+            type="button"
+            disabled
+          >
+            Replay
+          </button>
+        </div>
+
+        <div class="status">
+          <div class="status-item">
+            <span class="status-label">State</span>
+            <span class="status-value" id="status-state">Idle</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Duration</span>
+            <span class="status-value" id="status-duration">0:00</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">File Size</span>
+            <span class="status-value" id="status-size">&mdash;</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================
+         BEFORE / AFTER COMPARISON
+         Shows the value proposition: native video
+         recording from HTML content with zero
+         third-party dependencies.
+         ============================================ -->
+    <div class="comparison">
+      <div class="compare-box before">
+        <h3>Before (manual pipeline)</h3>
+        <pre><span class="cmt">// Screenshot each frame, stitch offline</span>
+<span class="kw">const</span> frames = [];
+<span class="kw">for</span> (<span class="kw">let</span> i = 0; i &lt; N; i++) {
+  frames.<span class="fn">push</span>(<span class="kw">await</span> <span class="fn">screenshot</span>(el));
+}
+<span class="fn">ffmpeg</span>(frames, <span class="str">'out.webm'</span>);</pre>
+        <span class="lib-size">ffmpeg.wasm +25 MB</span>
+      </div>
+      <div class="compare-box after">
+        <h3>After (native API)</h3>
+        <pre><span class="cmt">// Stream directly from canvas</span>
+<span class="kw">const</span> stream = canvas.<span class="fn">captureStream</span>(30);
+<span class="kw">const</span> rec = <span class="kw">new</span> <span class="fn">MediaRecorder</span>(stream);
+rec.<span class="fn">start</span>();</pre>
+        <span class="lib-size">0 KB &mdash; built into the browser</span>
+      </div>
+    </div>
+
+    <p class="instructions">
+      Type a message, adjust the animation speed, then click
+      <strong>Record</strong> to capture the animated canvas as a WebM
+      video.<br />
+      The canvas renders live HTML via
+      <code>drawElementImage()</code> and streams frames via
+      <code>canvas.captureStream()</code> &mdash; no ffmpeg, no screenshots, no
+      external libraries.
+    </p>
+
+    <script>
+      // =============================================================
+      // CANVAS SETUP
+      // =============================================================
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+      const scene = document.getElementById("scene");
+
+      // =============================================================
+      // PAINT CALLBACK
+      // drawElementImage() renders the animated HTML scene — including
+      // every frame of CSS animation (floating shapes, gradient hue
+      // shift, cursor blink) — into the canvas. captureStream() then
+      // captures these painted frames as video.
+      // =============================================================
+      function paintScene() {
+        const dpr = devicePixelRatio;
+        const w = canvas.width / dpr;
+        const h = canvas.height / dpr;
+
+        ctx.clearRect(0, 0, w, h);
+
+        const transform = ctx.drawElementImage(scene, 0, 0);
+        if (transform) {
+          scene.style.transform = transform.toString();
+        }
+      }
+
+      canvas.onpaint = paintScene;
+
+      // =============================================================
+      // RESIZE OBSERVER
+      // Keeps the canvas bitmap in sync with its CSS layout size.
+      // =============================================================
+      const ro = new ResizeObserver(([entry]) => {
+        const { width, height } = entry.contentRect;
+        canvas.width = Math.round(width * devicePixelRatio);
+        canvas.height = Math.round(height * devicePixelRatio);
+        ctx.scale(devicePixelRatio, devicePixelRatio);
+        if (canvas.onpaint) canvas.onpaint();
+      });
+      ro.observe(canvas);
+
+      // =============================================================
+      // CONTINUOUS ANIMATION
+      // Slowly shift the gradient hue to prove CSS animations are
+      // faithfully captured frame-by-frame in the recorded video.
+      // =============================================================
+      let animationSpeed = 1;
+      let hueOffset = 0;
+      let lastTime = performance.now();
+      let animFrameId = null;
+
+      function animateScene(now) {
+        const dt = (now - lastTime) / 1000;
+        lastTime = now;
+
+        // Shift gradient hue continuously
+        hueOffset += dt * 15 * animationSpeed;
+        scene.style.setProperty("--hue-offset", hueOffset.toFixed(1));
+
+        // Request a canvas repaint to capture the new frame
+        requestRepaint();
+
+        animFrameId = requestAnimationFrame(animateScene);
+      }
+
+      animFrameId = requestAnimationFrame(animateScene);
+
+      /** Request a canvas repaint after a DOM change. */
+      function requestRepaint() {
+        if (canvas.requestPaint) {
+          canvas.requestPaint();
+        } else if (canvas.onpaint) {
+          canvas.onpaint();
+        }
+      }
+
+      // =============================================================
+      // CONTROLS -> SCENE UPDATES
+      // =============================================================
+      const inputMessage = document.getElementById("input-message");
+      const inputAuthor = document.getElementById("input-author");
+      const inputSpeed = document.getElementById("input-speed");
+      const speedValue = document.getElementById("speed-value");
+      const messageText = document.getElementById("message-text");
+      const messageAuthor = document.getElementById("message-author");
+
+      inputMessage.addEventListener("input", () => {
+        messageText.textContent = inputMessage.value || "...";
+        requestRepaint();
+      });
+
+      inputAuthor.addEventListener("input", () => {
+        messageAuthor.textContent = inputAuthor.value;
+        requestRepaint();
+      });
+
+      inputSpeed.addEventListener("input", () => {
+        animationSpeed = parseFloat(inputSpeed.value);
+        speedValue.textContent = animationSpeed.toFixed(1);
+
+        // Adjust CSS animation speed on the floating shapes via custom property
+        scene.style.setProperty("--anim-speed", animationSpeed);
+      });
+
+      // =============================================================
+      // RECORDING — captureStream() + MediaRecorder
+      //
+      // This is the heart of the demo. canvas.captureStream() creates
+      // a live MediaStream from the canvas output. MediaRecorder
+      // encodes those frames into a WebM video in real time.
+      //
+      // Because drawElementImage() paints real HTML (with CSS
+      // animations, transitions, and live updates) into the canvas,
+      // the resulting video captures the FULL fidelity of the
+      // animated HTML content — gradients, custom fonts, floating
+      // shapes, everything.
+      // =============================================================
+      const btnRecord = document.getElementById("btn-record");
+      const btnStop = document.getElementById("btn-stop");
+      const btnDownload = document.getElementById("btn-download");
+      const btnReplay = document.getElementById("btn-replay");
+      const recBadge = document.getElementById("rec-badge");
+      const recTimer = document.getElementById("rec-timer");
+      const statusState = document.getElementById("status-state");
+      const statusDuration = document.getElementById("status-duration");
+      const statusSize = document.getElementById("status-size");
+
+      let mediaRecorder = null;
+      let recordedChunks = [];
+      let recordingStartTime = 0;
+      let timerInterval = null;
+      let lastBlobUrl = null;
+
+      /** Format seconds as M:SS. */
+      function formatTime(seconds) {
+        const m = Math.floor(seconds / 60);
+        const s = Math.floor(seconds % 60);
+        return m + ":" + String(s).padStart(2, "0");
+      }
+
+      /** Format bytes as a human-readable string. */
+      function formatBytes(bytes) {
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+        return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+      }
+
+      /** Update the timer display. */
+      function updateTimer() {
+        const elapsed = (performance.now() - recordingStartTime) / 1000;
+        const timeStr = formatTime(elapsed);
+        recTimer.textContent = timeStr;
+        statusDuration.textContent = timeStr;
+
+        // Update file size estimate from chunks collected so far
+        const totalBytes = recordedChunks.reduce(
+          (sum, chunk) => sum + chunk.size,
+          0
+        );
+        if (totalBytes > 0) {
+          statusSize.textContent = formatBytes(totalBytes);
+        }
+      }
+
+      // ---- START RECORDING ----
+      btnRecord.addEventListener("click", () => {
+        // Clean up any previous recording
+        if (lastBlobUrl) {
+          URL.revokeObjectURL(lastBlobUrl);
+          lastBlobUrl = null;
+        }
+
+        recordedChunks = [];
+
+        // captureStream(30) creates a 30 fps MediaStream from the canvas
+        const stream = canvas.captureStream(30);
+
+        // Find a supported MIME type for WebM video
+        const mimeType = [
+          "video/webm;codecs=vp9",
+          "video/webm;codecs=vp8",
+          "video/webm",
+        ].find((type) => MediaRecorder.isTypeSupported(type));
+
+        if (!mimeType) {
+          statusState.textContent = "Error: WebM not supported";
+          return;
+        }
+
+        mediaRecorder = new MediaRecorder(stream, {
+          mimeType,
+          videoBitsPerSecond: 2_500_000, // 2.5 Mbps for good quality
+        });
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            recordedChunks.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstop = () => {
+          clearInterval(timerInterval);
+          timerInterval = null;
+
+          // Build the final blob
+          const blob = new Blob(recordedChunks, { type: mimeType });
+          lastBlobUrl = URL.createObjectURL(blob);
+
+          // Update UI
+          statusState.textContent = "Ready";
+          statusSize.textContent = formatBytes(blob.size);
+          recBadge.classList.remove("active");
+
+          btnRecord.disabled = false;
+          btnStop.disabled = true;
+          btnDownload.disabled = false;
+          btnReplay.disabled = false;
+        };
+
+        // Collect data every 250ms for live size updates
+        mediaRecorder.start(250);
+        recordingStartTime = performance.now();
+
+        // Update timer every 100ms
+        timerInterval = setInterval(updateTimer, 100);
+
+        // Update UI
+        statusState.textContent = "Recording";
+        statusState.classList.add("recording");
+        statusDuration.textContent = "0:00";
+        statusSize.textContent = "0 B";
+        recBadge.classList.add("active");
+
+        btnRecord.disabled = true;
+        btnStop.disabled = false;
+        btnDownload.disabled = true;
+        btnReplay.disabled = true;
+      });
+
+      // ---- STOP RECORDING ----
+      btnStop.addEventListener("click", () => {
+        if (mediaRecorder && mediaRecorder.state === "recording") {
+          mediaRecorder.stop();
+          statusState.textContent = "Finishing...";
+          statusState.classList.remove("recording");
+        }
+      });
+
+      // ---- DOWNLOAD ----
+      btnDownload.addEventListener("click", () => {
+        if (!lastBlobUrl) return;
+
+        const a = document.createElement("a");
+        a.href = lastBlobUrl;
+        a.download = "html-canvas-recording.webm";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      });
+
+      // ---- REPLAY (open in new tab) ----
+      btnReplay.addEventListener("click", () => {
+        if (!lastBlobUrl) return;
+        window.open(lastBlobUrl, "_blank");
+      });
+    </script>
+  </body>
+</html>

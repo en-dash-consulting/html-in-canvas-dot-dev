@@ -1,0 +1,15 @@
+{
+  "title": "HTML Video Recording",
+  "description": "Record animated HTML content as WebM video — type a message, watch it animate with CSS, hit record, and download the clip via canvas.captureStream() + MediaRecorder.",
+  "tags": ["demo", "video", "export", "media", "recording", "animation"],
+  "author": "En Dash Consulting",
+  "dateCreated": "2026-04-10",
+  "context": "2d",
+  "difficulty": "intermediate",
+  "features": ["layoutsubtree", "drawElementImage", "onpaint", "requestPaint"],
+  "browserSupport": {
+    "chrome": true,
+    "firefox": false,
+    "safari": false
+  }
+}
