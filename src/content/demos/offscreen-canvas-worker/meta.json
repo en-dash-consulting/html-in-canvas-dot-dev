@@ -1,0 +1,16 @@
+{
+  "title": "OffscreenCanvas Worker",
+  "description": "Captures HTML as a transferable ElementImage and sends it to a Web Worker for rendering on an OffscreenCanvas, demonstrating the worker communication pattern with postMessage.",
+  "tags": ["demo", "advanced", "workers", "offscreen"],
+  "author": "En Dash Consulting",
+  "dateCreated": "2026-04-10",
+  "dateUpdated": "2026-04-10",
+  "context": "2d",
+  "difficulty": "advanced",
+  "features": ["captureElementImage", "drawElementImage"],
+  "browserSupport": {
+    "chrome": true,
+    "firefox": false,
+    "safari": false
+  }
+}

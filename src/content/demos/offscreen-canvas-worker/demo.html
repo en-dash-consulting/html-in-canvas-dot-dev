@@ -1,0 +1,1003 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OffscreenCanvas Worker — HTML-in-Canvas</title>
+    <style>
+      * {
+        margin: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        background: #0a0a0f;
+        color: #f0f0f0;
+        font-family: system-ui, -apple-system, sans-serif;
+        padding: 2rem;
+      }
+
+      h1 {
+        text-align: center;
+        font-size: 1.25rem;
+        font-weight: 400;
+        color: #a0a0b8;
+        margin-bottom: 2rem;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        max-width: 1100px;
+        margin: 0 auto;
+        align-items: start;
+      }
+
+      @media (max-width: 800px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* ── Live demo panel ─────────────────────────────── */
+      .demo-panel {
+        background: #14141f;
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid #282840;
+      }
+
+      .demo-panel h2 {
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #6a6a80;
+        margin-bottom: 1rem;
+      }
+
+      /* ── Section labels ──────────────────────────────── */
+      .section-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #6a6a80;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .edit-hint {
+        font-weight: 400;
+        text-transform: none;
+        letter-spacing: 0;
+        color: #4a4a60;
+        font-size: 0.65rem;
+      }
+
+      .worker-badge {
+        font-weight: 400;
+        text-transform: none;
+        letter-spacing: 0;
+        font-size: 0.6rem;
+        background: #2a1a4e;
+        color: #9b6dff;
+        padding: 0.15em 0.5em;
+        border-radius: 4px;
+      }
+
+      /* ── Source element area ──────────────────────────── */
+      .source-area {
+        margin-bottom: 1rem;
+      }
+
+      #source {
+        background: #0d0d18;
+        border-radius: 8px;
+        padding: 1rem;
+        border: 1px dashed #282840;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+
+      #source:focus {
+        border-color: #6c41f0;
+      }
+
+      .source-card {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .source-card-icon {
+        font-size: 1.75rem;
+        line-height: 1;
+      }
+
+      .source-card h3 {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #e0e0f0;
+      }
+
+      .source-card p {
+        font-size: 0.78rem;
+        line-height: 1.5;
+        color: #8080a0;
+      }
+
+      .source-card code {
+        background: #282840;
+        padding: 0.1em 0.35em;
+        border-radius: 3px;
+        font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+        font-size: 0.72rem;
+        color: #c3e88d;
+      }
+
+      .source-card-badge {
+        display: inline-block;
+        width: fit-content;
+        font-size: 0.65rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        background: linear-gradient(135deg, #6c41f0, #9b6dff);
+        color: #fff;
+        padding: 0.25em 0.75em;
+        border-radius: 4px;
+      }
+
+      /* ── Controls row ────────────────────────────────── */
+      .controls {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .btn-primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.55rem 1rem;
+        border-radius: 8px;
+        border: none;
+        background: linear-gradient(135deg, #6c41f0, #9b6dff);
+        color: #fff;
+        font-family: inherit;
+        font-size: 0.78rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.15s;
+      }
+
+      .btn-primary:hover {
+        opacity: 0.9;
+      }
+
+      .btn-primary:active {
+        opacity: 0.8;
+      }
+
+      .btn-primary:focus-visible {
+        outline: 2px solid #9b6dff;
+        outline-offset: 2px;
+      }
+
+      .btn-icon {
+        font-size: 0.9rem;
+      }
+
+      .toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.75rem;
+        color: #8080a0;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .toggle input {
+        accent-color: #6c41f0;
+      }
+
+      /* ── Worker canvas ───────────────────────────────── */
+      canvas {
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        display: block;
+        border-radius: 8px;
+        border: 1px solid #282840;
+        background: #0a0a0f;
+      }
+
+      .canvas-area {
+        margin-bottom: 1rem;
+      }
+
+      /* ── Info row ────────────────────────────────────── */
+      .info-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin-top: 1rem;
+      }
+
+      .info-box {
+        background: #1a1a2e;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        border: 1px solid #282840;
+      }
+
+      .info-box .label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #6a6a80;
+        margin-bottom: 0.35rem;
+      }
+
+      .info-box .value {
+        font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+        font-size: 0.72rem;
+        color: #00e5b9;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+
+      .info-box .hint {
+        font-size: 0.65rem;
+        color: #555570;
+        margin-top: 0.25rem;
+      }
+
+      /* ── Message log ─────────────────────────────────── */
+      .log-area {
+        margin-top: 1rem;
+      }
+
+      .log-panel {
+        background: #0d0d18;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        border: 1px solid #1e1e30;
+        max-height: 140px;
+        overflow-y: auto;
+        font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+        font-size: 0.7rem;
+        line-height: 1.7;
+      }
+
+      .log-entry {
+        display: flex;
+        gap: 0.5rem;
+        color: #6a6a80;
+      }
+
+      .log-entry .log-dir {
+        flex-shrink: 0;
+        font-weight: 700;
+      }
+
+      .log-dir.to-worker {
+        color: #6c41f0;
+      }
+
+      .log-dir.from-worker {
+        color: #00e5b9;
+      }
+
+      .log-entry .log-text {
+        color: #8080a0;
+      }
+
+      /* ── Code panel ──────────────────────────────────── */
+      .code-panel {
+        background: #14141f;
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid #282840;
+      }
+
+      .code-panel h2 {
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #6a6a80;
+        margin-bottom: 1rem;
+      }
+
+      .code-block {
+        background: #0d0d18;
+        border-radius: 8px;
+        padding: 1.25rem;
+        overflow-x: auto;
+        border: 1px solid #1e1e30;
+      }
+
+      .code-block + .code-block {
+        margin-top: 1rem;
+      }
+
+      .code-block pre {
+        font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+        font-size: 0.8rem;
+        line-height: 1.7;
+        white-space: pre;
+        color: #c0c0d0;
+      }
+
+      .code-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #555570;
+        margin-bottom: 0.5rem;
+        margin-top: 1.25rem;
+      }
+
+      /* Syntax highlighting */
+      .kw { color: #c792ea; }
+      .at { color: #ffcb6b; }
+      .st { color: #c3e88d; }
+      .cm { color: #546e7a; }
+      .fn { color: #82aaff; }
+      .op { color: #89ddff; }
+      .nb { color: #f78c6c; }
+
+      .annotation {
+        display: block;
+        background: #1a1a2e;
+        border-left: 3px solid #6c41f0;
+        border-radius: 0 6px 6px 0;
+        padding: 0.5rem 0.75rem;
+        margin: 0.5rem 0;
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 0.78rem;
+        line-height: 1.5;
+        color: #a0a0b8;
+      }
+
+      .annotation strong {
+        color: #e0e0f0;
+        font-weight: 600;
+      }
+
+      .annotation code {
+        background: #282840;
+        padding: 0.1em 0.35em;
+        border-radius: 3px;
+        font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+        font-size: 0.75rem;
+        color: #c3e88d;
+      }
+
+      /* ── Concepts ────────────────────────────────────── */
+      .concepts {
+        margin-top: 1.5rem;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+      }
+
+      @media (max-width: 500px) {
+        .concepts {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .concept {
+        background: #1a1a2e;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        border: 1px solid #282840;
+      }
+
+      .concept-name {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #6c41f0;
+        margin-bottom: 0.25rem;
+        font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+      }
+
+      .concept-desc {
+        font-size: 0.75rem;
+        color: #8080a0;
+        line-height: 1.4;
+      }
+
+      .concept-desc code {
+        background: #282840;
+        padding: 0.1em 0.3em;
+        border-radius: 3px;
+        font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+        font-size: 0.7rem;
+        color: #c3e88d;
+      }
+
+      /* ── Flow diagram ────────────────────────────────── */
+      .flow-diagram {
+        background: #0d0d18;
+        border-radius: 8px;
+        padding: 1rem;
+        border: 1px solid #1e1e30;
+        margin-top: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        font-size: 0.72rem;
+        font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+      }
+
+      .flow-step {
+        background: #1a1a2e;
+        border: 1px solid #282840;
+        border-radius: 6px;
+        padding: 0.4rem 0.65rem;
+        color: #a0a0b8;
+        white-space: nowrap;
+      }
+
+      .flow-step.main-thread {
+        border-color: #6c41f0;
+        color: #c792ea;
+      }
+
+      .flow-step.worker-thread {
+        border-color: #00b894;
+        color: #00e5b9;
+      }
+
+      .flow-arrow {
+        color: #4a4a60;
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>OffscreenCanvas Worker</h1>
+
+    <div class="layout">
+      <!-- ── Live demo ─────────────────────────────────── -->
+      <div class="demo-panel">
+        <h2>Live Result</h2>
+
+        <!-- Source HTML element to capture -->
+        <div class="source-area">
+          <div class="section-label">
+            Source Element
+            <span class="edit-hint">(click to edit, then re-capture)</span>
+          </div>
+          <div id="source" contenteditable="true">
+            <div class="source-card">
+              <div class="source-card-icon">&#x1F3A8;</div>
+              <h3>HTML Content</h3>
+              <p>
+                This DOM element is captured as a transferable
+                <code>ElementImage</code> and sent to a Web Worker
+                for off-thread rendering.
+              </p>
+              <div class="source-card-badge">Transferable</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+          <button id="capture-btn" class="btn-primary">
+            <span class="btn-icon">&#x1F4F8;</span>
+            Capture &amp; Send to Worker
+          </button>
+          <label class="toggle">
+            <input type="checkbox" id="animate-toggle" checked />
+            <span>Animate</span>
+          </label>
+        </div>
+
+        <!-- Worker-rendered canvas -->
+        <div class="canvas-area">
+          <div class="section-label">
+            Worker Output
+            <span class="worker-badge">OffscreenCanvas</span>
+          </div>
+          <canvas id="output"></canvas>
+        </div>
+
+        <div class="info-row">
+          <div class="info-box">
+            <div class="label">Sync Transform</div>
+            <div class="value" id="transform-display">Waiting...</div>
+            <div class="hint">DOMMatrix sent back from worker</div>
+          </div>
+          <div class="info-box">
+            <div class="label">Worker FPS</div>
+            <div class="value" id="fps-display">&mdash;</div>
+            <div class="hint">Animation in worker thread</div>
+          </div>
+        </div>
+
+        <!-- Message log -->
+        <div class="log-area">
+          <div class="section-label">Message Log</div>
+          <div id="log" class="log-panel"></div>
+        </div>
+      </div>
+
+      <!-- ── Annotated source ──────────────────────────── -->
+      <div class="code-panel">
+        <h2>Annotated Source</h2>
+
+        <div class="code-label">Main Thread</div>
+        <div class="code-block"><pre>
+<span class="cm">// 1. Transfer canvas control to a worker</span>
+<span class="kw">const</span> canvas <span class="op">=</span> document.<span class="fn">getElementById</span>(<span class="st">"output"</span>);
+<span class="kw">const</span> offscreen <span class="op">=</span> canvas.<span class="fn">transferControlToOffscreen</span>();
+
+<span class="kw">const</span> worker <span class="op">=</span> <span class="kw">new</span> <span class="fn">Worker</span>(workerURL);
+worker.<span class="fn">postMessage</span>(
+  { <span class="at">type</span>: <span class="st">"init"</span>, <span class="at">canvas</span>: offscreen },
+  [offscreen]  <span class="cm">// transfer list</span>
+);
+<span class="annotation"><strong>OffscreenCanvas transfer.</strong> Calling <code>transferControlToOffscreen()</code> detaches the canvas backing store from the main thread. The worker now owns it exclusively &mdash; drawing happens off the main thread, keeping the UI responsive.</span>
+
+<span class="cm">// 2. Capture HTML as a transferable ElementImage</span>
+<span class="kw">const</span> source <span class="op">=</span> document.<span class="fn">getElementById</span>(<span class="st">"source"</span>);
+<span class="kw">const</span> image <span class="op">=</span> <span class="kw">await</span> <span class="fn">captureElementImage</span>(source);
+<span class="annotation"><strong>captureElementImage()</strong> takes a snapshot of a DOM element and produces an <code>ElementImage</code> &mdash; a lightweight, GPU-backed representation that can be transferred (zero-copy) to a worker via <code>postMessage</code>.</span>
+
+<span class="cm">// 3. Send the ElementImage to the worker</span>
+worker.<span class="fn">postMessage</span>(
+  { <span class="at">type</span>: <span class="st">"image"</span>, <span class="at">image</span>: image },
+  [image]  <span class="cm">// transferable &mdash; zero-copy</span>
+);
+<span class="annotation"><strong>Zero-copy transfer.</strong> By listing the <code>ElementImage</code> in the transfer list, ownership moves to the worker without serialization. The main thread can no longer use the image after transfer.</span>
+
+<span class="cm">// 4. Receive sync transform from worker</span>
+worker.<span class="at">onmessage</span> <span class="op">=</span> (e) <span class="op">=&gt;</span> {
+  <span class="kw">if</span> (e.data.<span class="at">type</span> <span class="op">===</span> <span class="st">"transform"</span>) {
+    <span class="kw">const</span> m <span class="op">=</span> e.data.<span class="at">matrix</span>;
+    source.style.<span class="at">transform</span> <span class="op">=</span>
+      <span class="st">`matrix(</span>${m.a}<span class="st">,</span>${m.b}<span class="st">,</span>${m.c}<span class="st">,</span>${m.d}<span class="st">,</span>${m.e}<span class="st">,</span>${m.f}<span class="st">)`</span>;
+  }
+};
+<span class="annotation"><strong>Transform sync.</strong> The worker sends back the <code>DOMMatrix</code> it used to draw the element. The main thread applies this as a CSS transform so hit testing and accessibility remain in sync with the visual position.</span></pre></div>
+
+        <div class="code-label">Worker Thread</div>
+        <div class="code-block"><pre>
+<span class="cm">// Worker: receive OffscreenCanvas + ElementImage</span>
+<span class="kw">let</span> canvas, ctx, currentImage;
+
+self.<span class="at">onmessage</span> <span class="op">=</span> (e) <span class="op">=&gt;</span> {
+  <span class="kw">const</span> msg <span class="op">=</span> e.data;
+
+  <span class="kw">if</span> (msg.<span class="at">type</span> <span class="op">===</span> <span class="st">"init"</span>) {
+    canvas <span class="op">=</span> msg.<span class="at">canvas</span>;
+    ctx <span class="op">=</span> canvas.<span class="fn">getContext</span>(<span class="st">"2d"</span>);
+    <span class="fn">tick</span>();
+  }
+
+  <span class="kw">if</span> (msg.<span class="at">type</span> <span class="op">===</span> <span class="st">"image"</span>) {
+    currentImage <span class="op">=</span> msg.<span class="at">image</span>;
+  }
+};
+<span class="annotation"><strong>Message dispatch.</strong> The worker handles two message types: <code>init</code> delivers the <code>OffscreenCanvas</code> (transferred, not copied), and <code>image</code> delivers a new <code>ElementImage</code> snapshot to draw.</span>
+
+<span class="cm">// Worker: animation loop</span>
+<span class="kw">function</span> <span class="fn">tick</span>() {
+  ctx.<span class="fn">clearRect</span>(<span class="nb">0</span>, <span class="nb">0</span>, canvas.<span class="at">width</span>, canvas.<span class="at">height</span>);
+
+  <span class="kw">if</span> (currentImage) {
+    ctx.<span class="fn">save</span>();
+    ctx.<span class="fn">translate</span>(cx, cy);
+    ctx.<span class="fn">rotate</span>(angle);
+    ctx.<span class="fn">drawImage</span>(currentImage, <span class="op">-</span>iw<span class="op">/</span><span class="nb">2</span>, <span class="op">-</span>ih<span class="op">/</span><span class="nb">2</span>);
+    <span class="kw">const</span> t <span class="op">=</span> ctx.<span class="fn">getTransform</span>();
+    ctx.<span class="fn">restore</span>();
+
+    <span class="cm">// Send transform back to main thread</span>
+    self.<span class="fn">postMessage</span>({
+      <span class="at">type</span>: <span class="st">"transform"</span>,
+      <span class="at">matrix</span>: { <span class="at">a</span>: t.a, <span class="at">b</span>: t.b, ... }
+    });
+  }
+
+  <span class="fn">requestAnimationFrame</span>(tick);
+}
+<span class="annotation"><strong>Worker animation.</strong> The worker runs its own <code>requestAnimationFrame</code> loop &mdash; completely independent of the main thread. <code>drawImage()</code> accepts the <code>ElementImage</code> just like any other image source. The transform matrix is sent back each frame for accessibility sync.</span></pre></div>
+
+        <!-- Data flow diagram -->
+        <div class="flow-diagram">
+          <div class="flow-step main-thread">captureElementImage()</div>
+          <div class="flow-arrow">&#x2192;</div>
+          <div class="flow-step">postMessage + transfer</div>
+          <div class="flow-arrow">&#x2192;</div>
+          <div class="flow-step worker-thread">drawImage()</div>
+          <div class="flow-arrow">&#x2192;</div>
+          <div class="flow-step">postMessage</div>
+          <div class="flow-arrow">&#x2192;</div>
+          <div class="flow-step main-thread">sync transform</div>
+        </div>
+
+        <div class="concepts">
+          <div class="concept">
+            <div class="concept-name">captureElementImage()</div>
+            <div class="concept-desc">
+              Captures a DOM element as a GPU-backed
+              <code>ElementImage</code> that can be transferred to
+              a worker without serialization overhead.
+            </div>
+          </div>
+          <div class="concept">
+            <div class="concept-name">OffscreenCanvas</div>
+            <div class="concept-desc">
+              <code>transferControlToOffscreen()</code> moves canvas
+              rendering to a worker, freeing the main thread from
+              all drawing work.
+            </div>
+          </div>
+          <div class="concept">
+            <div class="concept-name">Transferables</div>
+            <div class="concept-desc">
+              Both <code>OffscreenCanvas</code> and
+              <code>ElementImage</code> are transferable objects
+              &mdash; moved between threads at zero cost.
+            </div>
+          </div>
+          <div class="concept">
+            <div class="concept-name">Transform Sync</div>
+            <div class="concept-desc">
+              The worker sends back the <code>DOMMatrix</code> used
+              to draw, so the main thread can keep hit testing and
+              accessibility synchronized.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      /* ── DOM references ────────────────────────────── */
+      const canvas = document.getElementById("output");
+      const source = document.getElementById("source");
+      const captureBtn = document.getElementById("capture-btn");
+      const animateToggle = document.getElementById("animate-toggle");
+      const transformDisplay = document.getElementById("transform-display");
+      const fpsDisplay = document.getElementById("fps-display");
+      const logPanel = document.getElementById("log");
+
+      /* ── Message log utility ───────────────────────── */
+      function log(direction, text) {
+        const entry = document.createElement("div");
+        entry.className = "log-entry";
+
+        const dir = document.createElement("span");
+        dir.className =
+          "log-dir " +
+          (direction === "to" ? "to-worker" : "from-worker");
+        dir.textContent = direction === "to" ? "\u2192" : "\u2190";
+
+        const msg = document.createElement("span");
+        msg.className = "log-text";
+        msg.textContent = text;
+
+        entry.appendChild(dir);
+        entry.appendChild(msg);
+        logPanel.appendChild(entry);
+        logPanel.scrollTop = logPanel.scrollHeight;
+
+        /* Keep log at a reasonable size */
+        while (logPanel.children.length > 50) {
+          logPanel.removeChild(logPanel.firstChild);
+        }
+      }
+
+      /* ── Worker code (inline Blob) ─────────────────── */
+      const workerSource = [
+        '"use strict";',
+        "",
+        "let canvas = null;",
+        "let ctx = null;",
+        "let currentImage = null;",
+        "let dpr = 1;",
+        "let angle = 0;",
+        "let animating = true;",
+        "let frameCount = 0;",
+        "let lastFpsTime = 0;",
+        "let currentFps = 0;",
+        "",
+        "self.onmessage = (e) => {",
+        "  const msg = e.data;",
+        "",
+        '  if (msg.type === "init") {',
+        "    canvas = msg.canvas;",
+        "    dpr = msg.dpr || 1;",
+        '    ctx = canvas.getContext("2d");',
+        "    self.postMessage({",
+        '      type: "log",',
+        '      text: "Worker ready, OffscreenCanvas " +',
+        '        canvas.width + "\\u00d7" + canvas.height',
+        "    });",
+        "    tick();",
+        "  }",
+        "",
+        '  if (msg.type === "image") {',
+        "    currentImage = msg.image;",
+        "    self.postMessage({",
+        '      type: "log",',
+        '      text: "ElementImage received (" +',
+        '        currentImage.width + "\\u00d7" +',
+        '        currentImage.height + ")"',
+        "    });",
+        "  }",
+        "",
+        '  if (msg.type === "resize") {',
+        "    canvas.width = msg.width;",
+        "    canvas.height = msg.height;",
+        "    dpr = msg.dpr || dpr;",
+        "  }",
+        "",
+        '  if (msg.type === "animate") {',
+        "    animating = msg.value;",
+        "  }",
+        "};",
+        "",
+        "/* Draw a subtle dot grid */",
+        "function drawGrid(w, h) {",
+        '  ctx.fillStyle = "#1a1a2e";',
+        "  const step = 24 * dpr;",
+        "  for (let gx = step; gx < w; gx += step) {",
+        "    for (let gy = step; gy < h; gy += step) {",
+        "      ctx.beginPath();",
+        "      ctx.arc(gx, gy, dpr, 0, Math.PI * 2);",
+        "      ctx.fill();",
+        "    }",
+        "  }",
+        "}",
+        "",
+        "function tick() {",
+        "  if (!ctx) { requestAnimationFrame(tick); return; }",
+        "",
+        "  const w = canvas.width;",
+        "  const h = canvas.height;",
+        "",
+        "  /* Clear and draw background */",
+        '  ctx.fillStyle = "#0d0d18";',
+        "  ctx.fillRect(0, 0, w, h);",
+        "  drawGrid(w, h);",
+        "",
+        "  if (currentImage) {",
+        "    const iw = currentImage.width;",
+        "    const ih = currentImage.height;",
+        "",
+        "    /* Scale to fit nicely in the canvas */",
+        "    const fitScale = Math.min(",
+        "      (w * 0.45) / iw,",
+        "      (h * 0.45) / ih",
+        "    );",
+        "",
+        "    if (animating) angle += 0.006;",
+        "",
+        "    /* Draw main centered copy with rotation */",
+        "    ctx.save();",
+        "    ctx.translate(w / 2, h / 2);",
+        "    ctx.rotate(angle);",
+        "    ctx.scale(fitScale, fitScale);",
+        "",
+        "    /* Drop shadow */",
+        '    ctx.shadowColor = "rgba(108, 65, 240, 0.3)";',
+        "    ctx.shadowBlur = 24 * dpr;",
+        "    ctx.shadowOffsetX = 0;",
+        "    ctx.shadowOffsetY = 4 * dpr;",
+        "    ctx.drawImage(currentImage, -iw / 2, -ih / 2);",
+        "",
+        "    const transform = ctx.getTransform();",
+        "    ctx.restore();",
+        "",
+        "    /* Draw 4 smaller orbiting ghost copies */",
+        "    const orbitRadius = Math.min(w, h) * 0.33;",
+        "    for (let i = 0; i < 4; i++) {",
+        "      const orbitAngle = angle * 1.5 + (i * Math.PI / 2);",
+        "      const ox = w / 2 + Math.cos(orbitAngle) * orbitRadius;",
+        "      const oy = h / 2 + Math.sin(orbitAngle) * orbitRadius;",
+        "      const ghostScale = fitScale * 0.35;",
+        "",
+        "      ctx.save();",
+        "      ctx.globalAlpha = 0.25;",
+        "      ctx.translate(ox, oy);",
+        "      ctx.rotate(orbitAngle + Math.PI / 6);",
+        "      ctx.scale(ghostScale, ghostScale);",
+        "      ctx.drawImage(currentImage, -iw / 2, -ih / 2);",
+        "      ctx.restore();",
+        "    }",
+        "",
+        "    /* Send transform back for accessibility sync */",
+        "    self.postMessage({",
+        '      type: "transform",',
+        "      matrix: {",
+        "        a: transform.a, b: transform.b,",
+        "        c: transform.c, d: transform.d,",
+        "        e: transform.e, f: transform.f",
+        "      }",
+        "    });",
+        "  } else {",
+        "    /* Waiting state */",
+        '    ctx.fillStyle = "#4a4a60";',
+        "    ctx.font = (14 * dpr) + " +
+          '"px system-ui, -apple-system, sans-serif";',
+        '    ctx.textAlign = "center";',
+        '    ctx.fillText("Waiting for ElementImage\\u2026",',
+        "      w / 2, h / 2 - 8 * dpr);",
+        '    ctx.fillStyle = "#3a3a50";',
+        "    ctx.font = (12 * dpr) + " +
+          '"px system-ui, -apple-system, sans-serif";',
+        '    ctx.fillText("Click \\u201cCapture & Send\\u201d above",',
+        "      w / 2, h / 2 + 16 * dpr);",
+        "  }",
+        "",
+        "  /* FPS counter */",
+        "  frameCount++;",
+        "  const now = performance.now();",
+        "  if (now - lastFpsTime >= 1000) {",
+        "    currentFps = frameCount;",
+        "    frameCount = 0;",
+        "    lastFpsTime = now;",
+        "    self.postMessage({",
+        '      type: "fps",',
+        "      value: currentFps",
+        "    });",
+        "  }",
+        "",
+        "  /* Draw FPS in corner */",
+        '  ctx.fillStyle = "#3a3a50";',
+        '  ctx.font = (11 * dpr) + "px monospace";',
+        '  ctx.textAlign = "left";',
+        "  ctx.fillText(currentFps + " +
+          '" fps", 8 * dpr, 16 * dpr);',
+        "",
+        "  requestAnimationFrame(tick);",
+        "}",
+      ].join("\n");
+
+      const workerBlob = new Blob([workerSource], {
+        type: "application/javascript",
+      });
+      const workerURL = URL.createObjectURL(workerBlob);
+
+      /* ── Create worker + transfer OffscreenCanvas ──── */
+      const offscreen = canvas.transferControlToOffscreen();
+      const worker = new Worker(workerURL);
+
+      /* Set initial canvas size before transfer */
+      const dp = devicePixelRatio;
+      const rect = canvas.getBoundingClientRect();
+      offscreen.width = Math.round(rect.width * dp);
+      offscreen.height = Math.round(rect.height * dp);
+
+      worker.postMessage(
+        { type: "init", canvas: offscreen, dpr: dp },
+        [offscreen],
+      );
+
+      log("to", "init: OffscreenCanvas " +
+        offscreen.width + "\u00d7" + offscreen.height +
+        " (transferred)");
+
+      /* ── Resize handling ───────────────────────────── */
+      new ResizeObserver(([entry]) => {
+        const { width, height } = entry.contentRect;
+        const pw = Math.round(width * dp);
+        const ph = Math.round(height * dp);
+        worker.postMessage({
+          type: "resize",
+          width: pw,
+          height: ph,
+          dpr: dp,
+        });
+      }).observe(canvas);
+
+      /* ── Capture & send ────────────────────────────── */
+      captureBtn.addEventListener("click", async () => {
+        captureBtn.disabled = true;
+        captureBtn.textContent = "Capturing\u2026";
+
+        try {
+          const t0 = performance.now();
+          const image = await captureElementImage(source);
+          const captureMs = (performance.now() - t0).toFixed(1);
+
+          log(
+            "to",
+            "image: ElementImage " +
+              image.width + "\u00d7" + image.height +
+              " (captured in " + captureMs + "ms, transferring\u2026)",
+          );
+
+          worker.postMessage(
+            { type: "image", image: image },
+            [image],
+          );
+
+          log("to", "image transferred (zero-copy)");
+        } catch (err) {
+          log("to", "ERROR: " + err.message);
+        }
+
+        captureBtn.disabled = false;
+        captureBtn.innerHTML =
+          '<span class="btn-icon">&#x1F4F8;</span> ' +
+          "Capture &amp; Send to Worker";
+      });
+
+      /* ── Animate toggle ────────────────────────────── */
+      animateToggle.addEventListener("change", () => {
+        const val = animateToggle.checked;
+        worker.postMessage({ type: "animate", value: val });
+        log("to", "animate: " + val);
+      });
+
+      /* ── Receive messages from worker ──────────────── */
+      let transformThrottle = 0;
+
+      worker.onmessage = (e) => {
+        const msg = e.data;
+
+        if (msg.type === "transform") {
+          const m = msg.matrix;
+          const formatted =
+            "matrix(" +
+            m.a.toFixed(3) + ", " + m.b.toFixed(3) + ",\n" +
+            "       " +
+            m.c.toFixed(3) + ", " + m.d.toFixed(3) + ",\n" +
+            "       " +
+            m.e.toFixed(1) + ", " + m.f.toFixed(1) + ")";
+          transformDisplay.textContent = formatted;
+
+          /*
+           * Log transform updates at most once per second
+           * to avoid flooding the log.
+           */
+          const now = Date.now();
+          if (now - transformThrottle > 2000) {
+            transformThrottle = now;
+            log(
+              "from",
+              "transform: a=" + m.a.toFixed(3) +
+                " b=" + m.b.toFixed(3) +
+                " e=" + m.e.toFixed(1) +
+                " f=" + m.f.toFixed(1),
+            );
+          }
+        }
+
+        if (msg.type === "fps") {
+          fpsDisplay.textContent = msg.value + " fps";
+        }
+
+        if (msg.type === "log") {
+          log("from", msg.text);
+        }
+      };
+
+      /* ── Cleanup ───────────────────────────────────── */
+      window.addEventListener("unload", () => {
+        worker.terminate();
+        URL.revokeObjectURL(workerURL);
+      });
+    </script>
+  </body>
+</html>
