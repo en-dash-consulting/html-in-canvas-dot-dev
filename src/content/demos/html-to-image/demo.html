@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>HTML-to-Image Export — HTML-in-Canvas</title>
+    <title>Social Card Generator — HTML-in-Canvas</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -19,62 +19,60 @@
         height: 100%;
       }
 
-      :where(body, :host) {
+      body,
+      :host {
         display: block;
+        position: relative;
         margin: 0;
-        min-height: 100%;
-        background: #0a0a0f;
+        width: 100%;
+        min-height: min(78vh, 820px);
+        height: 100%;
+        background:
+          radial-gradient(
+            ellipse at top right,
+            rgba(108, 65, 240, 0.18),
+            transparent 55%
+          ),
+          radial-gradient(
+            ellipse at bottom left,
+            rgba(0, 229, 185, 0.14),
+            transparent 60%
+          ),
+          #07070d;
         color: #f0f0f0;
         font-family: system-ui, -apple-system, sans-serif;
+        overflow: hidden;
+      }
+
+      .stage {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.25rem;
         padding: 1.5rem;
         overflow-y: auto;
       }
 
-      h1 {
-        text-align: center;
-        font-size: 1.25rem;
-        margin-bottom: 0.25rem;
-        color: #f0f0f0;
-        font-weight: 600;
-      }
-
-      .page-subtitle {
-        text-align: center;
-        font-size: 0.85rem;
-        color: #6a6a80;
-        margin-bottom: 1.5rem;
-      }
-
-      .generator {
-        max-width: 720px;
-        margin: 0 auto;
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-      }
-
-      /* ==========================================================
-         Canvas preview wrapper
-         ========================================================== */
-      .preview {
-        background: #14141f;
-        border-radius: 12px;
-        padding: 1rem;
-        border: 1px solid #282840;
-      }
-
-      canvas {
-        width: 100%;
+      /* Canvas — the social card preview */
+      #canvas {
+        width: min(720px, 100%);
         aspect-ratio: 1200 / 630;
         display: block;
-        border-radius: 6px;
+        border-radius: 14px;
+        box-shadow:
+          0 30px 80px -20px rgba(0, 0, 0, 0.6),
+          0 0 0 1px rgba(255, 255, 255, 0.06);
+        flex-shrink: 0;
       }
 
       /* ==========================================================
-         Social card — rendered inside the canvas via layoutsubtree.
-         All styling is pure CSS; drawElementImage() renders it
-         pixel-perfectly, including gradients, custom fonts,
-         border-radius, shadows, and layered elements.
+         The social card — drawn into the canvas via layoutsubtree.
+         All visual richness is pure CSS: gradients, custom fonts,
+         border-radius, shadows, layered decorative shapes. One
+         drawElementImage() call captures the whole thing.
          ========================================================== */
       #card {
         --gradient-start: #6c41f0;
@@ -98,7 +96,6 @@
         overflow: hidden;
       }
 
-      /* Decorative circles — shows complex CSS rendering in canvas */
       .deco {
         position: absolute;
         border-radius: 50%;
@@ -156,12 +153,14 @@
         color: #fff;
         line-height: 1.15;
         text-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+        margin: 0;
       }
 
       .card-desc {
         font-size: 0.88em;
         color: rgba(255, 255, 255, 0.85);
         line-height: 1.5;
+        margin: 0;
       }
 
       .card-footer {
@@ -202,398 +201,193 @@
         color: rgba(255, 255, 255, 0.6);
       }
 
-      /* ==========================================================
-         Controls panel
-         ========================================================== */
+      /* Floating controls panel */
       .controls {
-        background: #14141f;
-        border-radius: 12px;
-        padding: 1.25rem;
-        border: 1px solid #282840;
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
+        width: min(720px, 100%);
+        padding: 1rem 1.25rem;
+        background: rgba(15, 15, 22, 0.78);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        backdrop-filter: blur(12px);
+        box-shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.5);
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem 1rem;
+        flex-shrink: 0;
       }
 
-      .control-row {
+      .control {
         display: flex;
         flex-direction: column;
         gap: 0.3rem;
       }
 
-      .control-row label {
-        font-size: 0.7rem;
+      .control-wide {
+        grid-column: 1 / -1;
+      }
+
+      .control label {
+        font-size: 0.65rem;
         font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.05em;
         color: #6a6a80;
       }
 
-      .control-row input[type="text"],
-      .control-row select {
-        width: 100%;
-        padding: 0.5rem 0.75rem;
-        font-size: 0.85rem;
+      .control input[type="text"],
+      .control select {
+        padding: 0.45rem 0.7rem;
+        font-size: 0.82rem;
         font-family: inherit;
-        background: #1e1e2e;
-        border: 1px solid #2a2a40;
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 6px;
         color: #f0f0f0;
         outline: none;
-        transition: border-color 0.15s ease;
       }
 
-      .control-row input[type="text"]:focus,
-      .control-row select:focus {
+      .control input[type="text"]:focus,
+      .control select:focus {
         border-color: #6c41f0;
       }
 
-      .color-row {
-        flex-direction: row;
-        gap: 0.75rem;
-        align-items: flex-end;
-      }
-
-      .color-group,
-      .angle-group {
-        flex: 1;
+      .swatches {
         display: flex;
-        flex-direction: column;
-        gap: 0.3rem;
+        align-items: center;
+        gap: 0.5rem;
       }
 
-      input[type="color"] {
-        width: 100%;
-        height: 36px;
-        border: 1px solid #2a2a40;
-        border-radius: 6px;
-        background: #1e1e2e;
-        cursor: pointer;
+      .swatches input[type="color"] {
+        flex: 0 0 32px;
+        height: 32px;
         padding: 2px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 6px;
+        background: rgba(0, 0, 0, 0.4);
+        cursor: pointer;
       }
 
-      input[type="range"] {
-        width: 100%;
+      .swatches input[type="range"] {
+        flex: 1;
         accent-color: #6c41f0;
       }
 
-      .export-row {
-        flex-direction: row;
-        gap: 0.75rem;
-        align-items: flex-end;
-        margin-top: 0.25rem;
-      }
-
-      .format-group,
-      .quality-group {
-        flex: 1;
+      .actions {
+        grid-column: 1 / -1;
         display: flex;
-        flex-direction: column;
-        gap: 0.3rem;
+        align-items: center;
+        gap: 0.75rem;
       }
 
-      #btn-download {
-        flex-shrink: 0;
-        padding: 0.5rem 1.25rem;
+      .actions select {
+        flex: 0 0 auto;
+        min-width: 9rem;
+      }
+
+      .actions input[type="range"] {
+        flex: 1;
+        min-width: 6rem;
+        accent-color: #6c41f0;
+      }
+
+      .actions #btn-download {
+        margin-left: auto;
+        padding: 0.5rem 1.1rem;
         font-family: inherit;
-        font-size: 0.85rem;
-        font-weight: 600;
+        font-size: 0.8rem;
+        font-weight: 700;
         background: #6c41f0;
         color: #fff;
         border: none;
         border-radius: 6px;
         cursor: pointer;
-        transition: background-color 0.15s ease;
-        white-space: nowrap;
+        transition: background 0.15s;
       }
 
-      #btn-download:hover {
-        background: #8562ff;
+      .actions #btn-download:hover {
+        background: #7a52ff;
       }
 
-      #btn-download:active {
-        background: #5a35d0;
-      }
-
-      /* ==========================================================
-         Before/after comparison
-         ========================================================== */
-      .comparison {
-        max-width: 720px;
-        margin: 1.25rem auto 0;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.75rem;
-      }
-
-      .compare-box {
-        background: #14141f;
-        border: 1px solid #282840;
-        border-radius: 8px;
-        padding: 1rem;
-      }
-
-      .compare-box h3 {
-        font-size: 0.7rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        margin-bottom: 0.5rem;
-      }
-
-      .compare-box.before h3 {
-        color: #d52e66;
-      }
-
-      .compare-box.after h3 {
-        color: #00e5b9;
-      }
-
-      .compare-box pre {
+      .quality-display {
+        font-size: 0.75rem;
+        color: #8a8aa0;
         font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
-        font-size: 0.72rem;
-        line-height: 1.6;
-        color: #a0a0b8;
-        white-space: pre;
-        overflow-x: auto;
-      }
-
-      .compare-box pre .fn {
-        color: #6c41f0;
-      }
-
-      .compare-box pre .str {
-        color: #00e5b9;
-      }
-
-      .compare-box pre .kw {
-        color: #d52e66;
-      }
-
-      .compare-box pre .cmt {
-        color: #4a4a60;
-      }
-
-      .compare-box .lib-size {
-        display: inline-block;
-        margin-top: 0.5rem;
-        font-size: 0.65rem;
-        font-weight: 600;
-        padding: 0.15em 0.5em;
-        border-radius: 3px;
-      }
-
-      .before .lib-size {
-        background: rgba(213, 46, 102, 0.12);
-        color: #d52e66;
-      }
-
-      .after .lib-size {
-        background: rgba(0, 229, 185, 0.12);
-        color: #00e5b9;
-      }
-
-      /* ==========================================================
-         Instructions
-         ========================================================== */
-      .instructions {
-        text-align: center;
-        margin-top: 1.25rem;
-        font-size: 0.8rem;
-        color: #6a6a80;
-        line-height: 1.6;
-        max-width: 720px;
-        margin-left: auto;
-        margin-right: auto;
-      }
-
-      .instructions code {
-        font-size: 0.78rem;
-        background: #282840;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-family: "JetBrains Mono", monospace;
-        color: #00e5b9;
+        min-width: 2.5rem;
+        text-align: right;
       }
 
       @media (max-width: 540px) {
-        .color-row,
-        .export-row {
-          flex-direction: column;
-        }
-
-        .comparison {
+        .controls {
           grid-template-columns: 1fr;
         }
       }
     </style>
   </head>
   <body>
-    <h1>Social Card Generator</h1>
-    <p class="page-subtitle">
-      Edit rich HTML content and export as PNG or JPEG &mdash; no html2canvas
-      needed.
-    </p>
-
-    <div class="generator">
-      <!-- ============================================
-           CANVAS PREVIEW
-           The <canvas> with layoutsubtree renders its
-           child HTML as the social card. This is the
-           native replacement for html2canvas — one
-           drawElementImage() call captures the entire
-           HTML/CSS output pixel-perfectly.
-           ============================================ -->
-      <div class="preview">
-        <canvas
-          id="canvas"
-          width="1200"
-          height="630"
-          layoutsubtree
-          aria-label="Social card preview"
-        >
-          <!--
-            This single <div> IS the social card. All visual
-            richness comes from CSS: gradients, custom fonts,
-            border-radius, shadows, layered decorative shapes.
-            drawElementImage() renders it all in one call.
-          -->
-          <div id="card">
-            <div class="deco deco-1"></div>
-            <div class="deco deco-2"></div>
-            <div class="deco deco-3"></div>
-            <div class="card-content">
-              <span class="card-tag" id="card-tag">Blog Post</span>
-              <h2 class="card-title" id="card-title">
-                Building the Future of Web Rendering
-              </h2>
-              <p class="card-desc" id="card-desc">
-                Native HTML-to-canvas rendering replaces html2canvas with a
-                single API call.
-              </p>
-              <div class="card-footer">
-                <div class="card-author">
-                  <span class="avatar" id="card-avatar">JD</span>
-                  <span class="author-name" id="card-author-name">Jane Doe</span>
-                </div>
-                <span class="card-domain">html-in-canvas.dev</span>
+    <div class="stage">
+      <canvas
+        id="canvas"
+        width="1200"
+        height="630"
+        layoutsubtree
+        aria-label="Social card preview"
+      >
+        <div id="card">
+          <div class="deco deco-1"></div>
+          <div class="deco deco-2"></div>
+          <div class="deco deco-3"></div>
+          <div class="card-content">
+            <span class="card-tag" id="card-tag">Blog Post</span>
+            <h2 class="card-title" id="card-title">
+              Building the Future of Web Rendering
+            </h2>
+            <p class="card-desc" id="card-desc">
+              Native HTML-to-canvas rendering replaces html2canvas with a
+              single API call.
+            </p>
+            <div class="card-footer">
+              <div class="card-author">
+                <span class="avatar" id="card-avatar">JD</span>
+                <span class="author-name" id="card-author-name">Jane Doe</span>
               </div>
+              <span class="card-domain">html-in-canvas.dev</span>
             </div>
           </div>
-        </canvas>
-      </div>
+        </div>
+      </canvas>
 
-      <!-- ============================================
-           CONTROLS
-           Standard form inputs update the card's HTML
-           content and CSS custom properties. Each change
-           triggers requestPaint() to re-render.
-           ============================================ -->
       <div class="controls">
-        <div class="control-row">
+        <div class="control control-wide">
           <label for="input-title">Title</label>
-          <input
-            type="text"
-            id="input-title"
-            value="Building the Future of Web Rendering"
-          />
+          <input type="text" id="input-title" value="Building the Future of Web Rendering" />
         </div>
-
-        <div class="control-row">
+        <div class="control control-wide">
           <label for="input-desc">Description</label>
-          <input
-            type="text"
-            id="input-desc"
-            value="Native HTML-to-canvas rendering replaces html2canvas with a single API call."
-          />
+          <input type="text" id="input-desc" value="Native HTML-to-canvas rendering replaces html2canvas with a single API call." />
         </div>
-
-        <div class="control-row">
+        <div class="control">
           <label for="input-author">Author</label>
           <input type="text" id="input-author" value="Jane Doe" />
         </div>
-
-        <div class="control-row color-row">
-          <div class="color-group">
-            <label for="input-color1">Start Color</label>
+        <div class="control">
+          <label>Gradient</label>
+          <div class="swatches">
             <input type="color" id="input-color1" value="#6c41f0" />
-          </div>
-          <div class="color-group">
-            <label for="input-color2">End Color</label>
             <input type="color" id="input-color2" value="#00e5b9" />
-          </div>
-          <div class="angle-group">
-            <label for="input-angle">
-              Angle <span id="angle-value">135</span>&deg;
-            </label>
-            <input
-              type="range"
-              id="input-angle"
-              min="0"
-              max="360"
-              value="135"
-            />
+            <input type="range" id="input-angle" min="0" max="360" value="135" />
           </div>
         </div>
-
-        <div class="control-row export-row">
-          <div class="format-group">
-            <label for="input-format">Format</label>
-            <select id="input-format">
-              <option value="image/png">PNG (lossless)</option>
-              <option value="image/jpeg">JPEG (smaller)</option>
-            </select>
-          </div>
-          <div class="quality-group" id="quality-group" hidden>
-            <label for="input-quality">
-              Quality <span id="quality-value">92</span>%
-            </label>
-            <input
-              type="range"
-              id="input-quality"
-              min="10"
-              max="100"
-              step="5"
-              value="92"
-            />
-          </div>
-          <button id="btn-download" type="button">Download Image</button>
+        <div class="actions">
+          <select id="input-format">
+            <option value="image/png">PNG</option>
+            <option value="image/jpeg">JPEG</option>
+          </select>
+          <input type="range" id="input-quality" min="10" max="100" step="5" value="92" hidden />
+          <span class="quality-display" id="quality-value" hidden>92%</span>
+          <button id="btn-download" type="button">Download</button>
         </div>
       </div>
     </div>
-
-    <!-- ============================================
-         BEFORE / AFTER COMPARISON
-         Shows the value proposition: one native API
-         call replaces an entire third-party library.
-         ============================================ -->
-    <div class="comparison">
-      <div class="compare-box before">
-        <h3>Before (html2canvas)</h3>
-        <pre><span class="kw">import</span> html2canvas <span class="kw">from</span> <span class="str">'html2canvas'</span>;
-
-<span class="kw">const</span> canvas = <span class="kw">await</span> <span class="fn">html2canvas</span>(el);
-canvas.<span class="fn">toBlob</span>(<span class="fn">download</span>);</pre>
-        <span class="lib-size">+130 KB library</span>
-      </div>
-      <div class="compare-box after">
-        <h3>After (native API)</h3>
-        <pre><span class="cmt">// No import needed</span>
-
-ctx.<span class="fn">drawElementImage</span>(el, 0, 0);
-canvas.<span class="fn">toBlob</span>(<span class="fn">download</span>);</pre>
-        <span class="lib-size">0 KB &mdash; built into the browser</span>
-      </div>
-    </div>
-
-    <p class="instructions">
-      Edit the fields to customize your social card. Click
-      <strong>Download</strong> to export via
-      <code>canvas.toBlob()</code>.<br />
-      The canvas renders live HTML using
-      <code>drawElementImage()</code> &mdash; pixel-perfect, no screenshot
-      library needed.
-    </p>
 
     <script>
       // Resolve the script's root: a ShadowRoot when mounted via shadow
@@ -601,60 +395,35 @@ canvas.<span class="fn">toBlob</span>(<span class="fn">download</span>);</pre>
       const root = window.__demoRoot ?? document;
       const $ = (id) => root.getElementById(id);
 
-      // =============================================================
-      // CANVAS SETUP
-      // =============================================================
       const canvas = $("canvas");
       const ctx = canvas.getContext("2d");
       const card = $("card");
 
-      // =============================================================
-      // PAINT CALLBACK
-      // This is the core of the demo: drawElementImage() renders the
-      // card's full HTML/CSS output — gradients, custom fonts (Google
-      // Fonts Montserrat), border-radius, layered decorative shapes,
-      // shadows — into the canvas in a single call.
-      //
-      // This REPLACES html2canvas: instead of a 130 KB library that
-      // reverse-engineers CSS rendering, the browser paints its own
-      // HTML natively to the canvas.
-      // =============================================================
+      // Paint callback — drawElementImage() captures the entire HTML
+      // card (gradients, custom fonts, layered shapes, everything) in
+      // a single call. This is the native replacement for html2canvas.
       function paintCard() {
         const dpr = devicePixelRatio;
         const w = canvas.width / dpr;
         const h = canvas.height / dpr;
-
         ctx.clearRect(0, 0, w, h);
-
-        // One call replaces an entire screenshot library:
         const transform = ctx.drawElementImage(card, 0, 0);
-        if (transform) {
-          card.style.transform = transform.toString();
-        }
+        if (transform) card.style.transform = transform.toString();
       }
-
       canvas.onpaint = paintCard;
 
-      // =============================================================
-      // RESIZE OBSERVER
-      // Keeps the canvas bitmap in sync with its CSS layout size so
-      // output stays crisp at any viewport width or device pixel ratio.
-      // =============================================================
-      const ro = new ResizeObserver(([entry]) => {
+      // ResizeObserver: keep the canvas bitmap synced to its CSS size
+      // at devicePixelRatio. requestPaint() so the browser's paint
+      // pipeline runs and generates the cached paint records.
+      new ResizeObserver(([entry]) => {
         const { width, height } = entry.contentRect;
         canvas.width = Math.round(width * devicePixelRatio);
         canvas.height = Math.round(height * devicePixelRatio);
         ctx.scale(devicePixelRatio, devicePixelRatio);
         canvas.requestPaint?.();
-      });
-      ro.observe(canvas);
+      }).observe(canvas);
 
-      // =============================================================
-      // CONTROLS -> CARD UPDATES
-      // Standard DOM manipulation: update text content and CSS custom
-      // properties on the card element, then request a repaint. The
-      // canvas re-renders the updated HTML automatically.
-      // =============================================================
+      // ── Inputs → card mutations ──────────────────────────
       const inputTitle = $("input-title");
       const inputDesc = $("input-desc");
       const inputAuthor = $("input-author");
@@ -663,16 +432,13 @@ canvas.<span class="fn">toBlob</span>(<span class="fn">download</span>);</pre>
       const inputAngle = $("input-angle");
       const inputFormat = $("input-format");
       const inputQuality = $("input-quality");
-      const angleValue = $("angle-value");
       const qualityValue = $("quality-value");
-      const qualityGroup = $("quality-group");
 
       const cardTitle = $("card-title");
       const cardDesc = $("card-desc");
       const cardAuthorName = $("card-author-name");
       const cardAvatar = $("card-avatar");
 
-      /** Extract up to two initials from a name. */
       function getInitials(name) {
         return name
           .split(/\s+/)
@@ -683,16 +449,10 @@ canvas.<span class="fn">toBlob</span>(<span class="fn">download</span>);</pre>
           .slice(0, 2);
       }
 
-      /** Request a canvas repaint after a DOM change. */
       function requestRepaint() {
-        if (canvas.requestPaint) {
-          canvas.requestPaint();
-        } else if (canvas.onpaint) {
-          canvas.onpaint();
-        }
+        canvas.requestPaint?.();
       }
 
-      // ---- Text inputs ----
       inputTitle.addEventListener("input", () => {
         cardTitle.textContent = inputTitle.value || "Untitled";
         requestRepaint();
@@ -704,69 +464,60 @@ canvas.<span class="fn">toBlob</span>(<span class="fn">download</span>);</pre>
       });
 
       inputAuthor.addEventListener("input", () => {
-        const name = inputAuthor.value || "Author";
-        cardAuthorName.textContent = name;
-        cardAvatar.textContent = getInitials(name);
+        cardAuthorName.textContent = inputAuthor.value || "Anonymous";
+        cardAvatar.textContent = getInitials(inputAuthor.value || "??");
         requestRepaint();
       });
 
-      // ---- Gradient controls ----
-      inputColor1.addEventListener("input", () => {
+      function updateGradient() {
         card.style.setProperty("--gradient-start", inputColor1.value);
-        requestRepaint();
-      });
-
-      inputColor2.addEventListener("input", () => {
         card.style.setProperty("--gradient-end", inputColor2.value);
-        requestRepaint();
-      });
-
-      inputAngle.addEventListener("input", () => {
-        angleValue.textContent = inputAngle.value;
         card.style.setProperty("--gradient-angle", inputAngle.value + "deg");
         requestRepaint();
-      });
+      }
 
-      // ---- Export format controls ----
+      inputColor1.addEventListener("input", updateGradient);
+      inputColor2.addEventListener("input", updateGradient);
+      inputAngle.addEventListener("input", updateGradient);
+
+      // Show/hide quality slider based on format
       inputFormat.addEventListener("change", () => {
-        qualityGroup.hidden = inputFormat.value !== "image/jpeg";
+        const isJpeg = inputFormat.value === "image/jpeg";
+        inputQuality.hidden = !isJpeg;
+        qualityValue.hidden = !isJpeg;
       });
 
       inputQuality.addEventListener("input", () => {
-        qualityValue.textContent = inputQuality.value;
+        qualityValue.textContent = inputQuality.value + "%";
       });
 
-      // =============================================================
-      // EXPORT / DOWNLOAD
-      // canvas.toBlob() exports the rendered HTML as a raster image.
-      // Because drawElementImage() renders real HTML, the output is
-      // pixel-perfect — matching exactly what the browser's CSS engine
-      // produces. No screenshot approximation, no missing styles.
-      // =============================================================
+      // Download — canvas.toBlob() captures the painted pixels.
+      // Because drawElementImage() rendered real HTML into the canvas
+      // moments ago, the resulting PNG/JPEG is pixel-perfect.
       $("btn-download").addEventListener("click", () => {
-          const format = inputFormat.value;
-          const quality =
-            format === "image/jpeg"
-              ? parseInt(inputQuality.value, 10) / 100
-              : undefined;
-          const ext = format === "image/jpeg" ? "jpg" : "png";
+        const format = inputFormat.value;
+        const quality =
+          format === "image/jpeg"
+            ? parseInt(inputQuality.value, 10) / 100
+            : undefined;
+        const ext = format === "image/jpeg" ? "jpg" : "png";
 
-          canvas.toBlob(
-            (blob) => {
-              if (!blob) return;
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = "social-card." + ext;
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-              URL.revokeObjectURL(url);
-            },
-            format,
-            quality
-          );
-        });
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return;
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "social-card." + ext;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          },
+          format,
+          quality,
+        );
+      });
     </script>
   </body>
 </html>

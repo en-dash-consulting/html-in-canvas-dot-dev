@@ -19,7 +19,8 @@
         height: 100%;
       }
 
-      :where(body, :host) {
+      body,
+      :host {
         margin: 0;
         min-height: 100%;
         background: #0a0a0f;
@@ -30,22 +31,6 @@
         align-items: center;
         padding: 1.5rem 1rem;
         overflow-x: hidden;
-      }
-
-      h1 {
-        font-size: 1.15rem;
-        font-weight: 700;
-        text-align: center;
-        margin-bottom: 0.25rem;
-      }
-
-      .page-subtitle {
-        text-align: center;
-        font-size: 0.8rem;
-        color: #6a6a80;
-        margin-bottom: 1.25rem;
-        max-width: 420px;
-        line-height: 1.4;
       }
 
       /* ============================================================
@@ -122,8 +107,25 @@
       #canvas {
         width: 100%;
         height: auto;
-        display: block;
+        display: grid;
+        grid-template-areas: "stack";
         border-radius: 16px;
+      }
+
+      /*
+       * Both layouts live in the same grid cell so they overlay each
+       * other. Position: absolute doesn't work on direct canvas
+       * children (Chrome forces them static), but display: grid does
+       * — and grid-area: stack lets two children share the same area.
+       *
+       * They're both always laid out so each has a cached paint
+       * record, which drawElementImage requires. We control which
+       * one is "shown" purely via canvas paint code (which one we
+       * draw in onpaint), not via display: none.
+       */
+      #canvas > .layout-a,
+      #canvas > .layout-b {
+        grid-area: stack;
       }
 
       /* ============================================================
@@ -427,7 +429,8 @@
       }
 
       @media (max-width: 480px) {
-        :where(body, :host) {
+        body,
+      :host {
           padding: 1rem 0.75rem;
         }
 
@@ -451,12 +454,6 @@
     </style>
   </head>
   <body>
-    <h1>Morphing Text Transitions</h1>
-    <p class="page-subtitle">
-      Two completely different HTML text layouts morph between each other using
-      pixel-level canvas manipulation. Select a transition and click morph.
-    </p>
-
     <div class="controls" id="controls">
       <button class="active" data-mode="crossfade">Crossfade</button>
       <button data-mode="dissolve">Dissolve</button>
@@ -527,37 +524,6 @@
       <span id="status-text">Showing layout A &mdash; ready to morph</span>
     </div>
 
-    <p class="hint">
-      Select a transition mode, then click <kbd>Morph</kbd> to blend between layouts
-    </p>
-
-    <div class="pipeline-info">
-      <p>
-        <strong>1.</strong> Two distinct HTML layouts live inside a
-        <code>&lt;canvas layoutsubtree&gt;</code> &mdash; each with unique
-        structure and styling
-      </p>
-      <p>
-        <strong>2.</strong>
-        <span class="hl">drawElementImage()</span> renders each layout into the
-        canvas bitmap separately
-      </p>
-      <p>
-        <strong>3.</strong>
-        <span class="hl">getImageData()</span> captures both as raw pixel
-        buffers for per-pixel blending
-      </p>
-      <p>
-        <strong>4.</strong> Custom transition algorithms
-        <span class="hl">blend the pixels</span> frame-by-frame: crossfade,
-        dissolve, wave wipe, or pixel sort
-      </p>
-      <p class="note">
-        These transitions work across entirely different DOM structures and text
-        content &mdash; something CSS transitions simply cannot do.
-      </p>
-    </div>
-
     <script>
       // Resolve the script's root: a ShadowRoot when mounted via shadow
       // DOM, or `document` when this file is served standalone.
@@ -602,13 +568,13 @@
         const rect = scene.getBoundingClientRect();
         const dpr = devicePixelRatio;
         const w = Math.round(rect.width * dpr);
-        /* Compute height from the current visible layout's aspect ratio */
-        const layoutEl = currentLayout === "a" ? layoutA : layoutB;
-        layoutEl.style.display = "";
-        const otherEl = currentLayout === "a" ? layoutB : layoutA;
-        otherEl.style.display = "none";
-        const layoutRect = layoutEl.getBoundingClientRect();
-        const aspect = layoutRect.height / layoutRect.width;
+        /* Both layouts are always laid out (grid-stack), so use the
+           taller of the two for the canvas aspect ratio. */
+        const aRect = layoutA.getBoundingClientRect();
+        const bRect = layoutB.getBoundingClientRect();
+        const layoutW = Math.max(aRect.width, bRect.width);
+        const layoutH = Math.max(aRect.height, bRect.height);
+        const aspect = layoutH / layoutW;
         const h = Math.round(w * aspect);
 
         if (canvas.width !== w || canvas.height !== h) {
@@ -639,19 +605,16 @@
       canvas.onpaint = () => {
         if (isMorphing) return;
         const el = currentLayout === "a" ? layoutA : layoutB;
-        const other = currentLayout === "a" ? layoutB : layoutA;
-        el.style.display = "";
-        other.style.display = "none";
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawElementImage(el, 0, 0, canvas.width, canvas.height);
       };
 
       /* ==============================================================
-         Capture a layout's pixels into an ImageData buffer
+         Capture a layout's pixels into an ImageData buffer.
+         Both layouts are always laid out and have cached paint
+         records, so no display toggling is needed.
          ============================================================== */
-      function captureLayout(layoutEl, otherEl) {
-        layoutEl.style.display = "";
-        otherEl.style.display = "none";
+      function captureLayout(layoutEl) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawElementImage(layoutEl, 0, 0, canvas.width, canvas.height);
         return ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -918,18 +881,12 @@
         /* Determine source and target */
         const srcEl = currentLayout === "a" ? layoutA : layoutB;
         const tgtEl = currentLayout === "a" ? layoutB : layoutA;
-        const srcOther = currentLayout === "a" ? layoutB : layoutA;
-        const tgtOther = currentLayout === "a" ? layoutA : layoutB;
 
-        /* Capture source pixels */
-        sourcePixels = captureLayout(srcEl, srcOther);
-
-        /* Capture target pixels at the same canvas dimensions */
-        targetPixels = captureLayout(tgtEl, tgtOther);
-
-        /* Restore source display so the transition starts visually correct */
-        srcEl.style.display = "";
-        tgtEl.style.display = "none";
+        /* Capture both layouts' pixels at the current canvas dims.
+           Both are always laid out (grid stack), so both have cached
+           paint records. */
+        sourcePixels = captureLayout(srcEl);
+        targetPixels = captureLayout(tgtEl);
 
         /* Generate noise for dissolve */
         if (transitionMode === "dissolve") {
@@ -1001,12 +958,8 @@
       }
 
       /* ==============================================================
-         Initial setup
+         Initial setup — both layouts always laid out via grid stack.
          ============================================================== */
-
-      /* Hide layout B initially */
-      layoutB.style.display = "none";
-
       syncCanvasSize();
       requestRepaint();
     </script>

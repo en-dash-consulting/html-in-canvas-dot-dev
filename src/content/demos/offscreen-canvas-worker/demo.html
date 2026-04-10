@@ -13,7 +13,8 @@
         height: 100%;
       }
 
-      :where(body, :host) {
+      body,
+      :host {
         display: block;
         margin: 0;
         min-height: 100%;
@@ -24,44 +25,19 @@
         overflow-y: auto;
       }
 
-      h1 {
-        text-align: center;
-        font-size: 1.25rem;
-        font-weight: 400;
-        color: #a0a0b8;
-        margin-bottom: 2rem;
-      }
-
       .layout {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 2rem;
-        max-width: 1100px;
+        max-width: 760px;
         margin: 0 auto;
-        align-items: start;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
       }
 
-      @media (max-width: 800px) {
-        .layout {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      /* ── Live demo panel ─────────────────────────────── */
       .demo-panel {
         background: #14141f;
         border-radius: 12px;
         padding: 1.5rem;
         border: 1px solid #282840;
-      }
-
-      .demo-panel h2 {
-        font-size: 0.8rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #6a6a80;
-        margin-bottom: 1rem;
       }
 
       /* ── Section labels ──────────────────────────────── */
@@ -307,179 +283,10 @@
         color: #8080a0;
       }
 
-      /* ── Code panel ──────────────────────────────────── */
-      .code-panel {
-        background: #14141f;
-        border-radius: 12px;
-        padding: 1.5rem;
-        border: 1px solid #282840;
-      }
-
-      .code-panel h2 {
-        font-size: 0.8rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #6a6a80;
-        margin-bottom: 1rem;
-      }
-
-      .code-block {
-        background: #0d0d18;
-        border-radius: 8px;
-        padding: 1.25rem;
-        overflow-x: auto;
-        border: 1px solid #1e1e30;
-      }
-
-      .code-block + .code-block {
-        margin-top: 1rem;
-      }
-
-      .code-block pre {
-        font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
-        font-size: 0.8rem;
-        line-height: 1.7;
-        white-space: pre;
-        color: #c0c0d0;
-      }
-
-      .code-label {
-        font-size: 0.7rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: #555570;
-        margin-bottom: 0.5rem;
-        margin-top: 1.25rem;
-      }
-
-      /* Syntax highlighting */
-      .kw { color: #c792ea; }
-      .at { color: #ffcb6b; }
-      .st { color: #c3e88d; }
-      .cm { color: #546e7a; }
-      .fn { color: #82aaff; }
-      .op { color: #89ddff; }
-      .nb { color: #f78c6c; }
-
-      .annotation {
-        display: block;
-        background: #1a1a2e;
-        border-left: 3px solid #6c41f0;
-        border-radius: 0 6px 6px 0;
-        padding: 0.5rem 0.75rem;
-        margin: 0.5rem 0;
-        font-family: system-ui, -apple-system, sans-serif;
-        font-size: 0.78rem;
-        line-height: 1.5;
-        color: #a0a0b8;
-      }
-
-      .annotation strong {
-        color: #e0e0f0;
-        font-weight: 600;
-      }
-
-      .annotation code {
-        background: #282840;
-        padding: 0.1em 0.35em;
-        border-radius: 3px;
-        font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
-        font-size: 0.75rem;
-        color: #c3e88d;
-      }
-
-      /* ── Concepts ────────────────────────────────────── */
-      .concepts {
-        margin-top: 1.5rem;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.75rem;
-      }
-
-      @media (max-width: 500px) {
-        .concepts {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      .concept {
-        background: #1a1a2e;
-        border-radius: 8px;
-        padding: 0.75rem 1rem;
-        border: 1px solid #282840;
-      }
-
-      .concept-name {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: #6c41f0;
-        margin-bottom: 0.25rem;
-        font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
-      }
-
-      .concept-desc {
-        font-size: 0.75rem;
-        color: #8080a0;
-        line-height: 1.4;
-      }
-
-      .concept-desc code {
-        background: #282840;
-        padding: 0.1em 0.3em;
-        border-radius: 3px;
-        font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
-        font-size: 0.7rem;
-        color: #c3e88d;
-      }
-
-      /* ── Flow diagram ────────────────────────────────── */
-      .flow-diagram {
-        background: #0d0d18;
-        border-radius: 8px;
-        padding: 1rem;
-        border: 1px solid #1e1e30;
-        margin-top: 1rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-        font-size: 0.72rem;
-        font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
-      }
-
-      .flow-step {
-        background: #1a1a2e;
-        border: 1px solid #282840;
-        border-radius: 6px;
-        padding: 0.4rem 0.65rem;
-        color: #a0a0b8;
-        white-space: nowrap;
-      }
-
-      .flow-step.main-thread {
-        border-color: #6c41f0;
-        color: #c792ea;
-      }
-
-      .flow-step.worker-thread {
-        border-color: #00b894;
-        color: #00e5b9;
-      }
-
-      .flow-arrow {
-        color: #4a4a60;
-        font-size: 0.9rem;
-      }
     </style>
   </head>
   <body>
-    <h1>OffscreenCanvas Worker</h1>
-
     <div class="layout">
-      <!-- ── Live demo ─────────────────────────────────── -->
       <div class="demo-panel">
         <h2>Live Result</h2>
 
@@ -544,136 +351,6 @@
         </div>
       </div>
 
-      <!-- ── Annotated source ──────────────────────────── -->
-      <div class="code-panel">
-        <h2>Annotated Source</h2>
-
-        <div class="code-label">Main Thread</div>
-        <div class="code-block"><pre>
-<span class="cm">// 1. Transfer canvas control to a worker</span>
-<span class="kw">const</span> canvas <span class="op">=</span> document.<span class="fn">getElementById</span>(<span class="st">"output"</span>);
-<span class="kw">const</span> offscreen <span class="op">=</span> canvas.<span class="fn">transferControlToOffscreen</span>();
-
-<span class="kw">const</span> worker <span class="op">=</span> <span class="kw">new</span> <span class="fn">Worker</span>(workerURL);
-worker.<span class="fn">postMessage</span>(
-  { <span class="at">type</span>: <span class="st">"init"</span>, <span class="at">canvas</span>: offscreen },
-  [offscreen]  <span class="cm">// transfer list</span>
-);
-<span class="annotation"><strong>OffscreenCanvas transfer.</strong> Calling <code>transferControlToOffscreen()</code> detaches the canvas backing store from the main thread. The worker now owns it exclusively &mdash; drawing happens off the main thread, keeping the UI responsive.</span>
-
-<span class="cm">// 2. Capture HTML as a transferable ElementImage</span>
-<span class="kw">const</span> source <span class="op">=</span> document.<span class="fn">getElementById</span>(<span class="st">"source"</span>);
-<span class="kw">const</span> image <span class="op">=</span> <span class="kw">await</span> <span class="fn">captureElementImage</span>(source);
-<span class="annotation"><strong>captureElementImage()</strong> takes a snapshot of a DOM element and produces an <code>ElementImage</code> &mdash; a lightweight, GPU-backed representation that can be transferred (zero-copy) to a worker via <code>postMessage</code>.</span>
-
-<span class="cm">// 3. Send the ElementImage to the worker</span>
-worker.<span class="fn">postMessage</span>(
-  { <span class="at">type</span>: <span class="st">"image"</span>, <span class="at">image</span>: image },
-  [image]  <span class="cm">// transferable &mdash; zero-copy</span>
-);
-<span class="annotation"><strong>Zero-copy transfer.</strong> By listing the <code>ElementImage</code> in the transfer list, ownership moves to the worker without serialization. The main thread can no longer use the image after transfer.</span>
-
-<span class="cm">// 4. Receive sync transform from worker</span>
-worker.<span class="at">onmessage</span> <span class="op">=</span> (e) <span class="op">=&gt;</span> {
-  <span class="kw">if</span> (e.data.<span class="at">type</span> <span class="op">===</span> <span class="st">"transform"</span>) {
-    <span class="kw">const</span> m <span class="op">=</span> e.data.<span class="at">matrix</span>;
-    source.style.<span class="at">transform</span> <span class="op">=</span>
-      <span class="st">`matrix(</span>${m.a}<span class="st">,</span>${m.b}<span class="st">,</span>${m.c}<span class="st">,</span>${m.d}<span class="st">,</span>${m.e}<span class="st">,</span>${m.f}<span class="st">)`</span>;
-  }
-};
-<span class="annotation"><strong>Transform sync.</strong> The worker sends back the <code>DOMMatrix</code> it used to draw the element. The main thread applies this as a CSS transform so hit testing and accessibility remain in sync with the visual position.</span></pre></div>
-
-        <div class="code-label">Worker Thread</div>
-        <div class="code-block"><pre>
-<span class="cm">// Worker: receive OffscreenCanvas + ElementImage</span>
-<span class="kw">let</span> canvas, ctx, currentImage;
-
-self.<span class="at">onmessage</span> <span class="op">=</span> (e) <span class="op">=&gt;</span> {
-  <span class="kw">const</span> msg <span class="op">=</span> e.data;
-
-  <span class="kw">if</span> (msg.<span class="at">type</span> <span class="op">===</span> <span class="st">"init"</span>) {
-    canvas <span class="op">=</span> msg.<span class="at">canvas</span>;
-    ctx <span class="op">=</span> canvas.<span class="fn">getContext</span>(<span class="st">"2d"</span>);
-    <span class="fn">tick</span>();
-  }
-
-  <span class="kw">if</span> (msg.<span class="at">type</span> <span class="op">===</span> <span class="st">"image"</span>) {
-    currentImage <span class="op">=</span> msg.<span class="at">image</span>;
-  }
-};
-<span class="annotation"><strong>Message dispatch.</strong> The worker handles two message types: <code>init</code> delivers the <code>OffscreenCanvas</code> (transferred, not copied), and <code>image</code> delivers a new <code>ElementImage</code> snapshot to draw.</span>
-
-<span class="cm">// Worker: animation loop</span>
-<span class="kw">function</span> <span class="fn">tick</span>() {
-  ctx.<span class="fn">clearRect</span>(<span class="nb">0</span>, <span class="nb">0</span>, canvas.<span class="at">width</span>, canvas.<span class="at">height</span>);
-
-  <span class="kw">if</span> (currentImage) {
-    ctx.<span class="fn">save</span>();
-    ctx.<span class="fn">translate</span>(cx, cy);
-    ctx.<span class="fn">rotate</span>(angle);
-    ctx.<span class="fn">drawImage</span>(currentImage, <span class="op">-</span>iw<span class="op">/</span><span class="nb">2</span>, <span class="op">-</span>ih<span class="op">/</span><span class="nb">2</span>);
-    <span class="kw">const</span> t <span class="op">=</span> ctx.<span class="fn">getTransform</span>();
-    ctx.<span class="fn">restore</span>();
-
-    <span class="cm">// Send transform back to main thread</span>
-    self.<span class="fn">postMessage</span>({
-      <span class="at">type</span>: <span class="st">"transform"</span>,
-      <span class="at">matrix</span>: { <span class="at">a</span>: t.a, <span class="at">b</span>: t.b, ... }
-    });
-  }
-
-  <span class="fn">requestAnimationFrame</span>(tick);
-}
-<span class="annotation"><strong>Worker animation.</strong> The worker runs its own <code>requestAnimationFrame</code> loop &mdash; completely independent of the main thread. <code>drawImage()</code> accepts the <code>ElementImage</code> just like any other image source. The transform matrix is sent back each frame for accessibility sync.</span></pre></div>
-
-        <!-- Data flow diagram -->
-        <div class="flow-diagram">
-          <div class="flow-step main-thread">captureElementImage()</div>
-          <div class="flow-arrow">&#x2192;</div>
-          <div class="flow-step">postMessage + transfer</div>
-          <div class="flow-arrow">&#x2192;</div>
-          <div class="flow-step worker-thread">drawImage()</div>
-          <div class="flow-arrow">&#x2192;</div>
-          <div class="flow-step">postMessage</div>
-          <div class="flow-arrow">&#x2192;</div>
-          <div class="flow-step main-thread">sync transform</div>
-        </div>
-
-        <div class="concepts">
-          <div class="concept">
-            <div class="concept-name">captureElementImage()</div>
-            <div class="concept-desc">
-              Captures a DOM element as a GPU-backed
-              <code>ElementImage</code> that can be transferred to
-              a worker without serialization overhead.
-            </div>
-          </div>
-          <div class="concept">
-            <div class="concept-name">OffscreenCanvas</div>
-            <div class="concept-desc">
-              <code>transferControlToOffscreen()</code> moves canvas
-              rendering to a worker, freeing the main thread from
-              all drawing work.
-            </div>
-          </div>
-          <div class="concept">
-            <div class="concept-name">Transferables</div>
-            <div class="concept-desc">
-              Both <code>OffscreenCanvas</code> and
-              <code>ElementImage</code> are transferable objects
-              &mdash; moved between threads at zero cost.
-            </div>
-          </div>
-          <div class="concept">
-            <div class="concept-name">Transform Sync</div>
-            <div class="concept-desc">
-              The worker sends back the <code>DOMMatrix</code> used
-              to draw, so the main thread can keep hit testing and
-              accessibility synchronized.
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
 
     <script>

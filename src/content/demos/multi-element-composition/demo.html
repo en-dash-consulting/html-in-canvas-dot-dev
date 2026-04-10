@@ -13,91 +13,127 @@
         height: 100%;
       }
 
-      :where(body, :host) {
+      body,
+      :host {
         display: block;
+        position: relative;
         margin: 0;
-        min-height: 100%;
-        background: #0a0a0f;
+        width: 100%;
+        min-height: min(78vh, 820px);
+        height: 100%;
+        background:
+          radial-gradient(
+            ellipse at top left,
+            rgba(108, 65, 240, 0.16),
+            transparent 55%
+          ),
+          radial-gradient(
+            ellipse at bottom right,
+            rgba(0, 229, 185, 0.13),
+            transparent 60%
+          ),
+          #0a0a0f;
         color: #f0f0f0;
         font-family: system-ui, -apple-system, sans-serif;
-        padding: 2rem;
-        overflow-y: auto;
+        overflow: hidden;
       }
 
-      h1 {
-        text-align: center;
-        font-size: 1.25rem;
-        font-weight: 400;
-        color: #a0a0b8;
-        margin-bottom: 2rem;
-      }
-
-      .layout {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 2rem;
-        max-width: 1100px;
-        margin: 0 auto;
-        align-items: start;
-      }
-
-      @media (max-width: 800px) {
-        .layout {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      /* ── Live demo panel ─────────────────────────────── */
-      .demo-panel {
-        background: #14141f;
-        border-radius: 12px;
-        padding: 1.5rem;
-        border: 1px solid #282840;
-      }
-
-      .demo-panel h2 {
-        font-size: 0.8rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #6a6a80;
-        margin-bottom: 1rem;
-      }
-
-      canvas {
+      #canvas {
+        position: absolute;
+        inset: 0;
         width: 100%;
-        aspect-ratio: 4 / 3;
+        height: 100%;
         display: block;
-        border-radius: 8px;
-        border: 1px solid #282840;
-        background: #0a0a0f;
         cursor: grab;
       }
 
-      canvas:active {
+      #canvas:active {
         cursor: grabbing;
       }
 
       /* ── Card elements drawn into the canvas ─────────── */
       .card {
-        padding: 1rem 1.25rem;
-        border-radius: 10px;
+        padding: 0.95rem 1.1rem;
+        border-radius: 12px;
         font-family: system-ui, -apple-system, sans-serif;
         font-size: 0.85rem;
         line-height: 1.4;
         color: #fff;
         user-select: none;
+        box-shadow:
+          0 18px 38px -18px rgba(0, 0, 0, 0.55),
+          0 0 0 1px rgba(255, 255, 255, 0.06);
       }
 
       .card h3 {
-        font-size: 0.9rem;
+        font-size: 0.78rem;
         font-weight: 700;
-        margin-bottom: 0.35rem;
+        margin: 0 0 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        opacity: 0.85;
+        cursor: grab;
       }
 
       .card p {
         font-size: 0.75rem;
         opacity: 0.85;
+        margin: 0;
+      }
+
+      /* Form controls inside the cards — real DOM, fully interactive */
+      .card input[type="text"] {
+        width: 100%;
+        padding: 0.45rem 0.7rem;
+        font-family: inherit;
+        font-size: 0.85rem;
+        color: #fff;
+        background: rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 6px;
+        outline: none;
+      }
+
+      .card input[type="text"]:focus {
+        border-color: rgba(255, 255, 255, 0.6);
+        background: rgba(0, 0, 0, 0.35);
+      }
+
+      .card input[type="range"] {
+        width: 100%;
+        accent-color: #fff;
+      }
+
+      .card .slider-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.7rem;
+        margin-bottom: 0.35rem;
+        opacity: 0.85;
+      }
+
+      .card select {
+        width: 100%;
+        padding: 0.45rem 0.7rem;
+        font-family: inherit;
+        font-size: 0.85rem;
+        color: #fff;
+        background: rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 6px;
+        outline: none;
+        appearance: none;
+        cursor: pointer;
+      }
+
+      .card input[type="color"] {
+        width: 100%;
+        height: 36px;
+        padding: 2px;
+        background: rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 6px;
+        cursor: pointer;
       }
 
       .card-image {
@@ -108,6 +144,9 @@
         justify-content: center;
         font-size: 2.5rem;
         user-select: none;
+        box-shadow:
+          0 18px 38px -18px rgba(0, 0, 0, 0.55),
+          0 0 0 1px rgba(255, 255, 255, 0.06);
       }
 
       .card-button {
@@ -122,6 +161,7 @@
         cursor: pointer;
         user-select: none;
         transition: background 0.15s;
+        box-shadow: 0 18px 38px -18px rgba(0, 0, 0, 0.55);
       }
 
       .card-button:hover {
@@ -136,23 +176,23 @@
       /* Individual card themes */
       #card-a {
         background: linear-gradient(135deg, #6c41f0, #9b6dff);
-        width: 180px;
+        width: 230px;
       }
 
       #card-b {
         background: linear-gradient(135deg, #00b894, #00e5b9);
-        width: 140px;
+        width: 220px;
       }
 
       #card-c {
         background: linear-gradient(135deg, #e84393, #fd79a8);
-        width: 100px;
-        height: 100px;
+        width: 110px;
+        height: 110px;
       }
 
       #card-d {
         background: linear-gradient(135deg, #0984e3, #74b9ff);
-        width: 160px;
+        width: 200px;
       }
 
       #card-e {
@@ -160,299 +200,93 @@
         width: auto;
       }
 
-      /* ── Info panels below canvas ────────────────────── */
+      /* Floating info badge — top-left of stage */
+      .info-badge {
+        position: absolute;
+        top: 1.25rem;
+        left: 1.25rem;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0.7rem 0.9rem;
+        background: rgba(15, 15, 22, 0.78);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        backdrop-filter: blur(10px);
+        font-family: system-ui, -apple-system, sans-serif;
+        max-width: 18rem;
+      }
+
       .info-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.75rem;
-        margin-top: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
       }
 
-      .info-box {
-        background: #1a1a2e;
-        border-radius: 8px;
-        padding: 0.75rem 1rem;
-        border: 1px solid #282840;
-      }
-
-      .info-box .label {
-        font-size: 0.7rem;
+      .info-row .label {
+        font-size: 0.62rem;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.06em;
         color: #6a6a80;
-        margin-bottom: 0.35rem;
       }
 
-      .info-box .value {
+      .info-row .value {
         font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
-        font-size: 0.78rem;
+        font-size: 0.75rem;
         color: #00e5b9;
-        line-height: 1.5;
-        white-space: pre-wrap;
+        line-height: 1.4;
         word-break: break-all;
       }
 
-      .info-box .hint {
-        font-size: 0.65rem;
+      .info-row .hint {
+        font-size: 0.62rem;
         color: #555570;
-        margin-top: 0.25rem;
-      }
-
-      /* ── Code panel ──────────────────────────────────── */
-      .code-panel {
-        background: #14141f;
-        border-radius: 12px;
-        padding: 1.5rem;
-        border: 1px solid #282840;
-      }
-
-      .code-panel h2 {
-        font-size: 0.8rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #6a6a80;
-        margin-bottom: 1rem;
-      }
-
-      .code-block {
-        background: #0d0d18;
-        border-radius: 8px;
-        padding: 1.25rem;
-        overflow-x: auto;
-        border: 1px solid #1e1e30;
-      }
-
-      .code-block pre {
-        font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
-        font-size: 0.8rem;
-        line-height: 1.7;
-        white-space: pre;
-        color: #c0c0d0;
-      }
-
-      /* Syntax highlighting */
-      .kw { color: #c792ea; }
-      .at { color: #ffcb6b; }
-      .st { color: #c3e88d; }
-      .cm { color: #546e7a; }
-      .fn { color: #82aaff; }
-      .op { color: #89ddff; }
-      .nb { color: #f78c6c; }
-
-      .annotation {
-        display: block;
-        background: #1a1a2e;
-        border-left: 3px solid #6c41f0;
-        border-radius: 0 6px 6px 0;
-        padding: 0.5rem 0.75rem;
-        margin: 0.5rem 0;
-        font-family: system-ui, -apple-system, sans-serif;
-        font-size: 0.78rem;
-        line-height: 1.5;
-        color: #a0a0b8;
-      }
-
-      .annotation strong {
-        color: #e0e0f0;
-        font-weight: 600;
-      }
-
-      .annotation code {
-        background: #282840;
-        padding: 0.1em 0.35em;
-        border-radius: 3px;
-        font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
-        font-size: 0.75rem;
-        color: #c3e88d;
-      }
-
-      /* ── Concepts ────────────────────────────────────── */
-      .concepts {
-        margin-top: 1.5rem;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.75rem;
-      }
-
-      @media (max-width: 500px) {
-        .concepts {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      .concept {
-        background: #1a1a2e;
-        border-radius: 8px;
-        padding: 0.75rem 1rem;
-        border: 1px solid #282840;
-      }
-
-      .concept-name {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: #6c41f0;
-        margin-bottom: 0.25rem;
-        font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
-      }
-
-      .concept-desc {
-        font-size: 0.75rem;
-        color: #8080a0;
-        line-height: 1.4;
       }
     </style>
   </head>
   <body>
-    <h1>Multi-Element Composition</h1>
-
-    <div class="layout">
-      <!-- ── Live demo ─────────────────────────────────── -->
-      <div class="demo-panel">
-        <h2>Live Result</h2>
-
-        <canvas id="canvas" layoutsubtree>
-          <!--
-            Each child is an independent element drawn at its own
-            position. The drawing order determines z-stacking.
-          -->
-          <div id="card-a" class="card">
-            <h3>Draggable Card</h3>
-            <p>Grab and move me around the canvas.</p>
-          </div>
-
-          <div id="card-b" class="card">
-            <h3>Scalable</h3>
-            <p>Drawn at 0.9&times; scale.</p>
-          </div>
-
-          <div id="card-c" class="card-image" style="background: linear-gradient(135deg, #e84393, #fd79a8);">
-            &#x1F3A8;
-          </div>
-
-          <div id="card-d" class="card">
-            <h3>Rotated</h3>
-            <p>A slight tilt via canvas transform.</p>
-          </div>
-
-          <button id="card-e" class="card-button">Click to Shuffle Z-Order</button>
-        </canvas>
-
-        <div class="info-row">
-          <div class="info-box">
-            <div class="label">Z-Order (back to front)</div>
-            <div class="value" id="z-order-display">A, B, C, D, E</div>
-            <div class="hint">Drag an element to bring it to front</div>
-          </div>
-          <div class="info-box">
-            <div class="label">Last Paint Info</div>
-            <div class="value" id="paint-info">Waiting for paint...</div>
-            <div class="hint">Shows changedElements data</div>
-          </div>
-        </div>
+    <canvas id="canvas" layoutsubtree>
+      <div id="card-a" class="card">
+        <h3>✏️ Text input</h3>
+        <input type="text" placeholder="Type something..." value="Real DOM!" />
       </div>
 
-      <!-- ── Annotated source ──────────────────────────── -->
-      <div class="code-panel">
-        <h2>Annotated Source</h2>
-
-        <div class="code-block"><pre>
-<span class="cm">&lt;!-- 1. Multiple children in one canvas --&gt;</span>
-<span class="op">&lt;</span><span class="kw">canvas</span> <span class="at">id</span><span class="op">=</span><span class="st">"canvas"</span> <span class="at">layoutsubtree</span><span class="op">&gt;</span>
-  <span class="op">&lt;</span><span class="kw">div</span> <span class="at">id</span><span class="op">=</span><span class="st">"card-a"</span><span class="op">&gt;</span>Draggable Card<span class="op">&lt;/</span><span class="kw">div</span><span class="op">&gt;</span>
-  <span class="op">&lt;</span><span class="kw">div</span> <span class="at">id</span><span class="op">=</span><span class="st">"card-b"</span><span class="op">&gt;</span>Scalable<span class="op">&lt;/</span><span class="kw">div</span><span class="op">&gt;</span>
-  <span class="op">&lt;</span><span class="kw">div</span> <span class="at">id</span><span class="op">=</span><span class="st">"card-c"</span><span class="op">&gt;</span>&#x1F3A8;<span class="op">&lt;/</span><span class="kw">div</span><span class="op">&gt;</span>
-  <span class="op">&lt;</span><span class="kw">div</span> <span class="at">id</span><span class="op">=</span><span class="st">"card-d"</span><span class="op">&gt;</span>Rotated<span class="op">&lt;/</span><span class="kw">div</span><span class="op">&gt;</span>
-  <span class="op">&lt;</span><span class="kw">button</span> <span class="at">id</span><span class="op">=</span><span class="st">"card-e"</span><span class="op">&gt;</span>Shuffle<span class="op">&lt;/</span><span class="kw">button</span><span class="op">&gt;</span>
-<span class="op">&lt;/</span><span class="kw">canvas</span><span class="op">&gt;</span>
-<span class="annotation"><strong>Multiple children</strong> &mdash; each element is drawn independently with its own position and transform. They are all real DOM elements with full interactivity.</span>
-
-<span class="cm">// 2. Element state: position, rotation, scale</span>
-<span class="kw">const</span> elements <span class="op">=</span> [
-  { el, x: <span class="nb">30</span>,  y: <span class="nb">20</span>,  rotate: <span class="nb">0</span>,   scale: <span class="nb">1</span>   },
-  { el, x: <span class="nb">240</span>, y: <span class="nb">30</span>,  rotate: <span class="nb">0</span>,   scale: <span class="nb">0.9</span> },
-  { el, x: <span class="nb">160</span>, y: <span class="nb">160</span>, rotate: <span class="nb">0</span>,   scale: <span class="nb">1</span>   },
-  { el, x: <span class="nb">50</span>,  y: <span class="nb">200</span>, rotate: <span class="nb">-5</span>,  scale: <span class="nb">1</span>   },
-  { el, x: <span class="nb">280</span>, y: <span class="nb">250</span>, rotate: <span class="nb">0</span>,   scale: <span class="nb">1</span>   },
-];
-<span class="annotation"><strong>Composition state</strong> &mdash; each element tracks its own x/y position, rotation angle, and scale factor. The array order defines z-stacking: first drawn = furthest back.</span>
-
-<span class="cm">// 3. Paint callback with changedElements</span>
-canvas.<span class="at">onpaint</span> <span class="op">=</span> (<span class="at">event</span>) <span class="op">=&gt;</span> {
-  ctx.<span class="fn">reset</span>();
-
-  <span class="cm">// Draw a subtle grid background</span>
-  <span class="fn">drawGrid</span>(ctx, w, h);
-
-  <span class="cm">// Draw each element in z-order</span>
-  <span class="kw">for</span> (<span class="kw">const</span> item <span class="kw">of</span> elements) {
-    ctx.<span class="fn">save</span>();
-    ctx.<span class="fn">translate</span>(item.x, item.y);
-    ctx.<span class="fn">rotate</span>(item.rotate <span class="op">*</span> Math.PI <span class="op">/</span> <span class="nb">180</span>);
-    ctx.<span class="fn">scale</span>(item.scale, item.scale);
-    <span class="kw">const</span> t <span class="op">=</span> ctx.<span class="fn">drawElementImage</span>(item.el, <span class="nb">0</span>, <span class="nb">0</span>);
-    item.el.style.<span class="at">transform</span> <span class="op">=</span> t.<span class="fn">toString</span>();
-    ctx.<span class="fn">restore</span>();
-  }
-};
-<span class="annotation"><strong>Z-ordering by draw order.</strong> Elements drawn later appear on top. Each element gets its own <code>save/translate/rotate/scale/restore</code> block. The <code>DOMMatrix</code> from <code>drawElementImage()</code> syncs hit testing for every element independently.</span>
-
-<span class="cm">// 4. Drag handling</span>
-canvas.<span class="fn">addEventListener</span>(<span class="st">"pointerdown"</span>, (e) <span class="op">=&gt;</span> {
-  <span class="cm">// Hit test: find topmost element</span>
-  <span class="kw">const</span> hit <span class="op">=</span> <span class="fn">hitTest</span>(e.offsetX, e.offsetY);
-  <span class="kw">if</span> (<span class="op">!</span>hit) <span class="kw">return</span>;
-
-  <span class="cm">// Move to front (end of array)</span>
-  elements.<span class="fn">splice</span>(elements.<span class="fn">indexOf</span>(hit), <span class="nb">1</span>);
-  elements.<span class="fn">push</span>(hit);
-
-  <span class="cm">// Track drag offset</span>
-  <span class="kw">const</span> startX <span class="op">=</span> e.offsetX <span class="op">-</span> hit.x;
-  <span class="kw">const</span> startY <span class="op">=</span> e.offsetY <span class="op">-</span> hit.y;
-
-  <span class="kw">const</span> <span class="fn">onMove</span> <span class="op">=</span> (ev) <span class="op">=&gt;</span> {
-    hit.x <span class="op">=</span> ev.offsetX <span class="op">-</span> startX;
-    hit.y <span class="op">=</span> ev.offsetY <span class="op">-</span> startY;
-    canvas.<span class="fn">requestPaint</span>();
-  };
-  ...
-});
-<span class="annotation"><strong>Drag-to-reposition.</strong> On pointer down we find the topmost element at that coordinate, move it to the end of the draw array (bringing it to front), and update its position on every pointer move. <code>requestPaint()</code> triggers a new paint pass.</span>
-</pre></div>
-
-        <div class="concepts">
-          <div class="concept">
-            <div class="concept-name">Z-ordering</div>
-            <div class="concept-desc">
-              Drawing order determines stacking. Elements drawn last
-              appear on top. Reorder the array to change z-index.
-            </div>
-          </div>
-          <div class="concept">
-            <div class="concept-name">changedElements</div>
-            <div class="concept-desc">
-              The <code>onpaint</code> event can report which elements
-              changed, enabling selective repaint optimizations.
-            </div>
-          </div>
-          <div class="concept">
-            <div class="concept-name">Per-element transforms</div>
-            <div class="concept-desc">
-              Each element gets its own <code>save/restore</code> block
-              with independent translate, rotate, and scale.
-            </div>
-          </div>
-          <div class="concept">
-            <div class="concept-name">requestPaint()</div>
-            <div class="concept-desc">
-              Called during drag to trigger a repaint after updating an
-              element's position. The browser batches paint requests
-              efficiently.
-            </div>
-          </div>
+      <div id="card-b" class="card">
+        <h3>🎚️ Range</h3>
+        <div class="slider-label">
+          <span>Drag the slider</span>
+          <span id="slider-val">50</span>
         </div>
+        <input id="slider" type="range" min="0" max="100" value="50" />
+      </div>
+
+      <div id="card-c" class="card-image">&#x1F3A8;</div>
+
+      <div id="card-d" class="card">
+        <h3>📋 Select</h3>
+        <select>
+          <option>Crossfade</option>
+          <option>Dissolve</option>
+          <option>Wipe</option>
+          <option>Pixel sort</option>
+        </select>
+      </div>
+
+      <button id="card-e" class="card-button">Shuffle z-order</button>
+    </canvas>
+
+    <div class="info-badge">
+      <div class="info-row">
+        <span class="label">Z-order (back → front)</span>
+        <span class="value" id="z-order-display">A → B → C → D → E</span>
+        <span class="hint">Drag any element to bring it to the front</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Last paint</span>
+        <span class="value" id="paint-info">waiting…</span>
+        <span class="hint">Reports event.changedElements</span>
       </div>
     </div>
 
@@ -462,124 +296,71 @@ canvas.<span class="fn">addEventListener</span>(<span class="st">"pointerdown"</
       const root = window.__demoRoot ?? document;
       const $ = (id) => root.getElementById(id);
 
-      /* ── Canvas setup ──────────────────────────────── */
       const canvas = $("canvas");
       const ctx = canvas.getContext("2d");
       const zOrderDisplay = $("z-order-display");
       const paintInfo = $("paint-info");
 
-      /* ── Element definitions ───────────────────────── */
       const cardA = $("card-a");
       const cardB = $("card-b");
       const cardC = $("card-c");
       const cardD = $("card-d");
       const cardE = $("card-e");
 
-      /*
-       * Each element has a position (x, y), rotation (degrees),
-       * and scale factor. Array order = z-order (first = back).
-       */
+      // Each element has its own position, rotation, and scale.
+      // Array order = z-order (first = back).
       const elements = [
-        { el: cardA, label: "A", x: 30,  y: 20,  rotate: 0,  scale: 1   },
-        { el: cardB, label: "B", x: 240, y: 30,  rotate: 0,  scale: 0.9 },
-        { el: cardC, label: "C", x: 160, y: 160, rotate: 0,  scale: 1   },
-        { el: cardD, label: "D", x: 50,  y: 200, rotate: -5, scale: 1   },
-        { el: cardE, label: "E", x: 270, y: 260, rotate: 0,  scale: 1   },
+        { el: cardA, label: "A", x: 60,  y: 60,  rotate: 0,  scale: 1   },
+        { el: cardB, label: "B", x: 320, y: 90,  rotate: 0,  scale: 0.9 },
+        { el: cardC, label: "C", x: 200, y: 220, rotate: 0,  scale: 1   },
+        { el: cardD, label: "D", x: 80,  y: 290, rotate: -5, scale: 1   },
+        { el: cardE, label: "E", x: 360, y: 360, rotate: 0,  scale: 1   },
       ];
 
       let cssW = 0;
       let cssH = 0;
       let paintCount = 0;
 
-      /* ── Draw a subtle dot grid behind the cards ──── */
+      // Subtle dot-grid background
       function drawGrid(context, w, h) {
-        context.fillStyle = "#1a1a2e";
-        const step = 20;
+        context.fillStyle = "rgba(108, 65, 240, 0.08)";
+        const step = 32;
         for (let gx = step; gx < w; gx += step) {
           for (let gy = step; gy < h; gy += step) {
             context.beginPath();
-            context.arc(gx, gy, 1, 0, Math.PI * 2);
+            context.arc(gx, gy, 1.2, 0, Math.PI * 2);
             context.fill();
           }
         }
       }
 
-      /* ── Draw drop shadow beneath a card ───────────── */
-      function drawShadow(context, item) {
-        const el = item.el;
-        const w = el.offsetWidth;
-        const h = el.offsetHeight;
-
-        context.save();
-        context.translate(item.x, item.y);
-        context.rotate((item.rotate * Math.PI) / 180);
-        context.scale(item.scale, item.scale);
-        context.shadowColor = "rgba(0, 0, 0, 0.35)";
-        context.shadowBlur = 16;
-        context.shadowOffsetX = 0;
-        context.shadowOffsetY = 4;
-        context.fillStyle = "rgba(0, 0, 0, 0)";
-
-        /* Draw an invisible rect to cast the shadow */
-        const r = 10;
-        context.beginPath();
-        context.moveTo(r, 0);
-        context.lineTo(w - r, 0);
-        context.quadraticCurveTo(w, 0, w, r);
-        context.lineTo(w, h - r);
-        context.quadraticCurveTo(w, h, w - r, h);
-        context.lineTo(r, h);
-        context.quadraticCurveTo(0, h, 0, h - r);
-        context.lineTo(0, r);
-        context.quadraticCurveTo(0, 0, r, 0);
-        context.closePath();
-        context.fill();
-
-        context.restore();
-      }
-
-      /* ── Update the z-order display ────────────────── */
       function updateZDisplay() {
         zOrderDisplay.textContent = elements
           .map((item) => item.label)
-          .join(" \u2192 ");
+          .join(" → ");
       }
 
-      /*
-       * Paint callback — fires when child rendering changes.
-       *
-       * Each element is drawn at its own position with its own
-       * transform. The array order determines z-stacking:
-       * elements drawn later appear on top.
-       */
+      // Paint callback — fires when child rendering changes.
+      // Each element is drawn at its own position with its own
+      // transform. The array order determines z-stacking.
       canvas.onpaint = (event) => {
         ctx.reset();
-
-        /* Scale for device pixels */
         ctx.scale(devicePixelRatio, devicePixelRatio);
 
-        /* Background grid */
         drawGrid(ctx, cssW, cssH);
 
-        /* Draw shadows first (behind all cards) */
-        for (const item of elements) {
-          drawShadow(ctx, item);
-        }
-
-        /* Draw each element with its transform */
         for (const item of elements) {
           ctx.save();
           ctx.translate(item.x, item.y);
           ctx.rotate((item.rotate * Math.PI) / 180);
           ctx.scale(item.scale, item.scale);
           const t = ctx.drawElementImage(item.el, 0, 0);
-          item.el.style.transform = t.toString();
+          if (t) item.el.style.transform = t.toString();
           ctx.restore();
         }
 
         paintCount++;
 
-        /* Display changedElements info if available */
         const changed = event && event.changedElements;
         if (changed && changed.length > 0) {
           const names = changed
@@ -597,47 +378,65 @@ canvas.<span class="fn">addEventListener</span>(<span class="st">"pointerdown"</
         updateZDisplay();
       };
 
-      /* ── Hit testing ───────────────────────────────── */
+      // Hit testing — walk the elements array in reverse (topmost first)
+      // and check if the point falls within the element's transformed
+      // bounding box.
       function hitTest(px, py) {
-        /*
-         * Walk the elements array in reverse (topmost first)
-         * and check if the point falls within the element's
-         * transformed bounding box.
-         */
         for (let i = elements.length - 1; i >= 0; i--) {
           const item = elements[i];
           const el = item.el;
           const w = el.offsetWidth * item.scale;
           const h = el.offsetHeight * item.scale;
-
-          /* Rotate the test point into the element's local space */
           const rad = (-item.rotate * Math.PI) / 180;
           const dx = px - item.x;
           const dy = py - item.y;
           const lx = dx * Math.cos(rad) - dy * Math.sin(rad);
           const ly = dx * Math.sin(rad) + dy * Math.cos(rad);
-
-          if (lx >= 0 && lx <= w && ly >= 0 && ly <= h) {
-            return item;
-          }
+          if (lx >= 0 && lx <= w && ly >= 0 && ly <= h) return item;
         }
         return null;
       }
 
-      /* ── Drag handling ─────────────────────────────── */
+      // Drag handling. We compute coordinates from clientX/Y minus the
+      // canvas bounding rect because e.offsetX/Y is relative to the
+      // event TARGET (which can be one of the canvas children if the
+      // user clicks on a card), not the canvas itself.
       let dragItem = null;
       let dragOffsetX = 0;
       let dragOffsetY = 0;
 
+      function canvasCoords(e) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top,
+        };
+      }
+
+      // Tags whose clicks should NOT initiate a drag — they're real
+      // form controls and the user expects clicks/focus/typing to
+      // work normally.
+      const interactiveTags = new Set([
+        "INPUT",
+        "SELECT",
+        "TEXTAREA",
+        "OPTION",
+      ]);
+
       canvas.addEventListener("pointerdown", (e) => {
-        const hit = hitTest(e.offsetX, e.offsetY);
+        // Skip drag if the click landed on a form control or button
+        const targetTag = (e.target).tagName;
+        if (interactiveTags.has(targetTag)) return;
+
+        const { x, y } = canvasCoords(e);
+        const hit = hitTest(x, y);
         if (!hit) return;
 
         dragItem = hit;
-        dragOffsetX = e.offsetX - hit.x;
-        dragOffsetY = e.offsetY - hit.y;
+        dragOffsetX = x - hit.x;
+        dragOffsetY = y - hit.y;
 
-        /* Move dragged element to front (end of array) */
+        // Move dragged element to front (end of array)
         const idx = elements.indexOf(hit);
         if (idx !== -1 && idx < elements.length - 1) {
           elements.splice(idx, 1);
@@ -645,15 +444,15 @@ canvas.<span class="fn">addEventListener</span>(<span class="st">"pointerdown"</
         }
 
         canvas.setPointerCapture(e.pointerId);
-        canvas.requestPaint();
+        canvas.requestPaint?.();
       });
 
       canvas.addEventListener("pointermove", (e) => {
         if (!dragItem) return;
-
-        dragItem.x = e.offsetX - dragOffsetX;
-        dragItem.y = e.offsetY - dragOffsetY;
-        canvas.requestPaint();
+        const { x, y } = canvasCoords(e);
+        dragItem.x = x - dragOffsetX;
+        dragItem.y = y - dragOffsetY;
+        canvas.requestPaint?.();
       });
 
       canvas.addEventListener("pointerup", () => {
@@ -664,26 +463,35 @@ canvas.<span class="fn">addEventListener</span>(<span class="st">"pointerdown"</
         dragItem = null;
       });
 
-      /* ── Shuffle button ────────────────────────────── */
+      // Wire up the slider value display so the demo proves the
+      // form controls inside the canvas are real DOM and respond to
+      // input events normally.
+      const sliderEl = $("slider");
+      const sliderVal = $("slider-val");
+      if (sliderEl && sliderVal) {
+        sliderEl.addEventListener("input", () => {
+          sliderVal.textContent = sliderEl.value;
+          canvas.requestPaint?.();
+        });
+      }
+
+      // Shuffle button — Fisher-Yates on the z-order array. This shows
+      // that z-ordering is entirely controlled by draw order, not by
+      // DOM order.
       cardE.addEventListener("click", () => {
-        /*
-         * Fisher-Yates shuffle of the z-order array.
-         * This demonstrates that z-ordering is entirely
-         * controlled by draw order, not DOM order.
-         */
         for (let i = elements.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
           const tmp = elements[i];
           elements[i] = elements[j];
           elements[j] = tmp;
         }
-        canvas.requestPaint();
+        canvas.requestPaint?.();
       });
 
-      /*
-       * ResizeObserver — keeps the canvas resolution in sync
-       * with its CSS layout size for crisp rendering.
-       */
+      // ResizeObserver: keep the canvas resolution synced to its CSS
+      // layout size. requestPaint() (not onpaint() directly) so the
+      // browser's paint pipeline runs and generates the cached paint
+      // records that drawElementImage depends on.
       new ResizeObserver(([entry]) => {
         const dp = devicePixelRatio;
         const { width, height } = entry.contentRect;
@@ -691,7 +499,6 @@ canvas.<span class="fn">addEventListener</span>(<span class="st">"pointerdown"</
         cssH = height;
         canvas.width = Math.round(width * dp);
         canvas.height = Math.round(height * dp);
-        /* Do not call ctx.scale here — onpaint handles it after reset */
         canvas.requestPaint?.();
       }).observe(canvas);
     </script>

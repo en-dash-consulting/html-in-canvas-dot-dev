@@ -19,7 +19,8 @@
         height: 100%;
       }
 
-      :where(body, :host) {
+      body,
+      :host {
         display: block;
         margin: 0;
         min-height: 100%;
@@ -30,23 +31,8 @@
         overflow-y: auto;
       }
 
-      h1 {
-        text-align: center;
-        font-size: 1.25rem;
-        margin-bottom: 0.25rem;
-        color: #f0f0f0;
-        font-weight: 600;
-      }
-
-      .page-subtitle {
-        text-align: center;
-        font-size: 0.85rem;
-        color: #6a6a80;
-        margin-bottom: 1.5rem;
-      }
-
       .editor-layout {
-        max-width: 820px;
+        max-width: 920px;
         margin: 0 auto;
         display: flex;
         flex-direction: column;
@@ -305,125 +291,14 @@
         padding: 2px;
       }
 
-      /* ==========================================================
-         Before / After comparison
-         ========================================================== */
-      .comparison {
-        max-width: 820px;
-        margin: 1.25rem auto 0;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.75rem;
-      }
-
-      .compare-box {
-        background: #14141f;
-        border: 1px solid #282840;
-        border-radius: 8px;
-        padding: 1rem;
-      }
-
-      .compare-box h3 {
-        font-size: 0.7rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        margin-bottom: 0.5rem;
-      }
-
-      .compare-box.before h3 {
-        color: #d52e66;
-      }
-
-      .compare-box.after h3 {
-        color: #00e5b9;
-      }
-
-      .compare-box pre {
-        font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
-        font-size: 0.72rem;
-        line-height: 1.6;
-        color: #a0a0b8;
-        white-space: pre;
-        overflow-x: auto;
-      }
-
-      .compare-box pre .fn {
-        color: #6c41f0;
-      }
-
-      .compare-box pre .str {
-        color: #00e5b9;
-      }
-
-      .compare-box pre .kw {
-        color: #d52e66;
-      }
-
-      .compare-box pre .cmt {
-        color: #4a4a60;
-      }
-
-      .compare-box .note {
-        display: inline-block;
-        margin-top: 0.5rem;
-        font-size: 0.65rem;
-        font-weight: 600;
-        padding: 0.15em 0.5em;
-        border-radius: 3px;
-      }
-
-      .before .note {
-        background: rgba(213, 46, 102, 0.12);
-        color: #d52e66;
-      }
-
-      .after .note {
-        background: rgba(0, 229, 185, 0.12);
-        color: #00e5b9;
-      }
-
-      /* ==========================================================
-         Instructions
-         ========================================================== */
-      .instructions {
-        text-align: center;
-        margin-top: 1.25rem;
-        font-size: 0.8rem;
-        color: #6a6a80;
-        line-height: 1.6;
-        max-width: 820px;
-        margin-left: auto;
-        margin-right: auto;
-      }
-
-      .instructions code {
-        font-size: 0.78rem;
-        background: #282840;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-family: "JetBrains Mono", monospace;
-        color: #00e5b9;
-      }
-
       @media (max-width: 600px) {
         .effect-controls {
-          grid-template-columns: 1fr;
-        }
-
-        .comparison {
           grid-template-columns: 1fr;
         }
       }
     </style>
   </head>
   <body>
-    <h1>Rich Text Canvas Editor</h1>
-    <p class="page-subtitle">
-      Native text editing with canvas effects &mdash; glow, shadow, and outline
-      beyond CSS.
-    </p>
-
     <div class="editor-layout">
       <!-- ============================================
            FORMATTING TOOLBAR
@@ -650,38 +525,6 @@
          effects, per-pixel manipulation, and effects
          that aren't possible with CSS alone.
          ============================================ -->
-    <div class="comparison">
-      <div class="compare-box before">
-        <h3>Before (simulated editing)</h3>
-        <pre><span class="cmt">// Fake text editing in canvas</span>
-<span class="kw">let</span> text = <span class="str">"Hello"</span>;
-canvas.<span class="fn">addEventListener</span>(<span class="str">'keydown'</span>, e => {
-  text += e.key;              <span class="cmt">// no selection</span>
-  ctx.<span class="fn">fillText</span>(text, x, y);  <span class="cmt">// no wrapping</span>
-});                           <span class="cmt">// no copy/paste</span></pre>
-        <span class="note">Custom IME, bidi, a11y all broken</span>
-      </div>
-      <div class="compare-box after">
-        <h3>After (native HTML editing)</h3>
-        <pre><span class="cmt">// Real contenteditable in canvas</span>
-canvas.<span class="fn">onpaint</span> = () => {
-  ctx.shadowColor = <span class="str">'#6c41f0'</span>;
-  ctx.shadowBlur = <span class="fn">20</span>;
-  ctx.<span class="fn">drawElementImage</span>(editor, 0, 0);
-};</pre>
-        <span class="note">Full editing + canvas effects for free</span>
-      </div>
-    </div>
-
-    <p class="instructions">
-      Click the canvas to start editing. Use the toolbar or keyboard
-      shortcuts (<code>Ctrl+B</code>, <code>Ctrl+I</code>,
-      <code>Ctrl+U</code>) to format text.<br />
-      Toggle the effects to see real-time canvas rendering with
-      <code>drawElementImage()</code> &mdash; effects that go beyond
-      what CSS can do.
-    </p>
-
     <script>
       // Resolve the script's root: a ShadowRoot when mounted via shadow
       // DOM, or `document` when this file is served standalone.

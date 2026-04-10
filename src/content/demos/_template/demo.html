@@ -10,7 +10,7 @@
        *  1. As a standalone HTML page (served at /demos/{slug}/demo.html)
        *  2. Mounted inside a shadow root on the wrapped /demos/{slug}/ page
        *
-       * The :where(body, :host) selector matches whichever root element
+       * The `body, :host` selector list matches whichever root element
        * exists in the current context. :host only matches inside a shadow
        * root; body only matches in a regular document.
        */
@@ -22,7 +22,8 @@
         height: 100%;
       }
 
-      :where(body, :host) {
+      body,
+      :host {
         display: grid;
         place-items: center;
         margin: 0;

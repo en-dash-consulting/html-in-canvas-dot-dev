@@ -13,89 +13,89 @@
         height: 100%;
       }
 
-      :where(body, :host) {
+      body,
+      :host {
         display: block;
+        position: relative;
         margin: 0;
-        min-height: 100%;
-        background: #0a0a0f;
+        width: 100%;
+        min-height: min(78vh, 820px);
+        height: 100%;
+        background:
+          radial-gradient(
+            ellipse at top right,
+            rgba(108, 65, 240, 0.15),
+            transparent 55%
+          ),
+          radial-gradient(
+            ellipse at bottom left,
+            rgba(0, 229, 185, 0.12),
+            transparent 60%
+          ),
+          #0a0a0f;
         color: #f0f0f0;
         font-family: system-ui, -apple-system, sans-serif;
-        padding: 2rem;
-        overflow-y: auto;
+        overflow: hidden;
       }
 
-      h1 {
-        text-align: center;
-        font-size: 1.25rem;
-        font-weight: 400;
-        color: #a0a0b8;
-        margin-bottom: 2rem;
-      }
-
-      .layout {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 2rem;
-        max-width: 1100px;
-        margin: 0 auto;
-        align-items: start;
-      }
-
-      @media (max-width: 800px) {
-        .layout {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      /* ── Live demo panel ─────────────────────────────── */
-      .demo-panel {
-        background: #14141f;
-        border-radius: 12px;
-        padding: 1.5rem;
-        border: 1px solid #282840;
-      }
-
-      .demo-panel h2 {
-        font-size: 0.8rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #6a6a80;
-        margin-bottom: 1rem;
-      }
-
-      canvas {
+      /* The canvas fills the stage; the form is laid out by the
+         layoutsubtree contract and drawn into the canvas pixels. */
+      #canvas {
+        position: absolute;
+        inset: 0;
         width: 100%;
+        height: 100%;
         display: block;
-        border-radius: 8px;
-        border: 1px solid #282840;
-        background: #0a0a0f;
       }
 
-      /* ── Form styles inside the canvas ───────────────── */
+      /*
+       * The form is a real DOM element. Every input, select, slider,
+       * checkbox, radio, and button is interactive — clicks, focus,
+       * keyboard, autofill, and screen readers all work natively
+       * because these are real elements, not painted approximations.
+       *
+       * Position is set explicitly here. Each frame, drawElementImage
+       * returns a DOMMatrix that we apply back to #form-root so the
+       * DOM elements stay aligned with the painted pixels.
+       */
       #form-root {
-        padding: 1.5rem;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: min(560px, calc(100vw - 4rem));
+        padding: 1.75rem 2rem;
+        border-radius: 18px;
+        background: rgba(20, 20, 31, 0.78);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(14px);
+        box-shadow:
+          0 20px 60px -20px rgba(0, 0, 0, 0.6),
+          0 0 0 1px rgba(108, 65, 240, 0.08);
         font-family: system-ui, -apple-system, sans-serif;
         font-size: 0.875rem;
         color: #e0e0f0;
+        transition: none;
+        transform-origin: 0 0;
+      }
+
+      .form-title {
+        font-size: 1rem;
+        font-weight: 700;
+        margin: 0 0 1.25rem;
+        color: #f0f0f0;
+        letter-spacing: -0.01em;
       }
 
       .form-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-      }
-
-      @media (max-width: 500px) {
-        .form-grid {
-          grid-template-columns: 1fr;
-        }
+        gap: 0.85rem 1rem;
       }
 
       .field {
         display: flex;
         flex-direction: column;
-        gap: 0.35rem;
+        gap: 0.3rem;
       }
 
       .field.full-width {
@@ -103,7 +103,7 @@
       }
 
       .field label {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         font-weight: 600;
         color: #8080a0;
         text-transform: uppercase;
@@ -114,7 +114,7 @@
       .field input[type="email"],
       .field textarea,
       .field select {
-        background: #1a1a2e;
+        background: #0d0d18;
         border: 1px solid #282840;
         border-radius: 6px;
         padding: 0.5rem 0.75rem;
@@ -122,7 +122,7 @@
         font-family: inherit;
         font-size: 0.85rem;
         outline: none;
-        transition: border-color 0.15s;
+        transition: border-color 0.15s, box-shadow 0.15s;
       }
 
       .field input[type="text"]:focus,
@@ -130,21 +130,32 @@
       .field textarea:focus,
       .field select:focus {
         border-color: #6c41f0;
+        box-shadow: 0 0 0 3px rgba(108, 65, 240, 0.18);
       }
 
       .field textarea {
         resize: vertical;
-        min-height: 3rem;
+        min-height: 3.25rem;
+        line-height: 1.45;
       }
 
       .field select {
         cursor: pointer;
+        appearance: none;
+        background-image:
+          linear-gradient(45deg, transparent 50%, #6a6a80 50%),
+          linear-gradient(135deg, #6a6a80 50%, transparent 50%);
+        background-position:
+          calc(100% - 14px) 50%,
+          calc(100% - 9px) 50%;
+        background-size: 5px 5px;
+        background-repeat: no-repeat;
+        padding-right: 2rem;
       }
 
-      /* ── Checkbox / radio rows ───────────────────────── */
       .inline-options {
         display: flex;
-        gap: 1rem;
+        gap: 0.85rem;
         flex-wrap: wrap;
       }
 
@@ -152,7 +163,7 @@
         display: flex;
         align-items: center;
         gap: 0.35rem;
-        font-size: 0.8rem;
+        font-size: 0.78rem;
         font-weight: 400;
         color: #c0c0d8;
         text-transform: none;
@@ -163,16 +174,15 @@
       .inline-options input[type="checkbox"],
       .inline-options input[type="radio"] {
         accent-color: #6c41f0;
-        width: 1rem;
-        height: 1rem;
+        width: 0.95rem;
+        height: 0.95rem;
         cursor: pointer;
       }
 
-      /* ── Range slider ────────────────────────────────── */
       .slider-row {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: 0.6rem;
       }
 
       .slider-row input[type="range"] {
@@ -183,41 +193,40 @@
       }
 
       .slider-value {
-        font-size: 0.8rem;
+        font-size: 0.78rem;
         color: #6c41f0;
-        font-weight: 600;
-        min-width: 2.5rem;
+        font-weight: 700;
+        min-width: 2rem;
         text-align: right;
         font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
       }
 
-      /* ── Submit button ───────────────────────────────── */
       .form-actions {
         grid-column: 1 / -1;
         display: flex;
-        gap: 0.75rem;
+        gap: 0.6rem;
         justify-content: flex-end;
         padding-top: 0.25rem;
       }
 
       .btn {
-        padding: 0.5rem 1.25rem;
+        padding: 0.5rem 1.1rem;
         border-radius: 6px;
         border: 1px solid #282840;
         font-family: inherit;
-        font-size: 0.8rem;
+        font-size: 0.78rem;
         font-weight: 600;
         cursor: pointer;
         transition: background 0.15s, border-color 0.15s;
       }
 
       .btn-secondary {
-        background: #1a1a2e;
+        background: transparent;
         color: #a0a0b8;
       }
 
       .btn-secondary:hover {
-        background: #242440;
+        background: rgba(255, 255, 255, 0.04);
         border-color: #3a3a58;
       }
 
@@ -228,310 +237,125 @@
       }
 
       .btn-primary:hover {
-        background: #5a35d0;
-        border-color: #5a35d0;
+        background: #7a52ff;
+        border-color: #7a52ff;
       }
 
       .btn:focus-visible {
-        outline: 2px solid #6c41f0;
+        outline: 2px solid #00e5b9;
         outline-offset: 2px;
       }
 
-      /* ── Paint counter ───────────────────────────────── */
-      .paint-counter {
+      /* Floating paint counter — top-right of stage */
+      .paint-badge {
+        position: absolute;
+        top: 1.25rem;
+        right: 1.25rem;
+        z-index: 2;
         display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-top: 1rem;
-        padding: 0.75rem 1rem;
-        background: #1a1a2e;
-        border-radius: 8px;
-        border: 1px solid #282840;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.15rem;
+        padding: 0.55rem 0.85rem;
+        background: rgba(15, 15, 22, 0.78);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        backdrop-filter: blur(10px);
+        font-family: system-ui, -apple-system, sans-serif;
       }
 
-      .paint-counter .label {
-        font-size: 0.75rem;
+      .paint-badge .label {
+        font-size: 0.65rem;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.06em;
         color: #6a6a80;
       }
 
-      .paint-counter .count {
+      .paint-badge .count {
         font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
-        font-size: 1rem;
+        font-size: 1.1rem;
         font-weight: 700;
         color: #00e5b9;
+        line-height: 1;
       }
 
-      .paint-counter .hint {
-        font-size: 0.7rem;
+      .paint-badge .hint {
+        font-size: 0.62rem;
         color: #555570;
-        margin-top: 0.15rem;
-      }
-
-      /* ── Code panel ──────────────────────────────────── */
-      .code-panel {
-        background: #14141f;
-        border-radius: 12px;
-        padding: 1.5rem;
-        border: 1px solid #282840;
-      }
-
-      .code-panel h2 {
-        font-size: 0.8rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #6a6a80;
-        margin-bottom: 1rem;
-      }
-
-      .code-block {
-        background: #0d0d18;
-        border-radius: 8px;
-        padding: 1.25rem;
-        overflow-x: auto;
-        border: 1px solid #1e1e30;
-      }
-
-      .code-block pre {
-        font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
-        font-size: 0.8rem;
-        line-height: 1.7;
-        white-space: pre;
-        color: #c0c0d0;
-      }
-
-      /* Syntax highlighting */
-      .kw { color: #c792ea; }
-      .at { color: #ffcb6b; }
-      .st { color: #c3e88d; }
-      .cm { color: #546e7a; }
-      .fn { color: #82aaff; }
-      .op { color: #89ddff; }
-      .nb { color: #f78c6c; }
-
-      .annotation {
-        display: block;
-        background: #1a1a2e;
-        border-left: 3px solid #6c41f0;
-        border-radius: 0 6px 6px 0;
-        padding: 0.5rem 0.75rem;
-        margin: 0.5rem 0;
-        font-family: system-ui, -apple-system, sans-serif;
-        font-size: 0.78rem;
-        line-height: 1.5;
-        color: #a0a0b8;
-      }
-
-      .annotation strong {
-        color: #e0e0f0;
-        font-weight: 600;
-      }
-
-      .annotation code {
-        background: #282840;
-        padding: 0.1em 0.35em;
-        border-radius: 3px;
-        font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
-        font-size: 0.75rem;
-        color: #c3e88d;
-      }
-
-      /* ── Concepts ────────────────────────────────────── */
-      .concepts {
-        margin-top: 1.5rem;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.75rem;
-      }
-
-      @media (max-width: 500px) {
-        .concepts {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      .concept {
-        background: #1a1a2e;
-        border-radius: 8px;
-        padding: 0.75rem 1rem;
-        border: 1px solid #282840;
-      }
-
-      .concept-name {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: #6c41f0;
-        margin-bottom: 0.25rem;
-        font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
-      }
-
-      .concept-desc {
-        font-size: 0.75rem;
-        color: #8080a0;
-        line-height: 1.4;
+        margin-top: 0.1rem;
       }
     </style>
   </head>
   <body>
-    <h1>Interactive Form in Canvas</h1>
+    <canvas id="canvas" layoutsubtree>
+      <div id="form-root">
+        <h1 class="form-title">Sign up</h1>
+        <div class="form-grid">
+          <div class="field">
+            <label for="name">Name</label>
+            <input type="text" id="name" placeholder="Jane Doe" autocomplete="off" />
+          </div>
 
-    <div class="layout">
-      <!-- ── Live demo ─────────────────────────────────── -->
-      <div class="demo-panel">
-        <h2>Live Result</h2>
+          <div class="field">
+            <label for="email">Email</label>
+            <input type="email" id="email" placeholder="jane@example.com" autocomplete="off" />
+          </div>
 
-        <canvas id="canvas" layoutsubtree>
-          <div id="form-root">
-            <div class="form-grid">
-              <div class="field">
-                <label for="name">Name</label>
-                <input type="text" id="name" placeholder="Jane Doe" />
-              </div>
+          <div class="field full-width">
+            <label for="message">Message</label>
+            <textarea id="message" rows="2" placeholder="Type something..."></textarea>
+          </div>
 
-              <div class="field">
-                <label for="email">Email</label>
-                <input type="email" id="email" placeholder="jane@example.com" />
-              </div>
+          <div class="field">
+            <label for="role">Role</label>
+            <select id="role">
+              <option value="">Choose one</option>
+              <option value="developer">Developer</option>
+              <option value="designer">Designer</option>
+              <option value="pm">Product Manager</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
 
-              <div class="field full-width">
-                <label for="message">Message</label>
-                <textarea id="message" rows="2" placeholder="Type something..."></textarea>
-              </div>
-
-              <div class="field">
-                <label for="role">Role</label>
-                <select id="role">
-                  <option value="">Choose one</option>
-                  <option value="developer">Developer</option>
-                  <option value="designer">Designer</option>
-                  <option value="pm">Product Manager</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-
-              <div class="field">
-                <label>Experience</label>
-                <div class="slider-row">
-                  <input type="range" id="experience" min="0" max="10" value="5" />
-                  <span class="slider-value" id="exp-value">5</span>
-                </div>
-              </div>
-
-              <div class="field">
-                <label>Interests</label>
-                <div class="inline-options">
-                  <label><input type="checkbox" name="interest" value="graphics" /> Graphics</label>
-                  <label><input type="checkbox" name="interest" value="a11y" /> Accessibility</label>
-                  <label><input type="checkbox" name="interest" value="perf" /> Performance</label>
-                </div>
-              </div>
-
-              <div class="field">
-                <label>Preferred API</label>
-                <div class="inline-options">
-                  <label><input type="radio" name="api" value="2d" checked /> Canvas 2D</label>
-                  <label><input type="radio" name="api" value="webgl" /> WebGL</label>
-                  <label><input type="radio" name="api" value="webgpu" /> WebGPU</label>
-                </div>
-              </div>
-
-              <div class="form-actions">
-                <button type="button" class="btn btn-secondary" id="btn-reset">Reset</button>
-                <button type="button" class="btn btn-primary" id="btn-submit">Submit</button>
-              </div>
+          <div class="field">
+            <label>Experience</label>
+            <div class="slider-row">
+              <input type="range" id="experience" min="0" max="10" value="5" />
+              <span class="slider-value" id="exp-value">5</span>
             </div>
           </div>
-        </canvas>
 
-        <div class="paint-counter">
-          <div>
-            <div class="label">Paint events fired</div>
-            <div class="hint">Focus a text field and watch the cursor blink</div>
-          </div>
-          <div class="count" id="paint-count">0</div>
-        </div>
-      </div>
-
-      <!-- ── Annotated source ──────────────────────────── -->
-      <div class="code-panel">
-        <h2>Annotated Source</h2>
-
-        <div class="code-block"><pre>
-<span class="cm">&lt;!-- 1. Canvas with form children --&gt;</span>
-<span class="op">&lt;</span><span class="kw">canvas</span> <span class="at">id</span><span class="op">=</span><span class="st">"canvas"</span> <span class="at">layoutsubtree</span><span class="op">&gt;</span>
-  <span class="op">&lt;</span><span class="kw">div</span> <span class="at">id</span><span class="op">=</span><span class="st">"form-root"</span><span class="op">&gt;</span>
-    <span class="op">&lt;</span><span class="kw">input</span> <span class="at">type</span><span class="op">=</span><span class="st">"text"</span> <span class="at">placeholder</span><span class="op">=</span><span class="st">"..."</span> <span class="op">/&gt;</span>
-    <span class="op">&lt;</span><span class="kw">select</span><span class="op">&gt;</span>...<span class="op">&lt;/</span><span class="kw">select</span><span class="op">&gt;</span>
-    <span class="op">&lt;</span><span class="kw">input</span> <span class="at">type</span><span class="op">=</span><span class="st">"range"</span> <span class="op">/&gt;</span>
-    <span class="op">&lt;</span><span class="kw">input</span> <span class="at">type</span><span class="op">=</span><span class="st">"checkbox"</span> <span class="op">/&gt;</span>
-    <span class="op">&lt;</span><span class="kw">button</span><span class="op">&gt;</span>Submit<span class="op">&lt;/</span><span class="kw">button</span><span class="op">&gt;</span>
-  <span class="op">&lt;/</span><span class="kw">div</span><span class="op">&gt;</span>
-<span class="op">&lt;/</span><span class="kw">canvas</span><span class="op">&gt;</span>
-<span class="annotation"><strong>layoutsubtree</strong> turns these into real, interactive DOM elements laid out inside the canvas. Every form control works natively &mdash; typing, clicking, tabbing, and keyboard shortcuts are all preserved.</span>
-
-<span class="cm">// 2. Setup</span>
-<span class="kw">const</span> canvas <span class="op">=</span> document.<span class="fn">getElementById</span>(<span class="st">"canvas"</span>);
-<span class="kw">const</span> ctx <span class="op">=</span> canvas.<span class="fn">getContext</span>(<span class="st">"2d"</span>);
-<span class="kw">const</span> form <span class="op">=</span> document.<span class="fn">getElementById</span>(<span class="st">"form-root"</span>);
-
-<span class="cm">// 3. Paint callback</span>
-canvas.<span class="at">onpaint</span> <span class="op">=</span> () <span class="op">=&gt;</span> {
-  ctx.<span class="fn">reset</span>();
-  <span class="kw">const</span> t <span class="op">=</span> ctx.<span class="fn">drawElementImage</span>(form, <span class="nb">0</span>, <span class="nb">0</span>);
-  form.style.<span class="at">transform</span> <span class="op">=</span> t.<span class="fn">toString</span>();
-  paintCount<span class="op">++</span>;
-};
-<span class="annotation"><strong>onpaint</strong> fires whenever child content changes &mdash; including the cursor blinking in a focused text input. The <code>DOMMatrix</code> returned by <code>drawElementImage()</code> keeps DOM positions synchronized, so clicks and focus land on the correct controls.</span>
-
-<span class="cm">// 4. ResizeObserver</span>
-<span class="kw">new</span> <span class="fn">ResizeObserver</span>(([entry]) <span class="op">=&gt;</span> {
-  <span class="kw">const</span> dp <span class="op">=</span> devicePixelRatio;
-  <span class="kw">const</span> { width, height } <span class="op">=</span> entry.contentRect;
-  canvas.<span class="at">width</span>  <span class="op">=</span> Math.<span class="fn">round</span>(width <span class="op">*</span> dp);
-  canvas.<span class="at">height</span> <span class="op">=</span> Math.<span class="fn">round</span>(height <span class="op">*</span> dp);
-  ctx.<span class="fn">scale</span>(dp, dp);
-  <span class="kw">if</span> (canvas.<span class="at">onpaint</span>) canvas.<span class="fn">onpaint</span>();
-}).<span class="fn">observe</span>(canvas);
-<span class="annotation"><strong>No special event wiring needed.</strong> The browser routes all pointer, keyboard, and focus events to the child elements. The <code>onpaint</code> callback handles the visual updates automatically.</span>
-</pre></div>
-
-        <div class="concepts">
-          <div class="concept">
-            <div class="concept-name">Native interactivity</div>
-            <div class="concept-desc">
-              Form controls inside a <code>layoutsubtree</code> canvas receive
-              clicks, focus, keyboard input, and tab navigation with zero
-              extra code.
+          <div class="field full-width">
+            <label>Interests</label>
+            <div class="inline-options">
+              <label><input type="checkbox" name="interest" value="graphics" /> Graphics</label>
+              <label><input type="checkbox" name="interest" value="a11y" /> Accessibility</label>
+              <label><input type="checkbox" name="interest" value="perf" /> Performance</label>
             </div>
           </div>
-          <div class="concept">
-            <div class="concept-name">Cursor blink = paint</div>
-            <div class="concept-desc">
-              A blinking text cursor changes the visual output, so the browser
-              fires <code>onpaint</code> on each blink &mdash; watch the counter
-              climb.
+
+          <div class="field full-width">
+            <label>Preferred API</label>
+            <div class="inline-options">
+              <label><input type="radio" name="api" value="2d" checked /> Canvas 2D</label>
+              <label><input type="radio" name="api" value="webgl" /> WebGL</label>
+              <label><input type="radio" name="api" value="webgpu" /> WebGPU</label>
             </div>
           </div>
-          <div class="concept">
-            <div class="concept-name">DOMMatrix sync</div>
-            <div class="concept-desc">
-              <code>drawElementImage()</code> returns a <code>DOMMatrix</code>.
-              Applying it as a CSS transform keeps hit&nbsp;testing accurate
-              for every control.
-            </div>
-          </div>
-          <div class="concept">
-            <div class="concept-name">Accessibility</div>
-            <div class="concept-desc">
-              Because these are real DOM elements, screen readers, autofill,
-              and form validation all work as expected.
-            </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" id="btn-reset">Reset</button>
+            <button type="button" class="btn btn-primary" id="btn-submit">Submit</button>
           </div>
         </div>
       </div>
+    </canvas>
+
+    <div class="paint-badge">
+      <div class="label">Paint events</div>
+      <div class="count" id="paint-count">0</div>
+      <div class="hint">Focus a text field — cursor blink fires onpaint</div>
     </div>
 
     <script>
@@ -540,7 +364,6 @@ canvas.<span class="at">onpaint</span> <span class="op">=</span> () <span class=
       const root = window.__demoRoot ?? document;
       const $ = (id) => root.getElementById(id);
 
-      /* ── Canvas setup ──────────────────────────────── */
       const canvas = $("canvas");
       const ctx = canvas.getContext("2d");
       const formRoot = $("form-root");
@@ -548,43 +371,259 @@ canvas.<span class="at">onpaint</span> <span class="op">=</span> () <span class=
 
       let paintCount = 0;
 
-      /*
-       * Paint callback — fires when any child content changes.
-       *
-       * This includes text input cursor blinks, checkbox toggles,
-       * slider movement, dropdown changes, and hover effects.
-       * Each of these mutations triggers a new paint event.
-       */
+      // ── Hand-drawn mindmap annotation around the form ────────
+      // The form sits at the centre. The canvas's 2D context draws
+      // sketched arrows, labels, and decorative scribbles around it
+      // to make the demo feel like an annotated drawing on graph
+      // paper. This is the "very canvassy" wrapper the user asked
+      // for: a real DOM form positioned as the centerpiece of a
+      // canvas illustration.
+      const ANNOTATIONS = [
+        {
+          label: 'real <input> elements',
+          targetField: 'name',
+          side: 'left',
+        },
+        {
+          label: 'native <textarea>',
+          targetField: 'message',
+          side: 'right',
+        },
+        {
+          label: 'real <select>',
+          targetField: 'role',
+          side: 'left',
+        },
+        {
+          label: 'live cursor blink → onpaint',
+          targetField: 'email',
+          side: 'right',
+        },
+        {
+          label: 'native focus rings',
+          targetField: 'experience',
+          side: 'left',
+        },
+      ];
+
+      // Random-but-stable jitter so the sketch lines look hand-drawn
+      // without redrawing differently every frame.
+      function jitterFor(seed) {
+        const r = Math.sin(seed * 12.9898) * 43758.5453;
+        return (r - Math.floor(r)) * 2 - 1;
+      }
+
+      function sketchLine(x1, y1, x2, y2, seed) {
+        // Draw a slightly wobbly line by perturbing the midpoint and
+        // rendering as a quadratic curve. Stable across frames so it
+        // doesn't shimmer.
+        const mx = (x1 + x2) / 2;
+        const my = (y1 + y2) / 2;
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const len = Math.hypot(dx, dy);
+        const nx = -dy / len;
+        const ny = dx / len;
+        const wob = jitterFor(seed) * Math.min(8, len * 0.04);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.quadraticCurveTo(mx + nx * wob, my + ny * wob, x2, y2);
+        ctx.stroke();
+      }
+
+      function sketchArrowhead(x, y, angle) {
+        const len = 10;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(
+          x - Math.cos(angle - 0.4) * len,
+          y - Math.sin(angle - 0.4) * len,
+        );
+        ctx.moveTo(x, y);
+        ctx.lineTo(
+          x - Math.cos(angle + 0.4) * len,
+          y - Math.sin(angle + 0.4) * len,
+        );
+        ctx.stroke();
+      }
+
+      function drawDotGrid(w, h) {
+        ctx.fillStyle = 'rgba(108, 65, 240, 0.07)';
+        const step = 28;
+        for (let gx = step; gx < w; gx += step) {
+          for (let gy = step; gy < h; gy += step) {
+            ctx.beginPath();
+            ctx.arc(gx, gy, 1.1, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+
+      function drawDecorations(w, h, formRect) {
+        // Soft glow circles in the corners
+        const grad1 = ctx.createRadialGradient(
+          w * 0.85,
+          h * 0.15,
+          0,
+          w * 0.85,
+          h * 0.15,
+          Math.min(w, h) * 0.45,
+        );
+        grad1.addColorStop(0, 'rgba(108, 65, 240, 0.18)');
+        grad1.addColorStop(1, 'transparent');
+        ctx.fillStyle = grad1;
+        ctx.fillRect(0, 0, w, h);
+
+        const grad2 = ctx.createRadialGradient(
+          w * 0.15,
+          h * 0.85,
+          0,
+          w * 0.15,
+          h * 0.85,
+          Math.min(w, h) * 0.45,
+        );
+        grad2.addColorStop(0, 'rgba(0, 229, 185, 0.14)');
+        grad2.addColorStop(1, 'transparent');
+        ctx.fillStyle = grad2;
+        ctx.fillRect(0, 0, w, h);
+
+        // Sketchy spiral in the top-left
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        const sx = 90;
+        const sy = 90;
+        for (let t = 0; t < Math.PI * 4; t += 0.1) {
+          const r = t * 4;
+          const x = sx + Math.cos(t) * r;
+          const y = sy + Math.sin(t) * r;
+          if (t === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Constellation of dots in the bottom-right
+        ctx.fillStyle = 'rgba(0, 229, 185, 0.35)';
+        const dots = [
+          [w - 80, h - 60],
+          [w - 130, h - 90],
+          [w - 60, h - 110],
+          [w - 100, h - 140],
+          [w - 160, h - 130],
+        ];
+        for (const [dx, dy] of dots) {
+          ctx.beginPath();
+          ctx.arc(dx, dy, 2.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.strokeStyle = 'rgba(0, 229, 185, 0.18)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let i = 0; i < dots.length; i++) {
+          const [x, y] = dots[i];
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+
+      function drawAnnotations(formX, formY, formW, formH) {
+        ctx.font =
+          '600 12px ui-monospace, "JetBrains Mono", "Cascadia Code", monospace';
+        ctx.fillStyle = '#a78bfa';
+        ctx.strokeStyle = 'rgba(167, 139, 250, 0.55)';
+        ctx.lineWidth = 1.4;
+        ctx.lineCap = 'round';
+
+        ANNOTATIONS.forEach((ann, i) => {
+          const target = root.getElementById(ann.targetField);
+          if (!target) return;
+          const fieldRect = target.getBoundingClientRect();
+          const formRect = formRoot.getBoundingClientRect();
+          // The form has a CSS transform applied; compute the
+          // field's position in canvas coordinates by offsetting
+          // from the rendered form's screen position.
+          const fy = formY + (fieldRect.top - formRect.top) + fieldRect.height / 2;
+          const onLeft = ann.side === 'left';
+          const fx = onLeft ? formX + 12 : formX + formW - 12;
+
+          // Arrow start point — out in the margin
+          const labelX = onLeft ? formX - 110 : formX + formW + 110;
+          const labelY = fy + jitterFor(i + 7) * 6;
+
+          ctx.fillStyle = '#a78bfa';
+          ctx.textAlign = onLeft ? 'right' : 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(ann.label, labelX, labelY);
+
+          // Sketchy line from label edge → field
+          const startX = onLeft
+            ? labelX + 6
+            : labelX - 6 - ctx.measureText(ann.label).width;
+          // hmm: when textAlign is 'left', text grows right from labelX
+          // when 'right', text grows left from labelX
+          // so the right edge of label = labelX (for right-aligned) or labelX + width (for left-aligned)
+          const labelEdge = onLeft
+            ? labelX + 8
+            : labelX - 8;
+
+          ctx.strokeStyle = 'rgba(167, 139, 250, 0.55)';
+          sketchLine(labelEdge, labelY, fx, fy, i + 1);
+
+          // Arrowhead at field end
+          const angle = Math.atan2(fy - labelY, fx - labelEdge);
+          sketchArrowhead(fx, fy, angle);
+        });
+      }
+
+      // Center the form once we know its measured size, then sync its
+      // CSS transform to the painted matrix on every frame.
       canvas.onpaint = () => {
+        const dpr = devicePixelRatio;
+        const cssW = canvas.width / dpr;
+        const cssH = canvas.height / dpr;
+
         ctx.reset();
-        const t = ctx.drawElementImage(formRoot, 0, 0);
-        formRoot.style.transform = t.toString();
+        ctx.scale(dpr, dpr);
+
+        // Background decorations and dot grid (drawn first, behind form)
+        drawDotGrid(cssW, cssH);
+        const rect = formRoot.getBoundingClientRect();
+        const x = Math.max(160, (cssW - rect.width) / 2);
+        const y = Math.max(40, (cssH - rect.height) / 2);
+        drawDecorations(cssW, cssH, { x, y, w: rect.width, h: rect.height });
+
+        // Annotations (sketched arrows + labels around the form)
+        drawAnnotations(x, y, rect.width, rect.height);
+
+        // Now paint the actual form on top
+        const transform = ctx.drawElementImage(formRoot, x, y);
+        if (transform) formRoot.style.transform = transform.toString();
+
         paintCount++;
         paintCountEl.textContent = paintCount;
       };
 
-      /*
-       * ResizeObserver — keeps the canvas resolution in sync
-       * with its CSS layout size for crisp rendering.
-       */
+      // ResizeObserver: keep the bitmap sized to the stage at DPR.
+      // requestPaint() (not onpaint() directly) so the browser's paint
+      // pipeline runs and generates the cached paint records that
+      // drawElementImage depends on.
       new ResizeObserver(([entry]) => {
         const dp = devicePixelRatio;
         const { width, height } = entry.contentRect;
         canvas.width = Math.round(width * dp);
         canvas.height = Math.round(height * dp);
-        ctx.scale(dp, dp);
         canvas.requestPaint?.();
       }).observe(canvas);
 
-      /* ── Slider value display ──────────────────────── */
+      // Slider value mirror.
       const slider = $("experience");
       const expValue = $("exp-value");
-
       slider.addEventListener("input", () => {
         expValue.textContent = slider.value;
       });
 
-      /* ── Reset button ──────────────────────────────── */
+      // Reset button.
       $("btn-reset").addEventListener("click", () => {
         $("name").value = "";
         $("email").value = "";
@@ -592,18 +631,19 @@ canvas.<span class="at">onpaint</span> <span class="op">=</span> () <span class=
         $("role").selectedIndex = 0;
         slider.value = 5;
         expValue.textContent = "5";
-
         formRoot
           .querySelectorAll('input[type="checkbox"]')
-          .forEach((cb) => { cb.checked = false; });
-
+          .forEach((cb) => {
+            cb.checked = false;
+          });
         const defaultRadio = formRoot.querySelector(
-          'input[type="radio"][value="2d"]'
+          'input[type="radio"][value="2d"]',
         );
         if (defaultRadio) defaultRadio.checked = true;
+        canvas.requestPaint?.();
       });
 
-      /* ── Submit button ─────────────────────────────── */
+      // Submit button — log the data, no actual submission.
       $("btn-submit").addEventListener("click", () => {
         const data = {
           name: $("name").value,
@@ -612,13 +652,11 @@ canvas.<span class="at">onpaint</span> <span class="op">=</span> () <span class=
           role: $("role").value,
           experience: slider.value,
           interests: Array.from(
-            formRoot.querySelectorAll('input[name="interest"]:checked')
+            formRoot.querySelectorAll('input[name="interest"]:checked'),
           ).map((cb) => cb.value),
           api: formRoot.querySelector('input[name="api"]:checked')?.value,
         };
-
         console.log("Form submitted:", data);
-        alert("Form data logged to console.\nCheck DevTools to see the values.");
       });
     </script>
   </body>

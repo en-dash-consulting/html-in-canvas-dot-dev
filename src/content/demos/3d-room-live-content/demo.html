@@ -19,11 +19,13 @@
         height: 100%;
       }
 
-      :where(body, :host) {
+      body,
+      :host {
         display: block;
         position: relative;
         margin: 0;
         width: 100%;
+        min-height: min(78vh, 820px);
         height: 100%;
         background: #0a0a0f;
         color: #f0f0f0;
@@ -36,15 +38,16 @@
          ============================================================ */
       #viewport {
         display: block;
-        width: 100vw;
-        height: 100vh;
+        width: 100%;
+        height: 100%;
+        min-height: min(78vh, 820px);
       }
 
       /* ============================================================
          Entry overlay
          ============================================================ */
       #overlay {
-        position: fixed;
+        position: absolute;
         inset: 0;
         background: rgba(10, 10, 15, 0.92);
         display: flex;
@@ -183,10 +186,45 @@
       /* ============================================================
          Off-screen staging canvases
          ============================================================ */
-      .staging {
+      /*
+       * Staging canvases hold the HTML content that becomes the
+       * texture for each 3D surface. They MUST stay laid out and
+       * visually painted by the browser — otherwise their
+       * layoutsubtree children have no cached paint record and
+       * drawElementImage either throws "No cached paint record for
+       * element" or silently produces empty pixels.
+       *
+       * Chrome skips painting for `display: none`, `visibility: hidden`,
+       * `opacity: 0`, and (empirically) `left: -9999px`. The reliable
+       * way to hide an element while keeping it painted is the
+       * legacy `clip` rect-cropping idiom: position it in viewport,
+       * give it real dimensions, then clip it to a 0x0 area so it's
+       * laid out, painted, and visually invisible.
+       */
+      /*
+       * Staging canvases are wrapped in a 1×1 visible container at
+       * the corner of the page. The staging canvases themselves are
+       * full-size (800×500 etc.) and overflow the container, but
+       * `overflow: hidden` clips them visually to the 1×1 area while
+       * the browser still lays them out and paints them — which
+       * generates the cached paint records that drawElementImage
+       * needs.
+       *
+       * We tried `display: none`, `visibility: hidden`, `opacity: 0`,
+       * `left: -9999px`, and `clip-path: inset(50%)` first. Chrome
+       * skips painting for all of those, which leaves the layoutsubtree
+       * children with no cached paint record and silently produces
+       * blank pixels.
+       */
+      .staging-container {
         position: absolute;
-        left: -9999px;
-        top: -9999px;
+        right: 0;
+        bottom: 0;
+        width: 200px;
+        height: 200px;
+        overflow: visible;
+        pointer-events: none;
+        outline: 2px solid red;
       }
 
       #monitor-canvas {
@@ -356,115 +394,185 @@
       /* ============================================================
          Poster content
          ============================================================ */
+      /* ============================================================
+         Sign-up form (rendered onto the left wall as a poster)
+         ============================================================ */
       #poster-content {
         width: 500px;
         height: 700px;
-        background: linear-gradient(160deg, #1a0a2e 0%, #0a0a1a 50%, #0a1a2e 100%);
+        background: linear-gradient(160deg, #14142a 0%, #0a0a1a 60%, #0a1a2e 100%);
         color: #f0f0f0;
-        font-family: "Inter", sans-serif;
-        padding: 2.5rem 2rem;
+        font-family: "Inter", system-ui, sans-serif;
+        padding: 3rem 2.5rem;
         display: flex;
         flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
+        gap: 1.25rem;
         position: relative;
         overflow: hidden;
       }
 
-      .poster-circle-1 {
+      #poster-content::before {
+        content: "";
         position: absolute;
-        top: -100px;
-        right: -100px;
-        width: 300px;
-        height: 300px;
+        top: -120px;
+        right: -120px;
+        width: 320px;
+        height: 320px;
         border-radius: 50%;
         background: radial-gradient(
           circle,
-          rgba(108, 65, 240, 0.2),
+          rgba(108, 65, 240, 0.25),
           transparent 70%
         );
       }
 
-      .poster-circle-2 {
+      #poster-content::after {
+        content: "";
         position: absolute;
-        bottom: -80px;
-        left: -80px;
-        width: 250px;
-        height: 250px;
+        bottom: -100px;
+        left: -100px;
+        width: 280px;
+        height: 280px;
         border-radius: 50%;
         background: radial-gradient(
           circle,
-          rgba(0, 229, 185, 0.15),
+          rgba(0, 229, 185, 0.18),
           transparent 70%
         );
       }
 
-      .poster-inner {
+      .poster-form-header {
         position: relative;
         z-index: 1;
       }
 
-      .poster-badge {
-        display: inline-block;
-        padding: 0.3rem 0.8rem;
-        background: rgba(108, 65, 240, 0.2);
-        border: 1px solid rgba(108, 65, 240, 0.3);
-        border-radius: 20px;
+      .poster-form-eyebrow {
         font-size: 0.7rem;
         font-weight: 700;
-        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
         color: #a78bfa;
-        margin-bottom: 1.5rem;
+        margin-bottom: 0.4rem;
       }
 
-      .poster-title {
-        font-size: 3.8rem;
+      .poster-form-title {
+        font-size: 2.2rem;
         font-weight: 800;
-        line-height: 1.05;
-        margin-bottom: 1.25rem;
-        background: linear-gradient(
-          135deg,
-          #6c41f0 0%,
-          #00e5b9 50%,
-          #f0416c 100%
-        );
+        line-height: 1.1;
+        background: linear-gradient(135deg, #6c41f0 0%, #00e5b9 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
+        margin: 0;
       }
 
-      .poster-desc {
-        font-size: 1rem;
+      .poster-form-subtitle {
+        font-size: 0.95rem;
         color: #8a8aaf;
         line-height: 1.5;
-        margin-bottom: 2rem;
-        max-width: 30ch;
+        margin-top: 0.5rem;
+        max-width: 32ch;
       }
 
-      .poster-features {
+      .poster-form {
+        position: relative;
+        z-index: 1;
         display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        justify-content: center;
-        margin-bottom: 2rem;
+        flex-direction: column;
+        gap: 0.85rem;
+        margin-top: 1rem;
       }
 
-      .poster-tag {
-        padding: 0.3rem 0.7rem;
-        background: rgba(255, 255, 255, 0.05);
+      .poster-field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+      }
+
+      .poster-field label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #6a6a80;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
+      .poster-field .input {
+        padding: 0.7rem 0.9rem;
+        font-family: inherit;
+        font-size: 0.95rem;
+        background: rgba(0, 0, 0, 0.4);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 6px;
-        font-family: "JetBrains Mono", monospace;
-        font-size: 0.75rem;
-        color: #00e5b9;
+        border-radius: 8px;
+        color: #f0f0f0;
       }
 
-      .poster-url {
+      .poster-field .input.placeholder {
+        color: #5a5a70;
+      }
+
+      .poster-field .select {
+        padding: 0.7rem 0.9rem;
+        font-family: inherit;
+        font-size: 0.95rem;
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        color: #f0f0f0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .poster-field .select::after {
+        content: "▾";
+        color: #6a6a80;
+      }
+
+      .poster-checkbox-row {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
         font-size: 0.85rem;
+        color: #a0a0b8;
+      }
+
+      .poster-checkbox-row .check {
+        width: 18px;
+        height: 18px;
+        border-radius: 4px;
+        background: rgba(0, 229, 185, 0.2);
+        border: 1px solid #00e5b9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        color: #00e5b9;
+        font-weight: 700;
+      }
+
+      .poster-submit {
+        margin-top: 0.5rem;
+        padding: 0.85rem 1.25rem;
+        font-family: inherit;
+        font-size: 1rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #6c41f0, #8a52ff);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        text-align: center;
+        box-shadow: 0 12px 30px -10px rgba(108, 65, 240, 0.6);
+      }
+
+      .poster-fineprint {
+        position: relative;
+        z-index: 1;
+        margin-top: auto;
+        font-size: 0.7rem;
         color: #4a4a60;
-        font-weight: 500;
-        letter-spacing: 0.05em;
+        text-align: center;
+        line-height: 1.4;
       }
 
       /* ============================================================
@@ -754,8 +862,11 @@
     <div id="crosshair"></div>
 
     <!-- ============================================================
-         Off-screen staging canvases — HTML content rendered here
+         Staging canvases — HTML content rendered here, then read into
+         CanvasTextures and used as 3D surface materials. Wrapped in a
+         1x1 visible container so the browser paints them (see CSS).
          ============================================================ -->
+    <div class="staging-container">
 
     <!-- Monitor: live dashboard -->
     <canvas
@@ -841,20 +952,37 @@
       layoutsubtree
     >
       <div id="poster-content">
-        <div class="poster-circle-1"></div>
-        <div class="poster-circle-2"></div>
-        <div class="poster-inner">
-          <div class="poster-badge">WICG SPEC</div>
-          <h1 class="poster-title">HTML<br />in<br />Canvas</h1>
-          <p class="poster-desc">
-            Render styled DOM elements directly into canvas bitmaps at 60 fps
+        <div class="poster-form-header">
+          <div class="poster-form-eyebrow">Beta access</div>
+          <h2 class="poster-form-title">Sign up for the<br />HTML-in-Canvas<br />newsletter</h2>
+          <p class="poster-form-subtitle">
+            Real DOM, painted into a 3D scene. This entire form is one
+            HTML element drawn onto the wall via drawElementImage.
           </p>
-          <div class="poster-features">
-            <span class="poster-tag">layoutsubtree</span>
-            <span class="poster-tag">drawElementImage</span>
-            <span class="poster-tag">onpaint</span>
+        </div>
+
+        <div class="poster-form">
+          <div class="poster-field">
+            <label>Name</label>
+            <div class="input">Jane Doe</div>
           </div>
-          <div class="poster-url">html-in-canvas.dev</div>
+          <div class="poster-field">
+            <label>Email</label>
+            <div class="input">jane@example.com</div>
+          </div>
+          <div class="poster-field">
+            <label>Role</label>
+            <div class="select">Frontend engineer</div>
+          </div>
+          <div class="poster-checkbox-row">
+            <div class="check">✓</div>
+            <span>Email me when the spec ships in stable Chrome</span>
+          </div>
+          <div class="poster-submit">Get Early Access →</div>
+        </div>
+
+        <div class="poster-fineprint">
+          html-in-canvas.dev · No spam, no third-party tracking
         </div>
       </div>
     </canvas>
@@ -896,6 +1024,7 @@
         </div>
       </div>
     </canvas>
+    </div><!-- /staging-container -->
 
     <!-- ============================================================
          Three.js (loaded via CDN, no build step).
@@ -984,11 +1113,21 @@
          Three.js scene
          ============================================================== */
       const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x0a0a0f);
+      scene.background = new THREE.Color(0x05050a);
+
+      // Use the viewport canvas's actual CSS size — not window.* —
+      // so the renderer matches the stage in both standalone and
+      // shadow-mounted contexts.
+      function viewportSize() {
+        const w = viewport.clientWidth || 1;
+        const h = viewport.clientHeight || 1;
+        return { w, h };
+      }
+      const initial = viewportSize();
 
       const camera = new THREE.PerspectiveCamera(
         70,
-        window.innerWidth / window.innerHeight,
+        initial.w / initial.h,
         0.1,
         100,
       );
@@ -998,10 +1137,12 @@
         canvas: viewport,
         antialias: true,
       });
-      renderer.setSize(window.innerWidth, window.innerHeight);
+      // Pass `false` to setSize so it doesn't overwrite the CSS size
+      // we set on the viewport — we want CSS to drive layout.
+      renderer.setSize(initial.w, initial.h, false);
       renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.0;
+      renderer.toneMappingExposure = 1.25;
 
       /* ==============================================================
          Room geometry
@@ -1015,9 +1156,9 @@
       /* Floor */
       const floorGeo = new THREE.PlaneGeometry(ROOM_W, ROOM_D);
       const floorMat = new THREE.MeshStandardMaterial({
-        color: 0x1a1a2e,
-        roughness: 0.85,
-        metalness: 0.1,
+        color: 0x3a3a55,
+        roughness: 0.7,
+        metalness: 0.15,
       });
       const floor = new THREE.Mesh(floorGeo, floorMat);
       floor.rotation.x = -Math.PI / 2;
@@ -1027,7 +1168,7 @@
       /* Rug */
       const rugGeo = new THREE.PlaneGeometry(4.5, 3.5);
       const rugMat = new THREE.MeshStandardMaterial({
-        color: 0x1e1e38,
+        color: 0x4a3066,
         roughness: 0.95,
       });
       const rug = new THREE.Mesh(rugGeo, rugMat);
@@ -1038,7 +1179,7 @@
       /* Ceiling */
       const ceilingGeo = new THREE.PlaneGeometry(ROOM_W, ROOM_D);
       const ceilingMat = new THREE.MeshStandardMaterial({
-        color: 0x0d0d15,
+        color: 0x252535,
         roughness: 0.95,
       });
       const ceiling = new THREE.Mesh(ceilingGeo, ceilingMat);
@@ -1046,10 +1187,11 @@
       ceiling.position.y = ROOM_H;
       scene.add(ceiling);
 
-      /* Walls */
+      /* Walls — readable mid-tone with a slight purple cast so they
+         have visible contrast against the near-black scene background */
       const wallMat = new THREE.MeshStandardMaterial({
-        color: 0x14141f,
-        roughness: 0.9,
+        color: 0x363650,
+        roughness: 0.85,
         metalness: 0.05,
       });
 
@@ -1133,13 +1275,63 @@
       }
 
       /* ==============================================================
-         Content surfaces with HTML-in-Canvas textures
+         Content surfaces with HTML-in-Canvas textures.
+
+         Three.js's CanvasTexture doesn't reliably re-upload from a
+         <canvas layoutsubtree> source — even with needsUpdate=true on
+         every frame, the texture stays at the canvas's first-frame
+         contents (empty). Workaround: maintain a plain mirror canvas
+         per surface, drawImage() the layoutsubtree canvas into the
+         mirror each frame, and use the mirror as the texture source.
          ============================================================== */
 
-      /* --- Monitor screen --- */
-      const monitorTexture = new THREE.CanvasTexture(monitorCanvas);
-      monitorTexture.minFilter = THREE.LinearFilter;
-      monitorTexture.magFilter = THREE.LinearFilter;
+      function makeMirrorTexture(srcCanvas) {
+        const mirror = document.createElement('canvas');
+        mirror.width = srcCanvas.width;
+        mirror.height = srcCanvas.height;
+        // Attach to the document body (NOT shadow root) — there are
+        // open Chrome bugs around using shadow-DOM canvases as WebGL
+        // texture sources. Hide visually with offscreen positioning
+        // and a 1px clip-rect.
+        mirror.style.cssText =
+          'position:fixed;left:-1px;top:-1px;width:1px;height:1px;' +
+          'opacity:0.001;pointer-events:none;z-index:-1';
+        document.body.appendChild(mirror);
+        const mctx = mirror.getContext('2d');
+        const tex = new THREE.Texture(mirror);
+        tex.minFilter = THREE.LinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        tex.generateMipmaps = false;
+        tex.flipY = true;
+        tex.needsUpdate = true;
+        return {
+          mirror,
+          tex,
+          sync() {
+            if (
+              mirror.width !== srcCanvas.width ||
+              mirror.height !== srcCanvas.height
+            ) {
+              mirror.width = srcCanvas.width;
+              mirror.height = srcCanvas.height;
+            }
+            mctx.clearRect(0, 0, mirror.width, mirror.height);
+            try {
+              mctx.drawImage(srcCanvas, 0, 0);
+            } catch {}
+            tex.needsUpdate = true;
+          },
+        };
+      }
+
+      const monitorMirror = makeMirrorTexture(monitorCanvas);
+      const posterMirror = makeMirrorTexture(posterCanvas);
+      const tvMirror = makeMirrorTexture(tvCanvas);
+      const monitorTexture = monitorMirror.tex;
+      const posterTexture = posterMirror.tex;
+      const tvTexture = tvMirror.tex;
+      window.__mirrors = { monitor: monitorMirror, poster: posterMirror, tv: tvMirror };
+      window.__getMonitorMesh = () => monitorMesh;
 
       const monitorMesh = new THREE.Mesh(
         new THREE.PlaneGeometry(2.4, 1.5),
@@ -1177,10 +1369,6 @@
       scene.add(standBase);
 
       /* --- Poster --- */
-      const posterTexture = new THREE.CanvasTexture(posterCanvas);
-      posterTexture.minFilter = THREE.LinearFilter;
-      posterTexture.magFilter = THREE.LinearFilter;
-
       const posterMesh = new THREE.Mesh(
         new THREE.PlaneGeometry(1.4, 2.0),
         new THREE.MeshBasicMaterial({ map: posterTexture }),
@@ -1203,10 +1391,6 @@
       scene.add(posterFrame);
 
       /* --- TV --- */
-      const tvTexture = new THREE.CanvasTexture(tvCanvas);
-      tvTexture.minFilter = THREE.LinearFilter;
-      tvTexture.magFilter = THREE.LinearFilter;
-
       const tvMesh = new THREE.Mesh(
         new THREE.PlaneGeometry(2.8, 1.575),
         new THREE.MeshBasicMaterial({ map: tvTexture }),
@@ -1224,28 +1408,33 @@
       scene.add(tvFrame);
 
       /* ==============================================================
-         Lighting
+         Lighting — the room reads as moody-but-legible. Bright enough
+         that surfaces are visible from any angle, with colored accent
+         lights from each display tinting the surrounding walls.
          ============================================================== */
-      /* Dim ambient fill */
-      scene.add(new THREE.AmbientLight(0x1a1a2e, 0.5));
+      scene.add(new THREE.AmbientLight(0xa0a0c0, 1.2));
 
-      /* Warm ceiling light */
-      const ceilingLight = new THREE.PointLight(0xffe4c4, 0.35, 12);
+      /* Warm ceiling fill */
+      const ceilingLight = new THREE.PointLight(0xffe4c4, 1.4, 22);
       ceilingLight.position.set(0, 3.3, 0);
       scene.add(ceilingLight);
 
+      /* Hemisphere light for natural sky/ground bounce */
+      const hemi = new THREE.HemisphereLight(0xa0b0ff, 0x303040, 1.0);
+      scene.add(hemi);
+
       /* Monitor glow — cool blue wash on desk and nearby walls */
-      const monitorLight = new THREE.PointLight(0x4a9eff, 0.6, 5);
+      const monitorLight = new THREE.PointLight(0x4a9eff, 1.4, 7);
       monitorLight.position.set(0, 1.8, -3.0);
       scene.add(monitorLight);
 
       /* TV glow — purple tint on right side of room */
-      const tvLight = new THREE.PointLight(0x6c41f0, 0.45, 5);
+      const tvLight = new THREE.PointLight(0x6c41f0, 1.1, 7);
       tvLight.position.set(4.0, 2.1, -1);
       scene.add(tvLight);
 
       /* Poster accent — teal highlight on left wall area */
-      const posterLight = new THREE.PointLight(0x00e5b9, 0.3, 4);
+      const posterLight = new THREE.PointLight(0x00e5b9, 0.9, 6);
       posterLight.position.set(-4.0, 1.8, 0);
       scene.add(posterLight);
 
@@ -1266,7 +1455,11 @@
       });
 
       document.addEventListener("pointerlockchange", () => {
-        isLocked = document.pointerLockElement === viewport;
+        // In shadow DOM, document.pointerLockElement returns the host
+        // element (not the canvas inside the shadow root). Use the
+        // script's root — document in standalone, the shadow root in
+        // wrapped — to get the actual locked element.
+        isLocked = root.pointerLockElement === viewport;
         overlay.classList.toggle("hidden", isLocked);
         crosshair.classList.toggle("visible", isLocked);
       });
@@ -1453,8 +1646,11 @@
       let prevTime = performance.now();
       let lastTvPaint = 0;
 
+      let animFrames = 0;
+      window.__animFrames = () => animFrames;
       function animate() {
         requestAnimationFrame(animate);
+        animFrames++;
 
         const now = performance.now();
         const dt = Math.min((now - prevTime) / 1000, 0.1);
@@ -1469,32 +1665,27 @@
           lastTvPaint = now;
         }
 
-        /* Upload dirty textures to GPU */
-        if (monitorDirty) {
-          monitorTexture.needsUpdate = true;
-          monitorDirty = false;
-        }
-        if (posterDirty) {
-          posterTexture.needsUpdate = true;
-          posterDirty = false;
-        }
-        if (tvDirty) {
-          tvTexture.needsUpdate = true;
-          tvDirty = false;
-        }
+        /* Sync each layoutsubtree staging canvas into its plain
+         * mirror canvas, then mark the texture for upload. */
+        monitorMirror.sync();
+        posterMirror.sync();
+        tvMirror.sync();
 
         renderer.render(scene, camera);
       }
 
       /* ==============================================================
-         Resize handler
+         Resize handler — observe the viewport canvas itself.
+         A ResizeObserver fires whenever the canvas's CSS box changes,
+         which works in both standalone (window resize) and shadow
+         contexts (stage resize).
          ============================================================== */
-      window.addEventListener("resize", () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
+      new ResizeObserver(() => {
+        const { w, h } = viewportSize();
+        camera.aspect = w / h;
         camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-      });
+        renderer.setSize(w, h, false);
+      }).observe(viewport);
 
       /* ==============================================================
          Start

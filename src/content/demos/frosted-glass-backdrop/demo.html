@@ -19,7 +19,8 @@
         height: 100%;
       }
 
-      :where(body, :host) {
+      body,
+      :host {
         margin: 0;
         min-height: 100%;
         background: #0a0a0f;
@@ -57,10 +58,19 @@
         max-width: 100%;
       }
 
+      /*
+       * The canvas is a CSS grid with a single named "stack" area.
+       * Both children (#bg-layer and #frost-panel) live in that area
+       * so they overlay each other. We can't use `position: absolute`
+       * on the direct children — Chrome's <canvas layoutsubtree> forces
+       * direct children to `position: static` regardless of CSS — so
+       * grid stacking + transform offsets are the workaround.
+       */
       #canvas {
         width: 100%;
         aspect-ratio: 4 / 3;
-        display: block;
+        display: grid;
+        grid-template-areas: "stack";
         border-radius: 16px;
         background: #0d0d1a;
         position: relative;
@@ -70,8 +80,9 @@
          Background layer — 2x2 card grid
          ============================================================ */
       #bg-layer {
-        position: absolute;
-        inset: 0;
+        grid-area: stack;
+        width: 100%;
+        height: 100%;
         padding: 20px;
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -308,11 +319,19 @@
 
       /* ============================================================
          Frost panel (positioned inside canvas, draggable)
-         ============================================================ */
+         ============================================================
+         Same grid cell as #bg-layer — overlaid via the "stack" area.
+         Position offset is via transform because position:absolute
+         doesn't work on direct canvas children (see #canvas comment).
+         The drag handler updates --panel-x / --panel-y custom props.
+       */
       #frost-panel {
-        position: absolute;
-        left: 170px;
-        top: 115px;
+        grid-area: stack;
+        justify-self: start;
+        align-self: start;
+        --panel-x: 170px;
+        --panel-y: 115px;
+        transform: translate(var(--panel-x), var(--panel-y));
         width: 240px;
         background: transparent;
         cursor: grab;
@@ -567,7 +586,8 @@
       }
 
       @media (max-width: 640px) {
-        :where(body, :host) {
+        body,
+        :host {
           padding: 1rem 0.75rem;
         }
 
@@ -1072,9 +1092,13 @@ void main() {
         /* 2. Draw background cards */
         ctx.drawElementImage(bgLayer, 0, 0, cssW, cssH);
 
-        /* 3. Measure frost panel in CSS pixels */
-        const px = frostPanel.offsetLeft;
-        const py = frostPanel.offsetTop;
+        /* 3. Measure frost panel in CSS pixels.
+         * panelX/panelY are the logical position tracked in JS — the
+         * panel's CSS layout position is at (0,0) of the canvas grid
+         * cell, with a transform offsetting the visual rendering.
+         * offsetWidth/offsetHeight still report the panel's box size. */
+        const px = panelX;
+        const py = panelY;
         const pw = frostPanel.offsetWidth;
         const ph = frostPanel.offsetHeight;
 
@@ -1165,13 +1189,27 @@ void main() {
       ro.observe(canvas);
 
       /* ==============================================================
-         Drag handling for the frost panel
+         Drag handling for the frost panel.
+
+         The panel is positioned via a CSS transform driven by two
+         custom properties on the element (--panel-x, --panel-y),
+         because Chrome's <canvas layoutsubtree> forces direct canvas
+         children to position:static. We track the panel's logical
+         position in JS and use it for both the visual transform AND
+         the paint code's source coordinates.
          ============================================================== */
       let isDragging = false;
       let dragStartX = 0;
       let dragStartY = 0;
       let panelStartX = 0;
       let panelStartY = 0;
+      let panelX = 170;
+      let panelY = 115;
+
+      function applyPanelPosition() {
+        frostPanel.style.setProperty("--panel-x", panelX + "px");
+        frostPanel.style.setProperty("--panel-y", panelY + "px");
+      }
 
       function clampPanel(newX, newY) {
         const cssW = canvas.clientWidth;
@@ -1189,8 +1227,8 @@ void main() {
         frostPanel.classList.add("dragging");
         dragStartX = e.clientX;
         dragStartY = e.clientY;
-        panelStartX = frostPanel.offsetLeft;
-        panelStartY = frostPanel.offsetTop;
+        panelStartX = panelX;
+        panelStartY = panelY;
         e.preventDefault();
       });
 
@@ -1199,8 +1237,9 @@ void main() {
         const dx = e.clientX - dragStartX;
         const dy = e.clientY - dragStartY;
         const pos = clampPanel(panelStartX + dx, panelStartY + dy);
-        frostPanel.style.left = pos.x + "px";
-        frostPanel.style.top = pos.y + "px";
+        panelX = pos.x;
+        panelY = pos.y;
+        applyPanelPosition();
         requestRepaint();
       });
 
@@ -1219,8 +1258,8 @@ void main() {
           const touch = e.touches[0];
           dragStartX = touch.clientX;
           dragStartY = touch.clientY;
-          panelStartX = frostPanel.offsetLeft;
-          panelStartY = frostPanel.offsetTop;
+          panelStartX = panelX;
+          panelStartY = panelY;
         },
         { passive: true },
       );
@@ -1233,8 +1272,9 @@ void main() {
           const dx = touch.clientX - dragStartX;
           const dy = touch.clientY - dragStartY;
           const pos = clampPanel(panelStartX + dx, panelStartY + dy);
-          frostPanel.style.left = pos.x + "px";
-          frostPanel.style.top = pos.y + "px";
+          panelX = pos.x;
+          panelY = pos.y;
+          applyPanelPosition();
           requestRepaint();
         },
         { passive: true },

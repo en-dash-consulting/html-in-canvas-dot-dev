@@ -19,7 +19,8 @@
         height: 100%;
       }
 
-      :where(body, :host) {
+      body,
+      :host {
         display: block;
         margin: 0;
         min-height: 100%;
@@ -212,10 +213,25 @@
       /* ============================================================
          Off-screen staging canvas for HTML-in-Canvas capture
          ============================================================ */
-      #staging-canvas {
+      /*
+       * Wrap the staging canvas in a 1x1 visible container at the
+       * page corner so Chrome actually paints its layoutsubtree
+       * children. Off-screen positioning (left: -9999px) and
+       * opacity: 0 both cause the browser to skip painting, which
+       * leaves the layoutsubtree children with no cached paint
+       * record and drawElementImage produces blank pixels.
+       */
+      .staging-container {
         position: absolute;
-        left: -9999px;
-        top: -9999px;
+        right: 0;
+        bottom: 0;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      #staging-canvas {
         width: 600px;
         height: 400px;
       }
@@ -355,18 +371,21 @@
     </div>
 
     <!-- ============================================================
-         Off-screen: 2D staging canvas + HTML content
-         The HTML element inside this canvas is styled by the CSS editor.
-         drawElementImage() captures it; the result feeds WebGL.
+         Staging canvas + HTML content. The HTML element inside is
+         styled by the CSS editor. drawElementImage() captures it;
+         the result feeds WebGL. Wrapped in a 1×1 visible container
+         so Chrome paints it (see CSS).
          ============================================================ -->
-    <canvas id="staging-canvas" width="600" height="400" layoutsubtree>
-      <div id="staging-content">
-        <div id="user-content">
-          <h2 style="margin-bottom: 0.5rem">Hello, Shaders</h2>
-          <p>Edit the CSS on the left to style this element.</p>
+    <div class="staging-container">
+      <canvas id="staging-canvas" width="600" height="400" layoutsubtree>
+        <div id="staging-content">
+          <div id="user-content">
+            <h2 style="margin-bottom: 0.5rem">Hello, Shaders</h2>
+            <p>Edit the CSS on the left to style this element.</p>
+          </div>
         </div>
-      </div>
-    </canvas>
+      </canvas>
+    </div>
 
     <script>
       /* ==============================================================
