@@ -1,0 +1,1287 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Frosted Glass Backdrop — HTML-in-Canvas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        background: #0a0a0f;
+        color: #f0f0f0;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 1.5rem 1rem;
+        overflow-x: hidden;
+      }
+
+      h1 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 0.25rem;
+      }
+
+      .page-subtitle {
+        text-align: center;
+        font-size: 0.8rem;
+        color: #6a6a80;
+        margin-bottom: 1.5rem;
+        max-width: 520px;
+        line-height: 1.4;
+      }
+
+      /* ============================================================
+         Scene
+         ============================================================ */
+      .scene {
+        position: relative;
+        width: 600px;
+        max-width: 100%;
+      }
+
+      #canvas {
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        display: block;
+        border-radius: 16px;
+        background: #0d0d1a;
+        position: relative;
+      }
+
+      /* ============================================================
+         Background layer — 2x2 card grid
+         ============================================================ */
+      #bg-layer {
+        position: absolute;
+        inset: 0;
+        padding: 20px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        gap: 14px;
+        overflow: hidden;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+      }
+
+      .bg-card {
+        border-radius: 14px;
+        padding: 18px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* -- Weather card ------------------------------------------ */
+      .card-weather {
+        background: linear-gradient(135deg, #1a3a5c 0%, #0d2a4a 50%, #0a1628 100%);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+      }
+
+      .sun-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #fbbf24, #f59e0b);
+        box-shadow: 0 0 16px rgba(251, 191, 36, 0.4);
+        margin-bottom: 8px;
+      }
+
+      .weather-temp {
+        font-size: 2.6rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #60a5fa, #3b82f6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1;
+        margin-bottom: 4px;
+      }
+
+      .weather-city {
+        font-size: 0.8rem;
+        color: #94a3b8;
+        margin-bottom: 2px;
+      }
+
+      .weather-detail {
+        font-size: 0.65rem;
+        color: #475569;
+      }
+
+      /* -- Music card --------------------------------------------- */
+      .card-music {
+        background: linear-gradient(
+          135deg,
+          #2d1854 0%,
+          #1a0e3e 50%,
+          #110a2e 100%
+        );
+        border: 1px solid rgba(139, 92, 246, 0.2);
+      }
+
+      .album-art {
+        width: 44px;
+        height: 44px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #f59e0b, #ef4444, #8b5cf6);
+        margin-bottom: 8px;
+        flex-shrink: 0;
+      }
+
+      .track-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-bottom: 2px;
+      }
+
+      .track-artist {
+        font-size: 0.68rem;
+        color: #a78bfa;
+        margin-bottom: 10px;
+      }
+
+      .progress-bar {
+        height: 3px;
+        background: #2a2050;
+        border-radius: 2px;
+        margin-bottom: 10px;
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        width: 35%;
+        height: 100%;
+        background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+        border-radius: 2px;
+      }
+
+      .playback {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 16px;
+        color: #c4b5fd;
+      }
+
+      .play-circle {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: #8b5cf6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .play-tri {
+        width: 0;
+        height: 0;
+        border-left: 9px solid #fff;
+        border-top: 5px solid transparent;
+        border-bottom: 5px solid transparent;
+        margin-left: 2px;
+      }
+
+      .skip-icon {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: -1px;
+      }
+
+      /* -- Notifications card ------------------------------------- */
+      .card-notif {
+        background: linear-gradient(135deg, #1a1a30 0%, #12121f 100%);
+        border: 1px solid #282840;
+      }
+
+      .notif-header {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #8a8aaf;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .notif-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      .notif-item:last-child {
+        margin-bottom: 0;
+      }
+
+      .notif-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        margin-top: 3px;
+        flex-shrink: 0;
+      }
+
+      .notif-dot.green {
+        background: #00e5b9;
+      }
+      .notif-dot.purple {
+        background: #8b5cf6;
+      }
+      .notif-dot.amber {
+        background: #f59e0b;
+      }
+
+      .notif-text {
+        font-size: 0.7rem;
+        color: #c0c0d0;
+        line-height: 1.3;
+      }
+
+      .notif-time {
+        font-size: 0.58rem;
+        color: #4a4a60;
+        margin-top: 1px;
+      }
+
+      /* -- Chart card --------------------------------------------- */
+      .card-chart {
+        background: linear-gradient(
+          135deg,
+          #0f2027 0%,
+          #0a1a1a 50%,
+          #0d1117 100%
+        );
+        border: 1px solid rgba(0, 229, 185, 0.15);
+      }
+
+      .chart-title {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #8a8aaf;
+        margin-bottom: 10px;
+      }
+
+      .chart-bars {
+        display: flex;
+        align-items: flex-end;
+        gap: 5px;
+        height: 70px;
+        margin-bottom: 5px;
+      }
+
+      .bar {
+        flex: 1;
+        border-radius: 3px 3px 0 0;
+        background: linear-gradient(180deg, #00e5b9, #00bd81);
+        min-height: 3px;
+      }
+
+      .chart-labels {
+        display: flex;
+        gap: 5px;
+      }
+
+      .chart-labels span {
+        flex: 1;
+        text-align: center;
+        font-size: 0.55rem;
+        color: #4a4a60;
+      }
+
+      /* ============================================================
+         Frost panel (positioned inside canvas, draggable)
+         ============================================================ */
+      #frost-panel {
+        position: absolute;
+        left: 170px;
+        top: 115px;
+        width: 240px;
+        background: transparent;
+        cursor: grab;
+        user-select: none;
+        -webkit-user-select: none;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+      }
+
+      #frost-panel.dragging {
+        cursor: grabbing;
+      }
+
+      .frost-inner {
+        padding: 18px;
+        border-radius: 16px;
+        background: transparent;
+      }
+
+      .frost-grip {
+        display: flex;
+        justify-content: center;
+        gap: 3px;
+        margin-bottom: 10px;
+      }
+
+      .frost-grip span {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.25);
+      }
+
+      .frost-title {
+        font-size: 0.9rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 3px;
+        color: #f0f0f0;
+      }
+
+      .frost-desc {
+        font-size: 0.64rem;
+        color: rgba(255, 255, 255, 0.55);
+        text-align: center;
+        line-height: 1.45;
+        margin-bottom: 14px;
+      }
+
+      .frost-toggles {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 7px;
+        margin-bottom: 14px;
+      }
+
+      .frost-toggle {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        padding: 10px 4px 8px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.07);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .toggle-icon {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.65rem;
+        font-weight: 700;
+      }
+
+      .toggle-icon.blue {
+        background: rgba(59, 130, 246, 0.3);
+        color: #60a5fa;
+      }
+
+      .toggle-icon.green {
+        background: rgba(0, 229, 185, 0.3);
+        color: #00e5b9;
+      }
+
+      .toggle-icon.purple {
+        background: rgba(139, 92, 246, 0.3);
+        color: #a78bfa;
+      }
+
+      .toggle-label {
+        font-size: 0.55rem;
+        color: rgba(255, 255, 255, 0.45);
+      }
+
+      .frost-badge {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        font-size: 0.58rem;
+        color: rgba(0, 229, 185, 0.7);
+      }
+
+      .badge-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: #00e5b9;
+      }
+
+      /* ============================================================
+         Controls
+         ============================================================ */
+      .controls {
+        margin-top: 1rem;
+        max-width: 600px;
+        width: 100%;
+        padding: 0.85rem 1rem;
+        background: #14141f;
+        border: 1px solid #282840;
+        border-radius: 12px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.85rem;
+        align-items: flex-start;
+      }
+
+      .control-group {
+        flex: 1;
+        min-width: 120px;
+      }
+
+      .control-group label {
+        display: block;
+        font-size: 0.68rem;
+        color: #6a6a80;
+        margin-bottom: 5px;
+      }
+
+      .mode-buttons {
+        display: flex;
+        gap: 4px;
+      }
+
+      .mode-btn {
+        flex: 1;
+        padding: 5px 6px;
+        border: 1px solid #333355;
+        border-radius: 7px;
+        background: #1a1a30;
+        color: #8a8aaf;
+        font-family: "Inter", sans-serif;
+        font-size: 0.62rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .mode-btn:hover {
+        background: #252540;
+        color: #f0f0f0;
+      }
+
+      .mode-btn.active {
+        background: rgba(108, 65, 240, 0.2);
+        border-color: rgba(108, 65, 240, 0.4);
+        color: #a78bfa;
+      }
+
+      input[type="range"] {
+        width: 100%;
+        height: 4px;
+        -webkit-appearance: none;
+        appearance: none;
+        background: #282840;
+        border-radius: 2px;
+        outline: none;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #6c41f0;
+        cursor: pointer;
+      }
+
+      /* ============================================================
+         Hint + pipeline info
+         ============================================================ */
+      .hint {
+        margin-top: 1rem;
+        font-size: 0.7rem;
+        color: #4a4a60;
+        text-align: center;
+      }
+
+      .hint kbd {
+        display: inline-block;
+        padding: 0.1rem 0.35rem;
+        background: #1a1a30;
+        border: 1px solid #333;
+        border-radius: 3px;
+        font-family: inherit;
+        font-size: 0.65rem;
+        color: #6a6a80;
+      }
+
+      .pipeline-info {
+        margin-top: 1rem;
+        max-width: 600px;
+        width: 100%;
+        padding: 0.85rem 1rem;
+        background: #14141f;
+        border: 1px solid #282840;
+        border-radius: 10px;
+        font-size: 0.72rem;
+        color: #6a6a80;
+        line-height: 1.55;
+      }
+
+      .pipeline-info p {
+        margin-bottom: 0.3rem;
+      }
+
+      .pipeline-info p:last-child {
+        margin-bottom: 0;
+      }
+
+      .pipeline-info strong {
+        color: #8a8aaf;
+      }
+
+      .pipeline-info .hl {
+        color: #00e5b9;
+      }
+
+      .pipeline-info code {
+        color: #6c41f0;
+        font-family: "Courier New", monospace;
+        font-size: 0.68rem;
+      }
+
+      .pipeline-info .note {
+        color: #3a3a50;
+        font-size: 0.65rem;
+        margin-top: 0.4rem;
+      }
+
+      @media (max-width: 640px) {
+        body {
+          padding: 1rem 0.75rem;
+        }
+
+        #bg-layer {
+          padding: 12px;
+          gap: 10px;
+        }
+
+        .bg-card {
+          padding: 12px;
+        }
+
+        .weather-temp {
+          font-size: 2rem;
+        }
+
+        #frost-panel {
+          left: 50px;
+          top: 70px;
+          width: 200px;
+        }
+
+        .frost-inner {
+          padding: 14px;
+        }
+
+        .controls {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Frosted Glass Backdrop</h1>
+    <p class="page-subtitle">
+      Drag the frosted panel over the cards. Switch between blur modes that go
+      beyond CSS backdrop-filter — directional blur, tilt-shift, and custom
+      gaussian kernels with color tinting.
+    </p>
+
+    <div class="scene" id="scene">
+      <canvas id="canvas" layoutsubtree>
+        <!-- Background card grid -->
+        <div id="bg-layer">
+          <!-- Weather -->
+          <div class="bg-card card-weather">
+            <div class="sun-icon"></div>
+            <div class="weather-temp">24°</div>
+            <div class="weather-city">Los Angeles, CA</div>
+            <div class="weather-detail">H: 28° L: 18° | UV 7</div>
+          </div>
+
+          <!-- Music -->
+          <div class="bg-card card-music">
+            <div class="album-art"></div>
+            <div class="track-title">Midnight City</div>
+            <div class="track-artist">M83</div>
+            <div class="progress-bar"><div class="progress-fill"></div></div>
+            <div class="playback">
+              <span class="skip-icon">|&lt;</span>
+              <div class="play-circle"><div class="play-tri"></div></div>
+              <span class="skip-icon">&gt;|</span>
+            </div>
+          </div>
+
+          <!-- Notifications -->
+          <div class="bg-card card-notif">
+            <div class="notif-header">Notifications</div>
+            <div class="notif-item">
+              <div class="notif-dot green"></div>
+              <div>
+                <div class="notif-text">Build deployed</div>
+                <div class="notif-time">2 min ago</div>
+              </div>
+            </div>
+            <div class="notif-item">
+              <div class="notif-dot purple"></div>
+              <div>
+                <div class="notif-text">New comment on PR #42</div>
+                <div class="notif-time">15 min ago</div>
+              </div>
+            </div>
+            <div class="notif-item">
+              <div class="notif-dot amber"></div>
+              <div>
+                <div class="notif-text">Security scan passed</div>
+                <div class="notif-time">1 hr ago</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chart -->
+          <div class="bg-card card-chart">
+            <div class="chart-title">Weekly Revenue</div>
+            <div class="chart-bars">
+              <div class="bar" style="height: 40%"></div>
+              <div class="bar" style="height: 65%"></div>
+              <div class="bar" style="height: 45%"></div>
+              <div class="bar" style="height: 80%"></div>
+              <div class="bar" style="height: 55%"></div>
+              <div class="bar" style="height: 92%"></div>
+              <div class="bar" style="height: 70%"></div>
+            </div>
+            <div class="chart-labels">
+              <span>M</span><span>T</span><span>W</span><span>T</span
+              ><span>F</span><span>S</span><span>S</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Frost panel -->
+        <div id="frost-panel">
+          <div class="frost-inner" id="frost-content">
+            <div class="frost-grip">
+              <span></span><span></span><span></span>
+            </div>
+            <div class="frost-title">Control Center</div>
+            <div class="frost-desc">
+              Custom blur composited between HTML layers
+            </div>
+            <div class="frost-toggles">
+              <div class="frost-toggle">
+                <div class="toggle-icon blue">W</div>
+                <span class="toggle-label">WiFi</span>
+              </div>
+              <div class="frost-toggle">
+                <div class="toggle-icon green">B</div>
+                <span class="toggle-label">Bluetooth</span>
+              </div>
+              <div class="frost-toggle">
+                <div class="toggle-icon purple">A</div>
+                <span class="toggle-label">AirDrop</span>
+              </div>
+            </div>
+            <div class="frost-badge">
+              <span class="badge-dot"></span>
+              Canvas Composited
+            </div>
+          </div>
+        </div>
+      </canvas>
+    </div>
+
+    <p class="hint">
+      <kbd>drag</kbd> the panel to reveal the blur over different content
+    </p>
+
+    <!-- Controls -->
+    <div class="controls" id="controls">
+      <div class="control-group">
+        <label>Blur Mode</label>
+        <div class="mode-buttons" id="mode-buttons">
+          <button class="mode-btn active" data-mode="gaussian">Gaussian</button>
+          <button class="mode-btn" data-mode="directional">Directional</button>
+          <button class="mode-btn" data-mode="tiltshift">Tilt-Shift</button>
+        </div>
+      </div>
+      <div class="control-group">
+        <label>Radius: <span id="radius-value">12</span>px</label>
+        <input type="range" id="radius-slider" min="2" max="30" value="12" />
+      </div>
+      <div class="control-group" id="angle-group" style="display: none">
+        <label>Angle: <span id="angle-value">0</span>&deg;</label>
+        <input type="range" id="angle-slider" min="0" max="360" value="0" />
+      </div>
+      <div class="control-group" id="focus-group" style="display: none">
+        <label>Focus: <span id="focus-value">50</span>%</label>
+        <input type="range" id="focus-slider" min="10" max="90" value="50" />
+      </div>
+    </div>
+
+    <div class="pipeline-info">
+      <p>
+        <strong>1.</strong> Background cards live inside a
+        <code>&lt;canvas layoutsubtree&gt;</code> — fully styled with CSS
+      </p>
+      <p>
+        <strong>2.</strong>
+        <span class="hl">drawElementImage()</span> captures the background layer
+        as canvas pixels
+      </p>
+      <p>
+        <strong>3.</strong> The region behind the frost panel is processed
+        through a <span class="hl">custom WebGL blur shader</span>
+      </p>
+      <p>
+        <strong>4.</strong> Blurred pixels + color tint are composited back,
+        then the panel's HTML content is drawn on top via
+        <span class="hl">drawElementImage()</span>
+      </p>
+      <p class="note">
+        CSS backdrop-filter can only do standard gaussian blur. This demo
+        applies directional blur, tilt-shift, and custom kernels — only possible
+        with HTML-in-Canvas compositing between layers.
+      </p>
+    </div>
+
+    <script>
+      /* ==============================================================
+         DOM references
+         ============================================================== */
+      const scene = document.getElementById("scene");
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+      const bgLayer = document.getElementById("bg-layer");
+      const frostPanel = document.getElementById("frost-panel");
+      const frostContent = document.getElementById("frost-content");
+
+      /* ==============================================================
+         State
+         ============================================================== */
+      let blurMode = "gaussian";
+      let blurRadius = 12;
+      let blurAngle = 0;
+      let focusY = 0.5;
+
+      /* ==============================================================
+         Offscreen canvases for blur processing
+         ============================================================== */
+      const tempCanvas = document.createElement("canvas");
+      const tempCtx = tempCanvas.getContext("2d");
+
+      const blurCanvas = document.createElement("canvas");
+      const gl = blurCanvas.getContext("webgl", {
+        premultipliedAlpha: false,
+        preserveDrawingBuffer: true,
+        alpha: true,
+      });
+
+      if (!gl) {
+        document.body.innerHTML =
+          '<p style="padding:2rem;color:#f44">WebGL is not available.</p>';
+        throw new Error("WebGL unavailable");
+      }
+
+      /* ==============================================================
+         WebGL shader — configurable gaussian blur
+         ============================================================== */
+      const VERT_SRC = `
+attribute vec2 a_position;
+varying vec2 v_uv;
+void main() {
+  v_uv = a_position * 0.5 + 0.5;
+  v_uv.y = 1.0 - v_uv.y;
+  gl_Position = vec4(a_position, 0.0, 1.0);
+}`;
+
+      const FRAG_SRC = `
+precision highp float;
+
+uniform sampler2D u_image;
+uniform vec2 u_resolution;
+uniform vec2 u_direction;
+uniform float u_radius;
+uniform float u_tiltshift;
+uniform float u_focusY;
+uniform float u_focusRange;
+
+varying vec2 v_uv;
+
+void main() {
+  float radius = u_radius;
+
+  /* Tilt-shift: modulate blur radius by distance from focus line */
+  if (u_tiltshift > 0.5) {
+    float dist = abs(v_uv.y - u_focusY);
+    float factor = smoothstep(0.0, u_focusRange, dist);
+    radius *= factor;
+  }
+
+  /* Skip blur for negligible radius */
+  if (radius < 0.5) {
+    gl_FragColor = texture2D(u_image, v_uv);
+    return;
+  }
+
+  vec2 texel = u_direction / u_resolution;
+  vec4 color = vec4(0.0);
+  float total = 0.0;
+  float sigma = max(radius * 0.4, 1.0);
+  float coeff = -0.5 / (sigma * sigma);
+
+  /* 25-tap weighted gaussian sampling */
+  for (int i = -12; i <= 12; i++) {
+    float fi = float(i);
+    float offset = fi * (radius / 12.0);
+    float weight = exp(offset * offset * coeff);
+    vec2 sampleUV = clamp(v_uv + texel * offset, 0.0, 1.0);
+    color += texture2D(u_image, sampleUV) * weight;
+    total += weight;
+  }
+
+  gl_FragColor = color / total;
+}`;
+
+      /* ----------------------------------------------------------
+         Shader compilation helpers
+         ---------------------------------------------------------- */
+      function compileShader(type, src) {
+        const s = gl.createShader(type);
+        gl.shaderSource(s, src);
+        gl.compileShader(s);
+        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+          const log = gl.getShaderInfoLog(s);
+          gl.deleteShader(s);
+          throw new Error("Shader: " + log);
+        }
+        return s;
+      }
+
+      function linkProgram(vs, fs) {
+        const p = gl.createProgram();
+        gl.attachShader(p, vs);
+        gl.attachShader(p, fs);
+        gl.linkProgram(p);
+        if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+          const log = gl.getProgramInfoLog(p);
+          gl.deleteProgram(p);
+          throw new Error("Program: " + log);
+        }
+        return p;
+      }
+
+      /* Build the blur program */
+      const vsObj = compileShader(gl.VERTEX_SHADER, VERT_SRC);
+      const fsObj = compileShader(gl.FRAGMENT_SHADER, FRAG_SRC);
+      const program = linkProgram(vsObj, fsObj);
+      gl.deleteShader(vsObj);
+      gl.deleteShader(fsObj);
+
+      /* Uniform & attribute locations */
+      const aPosition = gl.getAttribLocation(program, "a_position");
+      const uImage = gl.getUniformLocation(program, "u_image");
+      const uResolution = gl.getUniformLocation(program, "u_resolution");
+      const uDirection = gl.getUniformLocation(program, "u_direction");
+      const uRadius = gl.getUniformLocation(program, "u_radius");
+      const uTiltshift = gl.getUniformLocation(program, "u_tiltshift");
+      const uFocusY = gl.getUniformLocation(program, "u_focusY");
+      const uFocusRange = gl.getUniformLocation(program, "u_focusRange");
+
+      /* Full-screen quad buffer */
+      const quadBuf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+      gl.bufferData(
+        gl.ARRAY_BUFFER,
+        new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
+        gl.STATIC_DRAW,
+      );
+
+      /* Source texture (receives the extracted frost region) */
+      const srcTex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, srcTex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+      /* Framebuffer texture (for two-pass separable blur) */
+      const fbTex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, fbTex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+      const fb = gl.createFramebuffer();
+      let fbWidth = 0;
+      let fbHeight = 0;
+
+      function ensureFramebuffer(w, h) {
+        if (w === fbWidth && h === fbHeight) return;
+        fbWidth = w;
+        fbHeight = h;
+        gl.bindTexture(gl.TEXTURE_2D, fbTex);
+        gl.texImage2D(
+          gl.TEXTURE_2D,
+          0,
+          gl.RGBA,
+          w,
+          h,
+          0,
+          gl.RGBA,
+          gl.UNSIGNED_BYTE,
+          null,
+        );
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+        gl.framebufferTexture2D(
+          gl.FRAMEBUFFER,
+          gl.COLOR_ATTACHMENT0,
+          gl.TEXTURE_2D,
+          fbTex,
+          0,
+        );
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      }
+
+      /* ----------------------------------------------------------
+         Execute a single blur pass
+         ---------------------------------------------------------- */
+      function blurPass(
+        inputTex,
+        outputFB,
+        w,
+        h,
+        dirX,
+        dirY,
+        radius,
+        tiltshift,
+        focusYVal,
+        focusRange,
+      ) {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, outputFB);
+        gl.viewport(0, 0, w, h);
+        gl.useProgram(program);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+        gl.enableVertexAttribArray(aPosition);
+        gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, inputTex);
+        gl.uniform1i(uImage, 0);
+
+        gl.uniform2f(uResolution, w, h);
+        gl.uniform2f(uDirection, dirX, dirY);
+        gl.uniform1f(uRadius, radius);
+        gl.uniform1f(uTiltshift, tiltshift);
+        gl.uniform1f(uFocusY, focusYVal);
+        gl.uniform1f(uFocusRange, focusRange);
+
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      }
+
+      /* ----------------------------------------------------------
+         Process blur on the extracted region (in tempCanvas)
+         ---------------------------------------------------------- */
+      function processBlur(w, h) {
+        blurCanvas.width = w;
+        blurCanvas.height = h;
+        ensureFramebuffer(w, h);
+
+        /* Upload the extracted region */
+        gl.bindTexture(gl.TEXTURE_2D, srcTex);
+        gl.texImage2D(
+          gl.TEXTURE_2D,
+          0,
+          gl.RGBA,
+          gl.RGBA,
+          gl.UNSIGNED_BYTE,
+          tempCanvas,
+        );
+
+        const r = blurRadius * devicePixelRatio;
+        const ts = blurMode === "tiltshift" ? 1.0 : 0.0;
+        const fy = focusY;
+        const fr = 0.3;
+
+        if (blurMode === "directional") {
+          /* Single pass along the angle direction */
+          const rad = (blurAngle * Math.PI) / 180;
+          blurPass(
+            srcTex,
+            null,
+            w,
+            h,
+            Math.cos(rad),
+            Math.sin(rad),
+            r * 1.4,
+            0.0,
+            0.5,
+            0.3,
+          );
+        } else {
+          /* Two-pass separable: horizontal → framebuffer, vertical → screen */
+          blurPass(srcTex, fb, w, h, 1.0, 0.0, r, ts, fy, fr);
+          blurPass(fbTex, null, w, h, 0.0, 1.0, r, ts, fy, fr);
+        }
+      }
+
+      /* ==============================================================
+         Canvas paint callback — multi-layer compositing
+         ============================================================== */
+      canvas.onpaint = () => {
+        const dpr = devicePixelRatio;
+        const cssW = canvas.clientWidth;
+        const cssH = canvas.clientHeight;
+        const w = canvas.width;
+        const h = canvas.height;
+
+        if (w === 0 || h === 0) return;
+
+        /* 1. Clear */
+        ctx.clearRect(0, 0, w, h);
+
+        /* 2. Draw background cards */
+        ctx.drawElementImage(bgLayer, 0, 0, cssW, cssH);
+
+        /* 3. Measure frost panel in CSS pixels */
+        const px = frostPanel.offsetLeft;
+        const py = frostPanel.offsetTop;
+        const pw = frostPanel.offsetWidth;
+        const ph = frostPanel.offsetHeight;
+
+        if (pw <= 0 || ph <= 0) return;
+
+        /* Device-pixel coordinates */
+        const dpx = Math.round(px * dpr);
+        const dpy = Math.round(py * dpr);
+        const dpw = Math.round(pw * dpr);
+        const dph = Math.round(ph * dpr);
+
+        /* 4. Extract the region behind the frost panel */
+        const sx = Math.max(0, dpx);
+        const sy = Math.max(0, dpy);
+        const ex = Math.min(w, dpx + dpw);
+        const ey = Math.min(h, dpy + dph);
+        const sw = ex - sx;
+        const sh = ey - sy;
+
+        if (sw <= 0 || sh <= 0) return;
+
+        tempCanvas.width = dpw;
+        tempCanvas.height = dph;
+        tempCtx.clearRect(0, 0, dpw, dph);
+        tempCtx.drawImage(canvas, sx, sy, sw, sh, sx - dpx, sy - dpy, sw, sh);
+
+        /* 5. Blur via WebGL */
+        processBlur(dpw, dph);
+
+        /* 6. Composite blurred backdrop + tint + border */
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(px, py, pw, ph, 16);
+        ctx.clip();
+
+        /* Draw the blurred image */
+        ctx.drawImage(blurCanvas, 0, 0, dpw, dph, px, py, pw, ph);
+
+        /* Color tint overlay — dark blue-purple for a glassy feel */
+        ctx.fillStyle = "rgba(16, 16, 40, 0.35)";
+        ctx.fill();
+
+        /* Subtle gradient highlight (light from above) */
+        const grad = ctx.createLinearGradient(px, py, px, py + ph);
+        grad.addColorStop(0, "rgba(255, 255, 255, 0.06)");
+        grad.addColorStop(0.5, "rgba(255, 255, 255, 0.0)");
+        grad.addColorStop(1, "rgba(255, 255, 255, 0.02)");
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        /* Border */
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.14)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.restore();
+
+        /* 7. Draw frost panel content on top */
+        ctx.drawElementImage(frostContent, px, py, pw, ph);
+      };
+
+      /* ==============================================================
+         Resize observer
+         ============================================================== */
+      function syncSize() {
+        const rect = canvas.getBoundingClientRect();
+        const dpr = devicePixelRatio;
+        const w = Math.round(rect.width * dpr);
+        const h = Math.round(rect.height * dpr);
+
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+          ctx.scale(dpr, dpr);
+          requestRepaint();
+        }
+      }
+
+      function requestRepaint() {
+        if (canvas.requestPaint) canvas.requestPaint();
+        else if (canvas.onpaint) canvas.onpaint();
+      }
+
+      const ro = new ResizeObserver(() => syncSize());
+      ro.observe(canvas);
+
+      /* ==============================================================
+         Drag handling for the frost panel
+         ============================================================== */
+      let isDragging = false;
+      let dragStartX = 0;
+      let dragStartY = 0;
+      let panelStartX = 0;
+      let panelStartY = 0;
+
+      function clampPanel(newX, newY) {
+        const cssW = canvas.clientWidth;
+        const cssH = canvas.clientHeight;
+        const pw = frostPanel.offsetWidth;
+        const ph = frostPanel.offsetHeight;
+        return {
+          x: Math.max(0, Math.min(cssW - pw, newX)),
+          y: Math.max(0, Math.min(cssH - ph, newY)),
+        };
+      }
+
+      frostPanel.addEventListener("mousedown", (e) => {
+        isDragging = true;
+        frostPanel.classList.add("dragging");
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+        panelStartX = frostPanel.offsetLeft;
+        panelStartY = frostPanel.offsetTop;
+        e.preventDefault();
+      });
+
+      window.addEventListener("mousemove", (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - dragStartX;
+        const dy = e.clientY - dragStartY;
+        const pos = clampPanel(panelStartX + dx, panelStartY + dy);
+        frostPanel.style.left = pos.x + "px";
+        frostPanel.style.top = pos.y + "px";
+        requestRepaint();
+      });
+
+      window.addEventListener("mouseup", () => {
+        if (!isDragging) return;
+        isDragging = false;
+        frostPanel.classList.remove("dragging");
+      });
+
+      /* Touch support */
+      frostPanel.addEventListener(
+        "touchstart",
+        (e) => {
+          isDragging = true;
+          frostPanel.classList.add("dragging");
+          const touch = e.touches[0];
+          dragStartX = touch.clientX;
+          dragStartY = touch.clientY;
+          panelStartX = frostPanel.offsetLeft;
+          panelStartY = frostPanel.offsetTop;
+        },
+        { passive: true },
+      );
+
+      window.addEventListener(
+        "touchmove",
+        (e) => {
+          if (!isDragging) return;
+          const touch = e.touches[0];
+          const dx = touch.clientX - dragStartX;
+          const dy = touch.clientY - dragStartY;
+          const pos = clampPanel(panelStartX + dx, panelStartY + dy);
+          frostPanel.style.left = pos.x + "px";
+          frostPanel.style.top = pos.y + "px";
+          requestRepaint();
+        },
+        { passive: true },
+      );
+
+      window.addEventListener("touchend", () => {
+        if (!isDragging) return;
+        isDragging = false;
+        frostPanel.classList.remove("dragging");
+      });
+
+      /* ==============================================================
+         Control panel event handlers
+         ============================================================== */
+      const modeButtons = document.getElementById("mode-buttons");
+      const radiusSlider = document.getElementById("radius-slider");
+      const radiusValue = document.getElementById("radius-value");
+      const angleGroup = document.getElementById("angle-group");
+      const angleSlider = document.getElementById("angle-slider");
+      const angleValue = document.getElementById("angle-value");
+      const focusGroup = document.getElementById("focus-group");
+      const focusSlider = document.getElementById("focus-slider");
+      const focusValue = document.getElementById("focus-value");
+
+      modeButtons.addEventListener("click", (e) => {
+        const btn = e.target.closest(".mode-btn");
+        if (!btn) return;
+
+        modeButtons
+          .querySelectorAll(".mode-btn")
+          .forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+
+        blurMode = btn.dataset.mode;
+        angleGroup.style.display = blurMode === "directional" ? "" : "none";
+        focusGroup.style.display = blurMode === "tiltshift" ? "" : "none";
+        requestRepaint();
+      });
+
+      radiusSlider.addEventListener("input", () => {
+        blurRadius = parseFloat(radiusSlider.value);
+        radiusValue.textContent = blurRadius;
+        requestRepaint();
+      });
+
+      angleSlider.addEventListener("input", () => {
+        blurAngle = parseFloat(angleSlider.value);
+        angleValue.textContent = blurAngle;
+        requestRepaint();
+      });
+
+      focusSlider.addEventListener("input", () => {
+        focusY = parseFloat(focusSlider.value) / 100;
+        focusValue.textContent = focusSlider.value;
+        requestRepaint();
+      });
+
+      /* ==============================================================
+         Initial setup
+         ============================================================== */
+      syncSize();
+    </script>
+  </body>
+</html>

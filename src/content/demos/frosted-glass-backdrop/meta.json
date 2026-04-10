@@ -1,0 +1,15 @@
+{
+  "title": "Frosted Glass Backdrop",
+  "description": "Draggable frosted glass panel with custom gaussian, directional, and tilt-shift blur effects composited between HTML rendering layers.",
+  "tags": ["demo", "2d", "blur", "compositing", "visual", "interactive"],
+  "author": "En Dash Consulting",
+  "dateCreated": "2026-04-10",
+  "context": "2d",
+  "difficulty": "advanced",
+  "features": ["layoutsubtree", "drawElementImage", "onpaint", "requestPaint"],
+  "browserSupport": {
+    "chrome": true,
+    "firefox": false,
+    "safari": false
+  }
+}
