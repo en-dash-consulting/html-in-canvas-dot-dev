@@ -1,9 +1,14 @@
 ---
 /**
  * Tabbed source code viewer with syntax highlighting.
- * Displays demo source files with Shiki-powered highlighting via Astro's Code component.
+ *
+ * Each panel renders a clipped preview (~8 lines) by default, with an
+ * Expand button that reveals the full file. Per-panel state lives on the
+ * panel element via the .is-expanded class, so multiple files can be in
+ * different expand states simultaneously and tab switching preserves them.
  */
 import { Code } from 'astro:components';
+import type { CodeLanguage } from 'astro';
 
 interface SourceFile {
   filename: string;
@@ -17,17 +22,25 @@ interface Props {
 
 const { files } = Astro.props;
 
-const langMap: Record<string, string> = {
+/**
+ * Map demo file extensions onto Shiki language identifiers. Restricting
+ * the map to known-bundled BundledLanguage values keeps the prop type
+ * happy without an `as any` cast.
+ */
+const langMap = {
   html: 'html',
   css: 'css',
   js: 'javascript',
   ts: 'typescript',
   json: 'json',
-};
+  svg: 'xml',
+  glsl: 'glsl',
+  wgsl: 'wgsl',
+} as const satisfies Record<string, CodeLanguage>;
 
-function getLang(filename: string): string {
+function getLang(filename: string): CodeLanguage {
   const ext = filename.split('.').pop()?.toLowerCase() ?? '';
-  return langMap[ext] ?? 'text';
+  return (langMap as Record<string, CodeLanguage>)[ext] ?? 'text';
 }
 ---
 
@@ -55,7 +68,17 @@ function getLang(filename: string): string {
       id={`source-panel-${i}`}
       data-panel-index={i}
     >
-      <Code code={file.code} lang={getLang(file.filename)} theme="github-dark" />
+      <div class="source-panel-content" id={`source-panel-content-${i}`}>
+        <Code code={file.code} lang={getLang(file.filename)} theme="github-dark" />
+      </div>
+      <button
+        class="expand-btn"
+        type="button"
+        aria-expanded="false"
+        aria-controls={`source-panel-content-${i}`}
+      >
+        Expand
+      </button>
     </div>
   ))}
 </div>
@@ -66,6 +89,8 @@ function getLang(filename: string): string {
       const tabs = viewer.querySelectorAll<HTMLButtonElement>('.source-tab');
       const panels = viewer.querySelectorAll<HTMLElement>('.source-panel');
 
+      // Tab switching: preserve each panel's expand state across switches
+      // by only toggling the .active class, never the .is-expanded class.
       tabs.forEach((tab) => {
         tab.addEventListener('click', () => {
           const index = tab.dataset.tabIndex;
@@ -83,6 +108,17 @@ function getLang(filename: string): string {
             `[data-panel-index="${index}"]`,
           );
           panel?.classList.add('active');
+        });
+      });
+
+      // Expand/collapse toggle, scoped per panel
+      panels.forEach((panel) => {
+        const btn = panel.querySelector<HTMLButtonElement>('.expand-btn');
+        if (!btn) return;
+        btn.addEventListener('click', () => {
+          const expanded = panel.classList.toggle('is-expanded');
+          btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+          btn.textContent = expanded ? 'Collapse' : 'Expand';
         });
       });
     });
@@ -131,20 +167,81 @@ function getLang(filename: string): string {
 
   .source-panel {
     display: none;
-    overflow-x: auto;
   }
 
   .source-panel.active {
     display: block;
   }
 
-  .source-panel :global(pre) {
+  /*
+   * Preview wrapper. Clipped to ~8 lines by default; the inner <pre>
+   * stays at its natural size so syntax highlighting and layout never
+   * re-render when toggling — only this wrapper's max-height changes.
+   *
+   * 8 lines × line-height 1.6 × font-size 0.8rem ≈ 10.24rem.
+   * Add ~0.75rem of vertical padding from the highlighted block.
+   */
+  .source-panel-content {
+    position: relative;
+    max-height: 11rem;
+    overflow: hidden;
+  }
+
+  .source-panel.is-expanded .source-panel-content {
+    max-height: none;
+  }
+
+  /* Fade-out gradient at the bottom of the preview region */
+  .source-panel-content::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    height: 3rem;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      var(--bg-surface) 90%
+    );
+  }
+
+  .source-panel.is-expanded .source-panel-content::after {
+    display: none;
+  }
+
+  .source-panel-content :global(pre) {
     margin: 0;
     border: none;
     border-radius: 0;
     font-size: 0.8rem;
     line-height: 1.6;
-    max-height: 32rem;
     overflow: auto;
+  }
+
+  /* Expand / Collapse button */
+  .expand-btn {
+    display: block;
+    width: 100%;
+    padding: 0.6rem 1rem;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border: none;
+    border-top: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: color 0.15s ease, background-color 0.15s ease;
+  }
+
+  .expand-btn:hover {
+    color: var(--text-primary);
+    background: var(--bg-elevated);
+  }
+
+  .expand-btn:focus-visible {
+    outline: 2px solid var(--color-purple);
+    outline-offset: -2px;
   }
 </style>
