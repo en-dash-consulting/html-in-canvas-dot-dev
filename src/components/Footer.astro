@@ -1,0 +1,58 @@
+---
+/**
+ * Site footer with En Dash Consulting attribution.
+ */
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="footer-container">
+    <p class="footer-attribution">
+      An <a href="https://endash.us" target="_blank" rel="noopener noreferrer">En Dash Consulting</a> project
+    </p>
+    <p class="footer-copyright">
+      &copy; {year} En Dash. All rights reserved.
+    </p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    border-top: 1px solid var(--border-color);
+    background-color: var(--bg-secondary);
+    padding: 2rem 1.5rem;
+    margin-top: auto;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .footer-container {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    text-align: center;
+  }
+
+  .footer-attribution {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+
+  .footer-attribution a {
+    color: var(--color-teal);
+    font-weight: 600;
+  }
+
+  .footer-attribution a:hover {
+    color: var(--link-hover);
+  }
+
+  .footer-copyright {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin: 0;
+  }
+</style>

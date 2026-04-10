@@ -1,0 +1,86 @@
+---
+/**
+ * Site navigation bar.
+ * Includes logo/site title, nav links, and theme toggle.
+ */
+import ThemeToggle from './ThemeToggle.astro';
+---
+
+<header class="site-header">
+  <nav class="nav-container" aria-label="Main navigation">
+    <a href="/" class="nav-logo">
+      <span class="nav-logo-text">HTML-in-Canvas</span>
+      <span class="nav-logo-suffix">.dev</span>
+    </a>
+
+    <div class="nav-links">
+      <a href="/demos/">Demos</a>
+      <a href="/docs/">Docs</a>
+      <ThemeToggle />
+    </div>
+  </nav>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background-color: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
+    backdrop-filter: blur(12px);
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .nav-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    height: var(--nav-height);
+  }
+
+  .nav-logo {
+    display: flex;
+    align-items: baseline;
+    gap: 0;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: var(--text-primary);
+    text-decoration: none;
+  }
+
+  .nav-logo:hover {
+    text-decoration: none;
+  }
+
+  .nav-logo-text {
+    color: var(--text-primary);
+  }
+
+  .nav-logo-suffix {
+    color: var(--color-teal);
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .nav-links a {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  .nav-links a:hover {
+    color: var(--text-primary);
+    text-decoration: none;
+  }
+</style>
