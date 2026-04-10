@@ -1,0 +1,918 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Page Curl / Book Turn — HTML-in-Canvas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        background: #0a0a0f;
+        color: #f0f0f0;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 1.5rem 1rem;
+        overflow-x: hidden;
+      }
+
+      h1 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 0.25rem;
+      }
+
+      .page-subtitle {
+        text-align: center;
+        font-size: 0.8rem;
+        color: #6a6a80;
+        margin-bottom: 1.5rem;
+        max-width: 450px;
+        line-height: 1.4;
+      }
+
+      /* ============================================================
+         Scene: positions the WebGL canvas
+         ============================================================ */
+      .scene {
+        position: relative;
+        width: 450px;
+        max-width: 100%;
+        aspect-ratio: 3 / 4;
+        cursor: grab;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      .scene:active {
+        cursor: grabbing;
+      }
+
+      #gl-canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        border-radius: 8px;
+        box-shadow:
+          0 8px 40px rgba(0, 0, 0, 0.5),
+          0 2px 8px rgba(0, 0, 0, 0.3);
+      }
+
+      /* ============================================================
+         Off-screen staging canvases
+         ============================================================ */
+      .staging {
+        position: absolute;
+        left: -9999px;
+        top: -9999px;
+      }
+
+      #page1-canvas,
+      #page2-canvas {
+        width: 600px;
+        height: 800px;
+      }
+
+      /* ============================================================
+         Book page shared styles
+         ============================================================ */
+      .book-page {
+        width: 600px;
+        height: 800px;
+        padding: 3rem 2.8rem;
+        font-family: "Source Serif 4", Georgia, serif;
+        color: #2a2a2a;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .page-front {
+        background: linear-gradient(
+          145deg,
+          #faf8f4 0%,
+          #f6f2eb 40%,
+          #f0ebe2 100%
+        );
+      }
+
+      .page-back {
+        background: linear-gradient(
+          145deg,
+          #f8f5f0 0%,
+          #f3eee7 40%,
+          #ede7de 100%
+        );
+      }
+
+      /* Subtle spine shadow on left edge */
+      .book-page::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 24px;
+        height: 100%;
+        background: linear-gradient(90deg, rgba(0, 0, 0, 0.06), transparent);
+        pointer-events: none;
+      }
+
+      /* ============================================================
+         Page 1 content: Chapter opening
+         ============================================================ */
+      .chapter-label {
+        font-family: "Inter", sans-serif;
+        font-size: 0.65rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.22em;
+        color: #8a7a6a;
+        margin-bottom: 0.6rem;
+      }
+
+      .chapter-title {
+        font-family: "Playfair Display", serif;
+        font-size: 2rem;
+        font-weight: 700;
+        line-height: 1.25;
+        color: #1a1a1a;
+        margin-bottom: 1.6rem;
+      }
+
+      .chapter-title em {
+        font-style: italic;
+        color: #6c41f0;
+      }
+
+      .body-text {
+        font-size: 0.88rem;
+        line-height: 1.75;
+        color: #3a3a3a;
+        margin-bottom: 1rem;
+        text-align: justify;
+        hyphens: auto;
+      }
+
+      .drop-cap::first-letter {
+        font-family: "Playfair Display", serif;
+        font-size: 3.6rem;
+        font-weight: 700;
+        float: left;
+        line-height: 0.8;
+        margin-right: 0.5rem;
+        margin-top: 0.15rem;
+        color: #6c41f0;
+      }
+
+      .divider {
+        width: 60px;
+        height: 2px;
+        background: linear-gradient(90deg, #6c41f0, #00e5b9);
+        margin: 1.4rem auto;
+        border-radius: 1px;
+      }
+
+      .page-number {
+        position: absolute;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        font-family: "Inter", sans-serif;
+        font-size: 0.65rem;
+        color: #b0a898;
+        letter-spacing: 0.05em;
+      }
+
+      .page-ornament {
+        position: absolute;
+        bottom: 3.5rem;
+        right: 2.8rem;
+        font-family: "Playfair Display", serif;
+        font-size: 5rem;
+        color: rgba(108, 65, 240, 0.035);
+        font-weight: 700;
+        pointer-events: none;
+        line-height: 1;
+      }
+
+      /* ============================================================
+         Page 2 content: Quote + code callout
+         ============================================================ */
+      .pullquote {
+        font-family: "Playfair Display", serif;
+        font-size: 1.2rem;
+        font-style: italic;
+        line-height: 1.55;
+        color: #4a4a4a;
+        padding: 1.25rem 0 1rem;
+        border-top: 2px solid #6c41f0;
+        border-bottom: 1px solid #d8d0c4;
+        margin-bottom: 1.4rem;
+      }
+
+      .pullquote-attr {
+        display: block;
+        font-family: "Inter", sans-serif;
+        font-size: 0.68rem;
+        font-style: normal;
+        color: #999;
+        margin-top: 0.6rem;
+        letter-spacing: 0.02em;
+      }
+
+      .code-callout {
+        background: #1a1a2e;
+        color: #e6edf3;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.7rem;
+        padding: 1rem 1.2rem;
+        border-radius: 8px;
+        border-left: 3px solid #6c41f0;
+        margin: 1.2rem 0;
+        line-height: 1.65;
+      }
+
+      .code-comment {
+        color: #6a737d;
+      }
+
+      .code-keyword {
+        color: #ff7b72;
+      }
+
+      .code-method {
+        color: #79c0ff;
+      }
+
+      .code-string {
+        color: #a5d6ff;
+      }
+
+      .page-watermark {
+        position: absolute;
+        bottom: 3.5rem;
+        right: 2.8rem;
+        font-family: "Playfair Display", serif;
+        font-size: 5rem;
+        color: rgba(0, 229, 185, 0.035);
+        font-weight: 700;
+        pointer-events: none;
+        line-height: 1;
+      }
+
+      /* ============================================================
+         Hint + pipeline info
+         ============================================================ */
+      .hint {
+        margin-top: 1rem;
+        font-size: 0.7rem;
+        color: #4a4a60;
+        text-align: center;
+      }
+
+      .hint kbd {
+        display: inline-block;
+        padding: 0.1rem 0.35rem;
+        background: #1a1a30;
+        border: 1px solid #333;
+        border-radius: 3px;
+        font-family: inherit;
+        font-size: 0.65rem;
+        color: #6a6a80;
+      }
+
+      .pipeline-info {
+        margin-top: 1.25rem;
+        max-width: 450px;
+        width: 100%;
+        padding: 0.85rem 1rem;
+        background: #14141f;
+        border: 1px solid #282840;
+        border-radius: 10px;
+        font-size: 0.72rem;
+        color: #6a6a80;
+        line-height: 1.55;
+      }
+
+      .pipeline-info p {
+        margin-bottom: 0.3rem;
+      }
+
+      .pipeline-info p:last-child {
+        margin-bottom: 0;
+      }
+
+      .pipeline-info strong {
+        color: #8a8aaf;
+      }
+
+      .pipeline-info .hl {
+        color: #00e5b9;
+      }
+
+      .pipeline-info code {
+        color: #6c41f0;
+        font-family: "Courier New", monospace;
+        font-size: 0.68rem;
+      }
+
+      .pipeline-info .note {
+        color: #3a3a50;
+        font-size: 0.65rem;
+        margin-top: 0.4rem;
+      }
+
+      @media (max-width: 480px) {
+        body {
+          padding: 1rem 0.75rem;
+        }
+
+        .scene {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Page Curl / Book Turn</h1>
+    <p class="page-subtitle">
+      Drag from the right edge to turn the page. Two live HTML pages render as
+      WebGL textures with a real-time cylindrical page-curl deformation.
+    </p>
+
+    <div class="scene" id="scene">
+      <!-- WebGL display canvas -->
+      <canvas id="gl-canvas"></canvas>
+    </div>
+
+    <!-- ============================================================
+         Off-screen staging canvases — HTML content rendered here
+         ============================================================ -->
+
+    <!-- Page 1: Chapter opening -->
+    <canvas
+      id="page1-canvas"
+      class="staging"
+      width="600"
+      height="800"
+      layoutsubtree
+    >
+      <div class="book-page page-front" id="page1-content">
+        <div class="chapter-label">Chapter One</div>
+        <h2 class="chapter-title">
+          The Promise of<br />
+          the <em>Canvas</em>
+        </h2>
+        <p class="body-text drop-cap">
+          For decades, the web platform drew a hard line between structured
+          documents and free-form graphics. HTML gave you semantics,
+          accessibility, and rich layout. Canvas gave you pixels, speed, and
+          creative freedom. You could have one or the other&hairsp;&mdash;&hairsp;never
+          both.
+        </p>
+        <p class="body-text">
+          That wall is coming down. The HTML-in-Canvas specification introduces a
+          bridge between these two worlds: the ability to render live, styled DOM
+          elements directly into a canvas bitmap, at full frame rate, with no
+          rasterization hacks or library workarounds.
+        </p>
+        <div class="divider"></div>
+        <p class="body-text">
+          Imagine CSS transitions flowing through WebGL shaders. Interactive
+          forms embedded in 3D environments. Styled text that shatters into
+          particles. This is not a future possibility&hairsp;&mdash;&hairsp;it is
+          happening now.
+        </p>
+        <span class="page-number">&mdash; 1 &mdash;</span>
+        <div class="page-ornament">1</div>
+      </div>
+    </canvas>
+
+    <!-- Page 2: Quote + code -->
+    <canvas
+      id="page2-canvas"
+      class="staging"
+      width="600"
+      height="800"
+      layoutsubtree
+    >
+      <div class="book-page page-back" id="page2-content">
+        <div class="pullquote">
+          &ldquo;Any sufficiently advanced technology is indistinguishable from
+          magic.&rdquo;
+          <span class="pullquote-attr">&mdash; Arthur C. Clarke</span>
+        </div>
+        <p class="body-text">
+          Consider what becomes possible when HTML elements&hairsp;&mdash;&hairsp;with
+          all their CSS styling, font rendering, and interactive
+          behaviors&hairsp;&mdash;&hairsp;can flow into a canvas context as
+          naturally as drawing a rectangle.
+        </p>
+        <div class="code-callout">
+          <span class="code-keyword">const</span> ctx =
+          canvas.<span class="code-method">getContext</span>(<span
+            class="code-string"
+            >'2d'</span
+          >);<br />
+          ctx.<span class="code-method">drawElementImage</span>(el, 0, 0);<br /><br />
+          <span class="code-comment">// That's it. The styled DOM</span><br />
+          <span class="code-comment">// element is now pixels in</span><br />
+          <span class="code-comment">// your canvas.</span>
+        </div>
+        <p class="body-text">
+          No rasterization libraries. No html2canvas workarounds. No
+          cross-origin restrictions on your own content. Just the platform, doing
+          what it should have always done.
+        </p>
+        <span class="page-number">&mdash; 2 &mdash;</span>
+        <div class="page-watermark">HC</div>
+      </div>
+    </canvas>
+
+    <p class="hint">
+      <kbd>drag</kbd> from the right edge to turn the page &mdash; or watch the
+      auto-animation
+    </p>
+
+    <div class="pipeline-info">
+      <p>
+        <strong>1.</strong> Two HTML &ldquo;book pages&rdquo; live inside
+        <code>&lt;canvas layoutsubtree&gt;</code> elements &mdash; fully styled
+        with CSS fonts and layout
+      </p>
+      <p>
+        <strong>2.</strong>
+        <span class="hl">drawElementImage()</span> captures each page&rsquo;s
+        DOM into a 2D canvas bitmap
+      </p>
+      <p>
+        <strong>3.</strong> Both bitmaps become
+        <span class="hl">WebGL textures</span> fed to a page-curl fragment
+        shader
+      </p>
+      <p>
+        <strong>4.</strong> A
+        <span class="hl">cylindrical deformation</span> creates the curl
+        &mdash; the back face shows the next page&rsquo;s content, correctly
+        mirrored
+      </p>
+      <p class="note">
+        Previously impossible: rendering styled HTML as a deformable 3D surface
+        required rasterizing the DOM manually with external libraries.
+      </p>
+    </div>
+
+    <script>
+      /* ==============================================================
+         DOM references
+         ============================================================== */
+      const scene = document.getElementById("scene");
+      const glCanvas = document.getElementById("gl-canvas");
+      const page1Canvas = document.getElementById("page1-canvas");
+      const page2Canvas = document.getElementById("page2-canvas");
+      const page1Content = document.getElementById("page1-content");
+      const page2Content = document.getElementById("page2-content");
+
+      /* ==============================================================
+         2D contexts — render HTML pages via drawElementImage
+         ============================================================== */
+      const page1Ctx = page1Canvas.getContext("2d");
+      const page2Ctx = page2Canvas.getContext("2d");
+
+      page1Canvas.onpaint = () => {
+        page1Ctx.clearRect(0, 0, page1Canvas.width, page1Canvas.height);
+        page1Ctx.drawElementImage(page1Content, 0, 0);
+      };
+
+      page2Canvas.onpaint = () => {
+        page2Ctx.clearRect(0, 0, page2Canvas.width, page2Canvas.height);
+        page2Ctx.drawElementImage(page2Content, 0, 0);
+      };
+
+      /* Trigger initial paints */
+      function requestRepaint(canvas) {
+        if (canvas.requestPaint) canvas.requestPaint();
+        else if (canvas.onpaint) canvas.onpaint();
+      }
+
+      requestRepaint(page1Canvas);
+      requestRepaint(page2Canvas);
+
+      /* ==============================================================
+         Resize: keep the GL canvas matched to CSS size at device DPR
+         ============================================================== */
+      function syncCanvasSize() {
+        const rect = scene.getBoundingClientRect();
+        const dpr = devicePixelRatio;
+        const w = Math.round(rect.width * dpr);
+        const h = Math.round(rect.height * dpr);
+
+        if (glCanvas.width !== w || glCanvas.height !== h) {
+          glCanvas.width = w;
+          glCanvas.height = h;
+        }
+      }
+
+      const ro = new ResizeObserver(() => syncCanvasSize());
+      ro.observe(scene);
+
+      /* ==============================================================
+         Curl state
+         ============================================================== */
+      let curlPos = 1.0; /* fold x: 1 = flat page 1, 0 = fully turned */
+      let curlTarget = 1.0;
+      let isDragging = false;
+      let autoAnimate = true;
+      let autoStartTime = -1;
+      let autoResumeTimer = 0;
+      const AUTO_RESUME_DELAY = 2500;
+
+      /* ==============================================================
+         Easing helper
+         ============================================================== */
+      function smoothstep(t) {
+        const c = Math.max(0, Math.min(1, t));
+        return c * c * (3 - 2 * c);
+      }
+
+      /* ==============================================================
+         Drag interaction
+         ============================================================== */
+      function getNormX(clientX) {
+        const rect = scene.getBoundingClientRect();
+        return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      }
+
+      scene.addEventListener("mousedown", (e) => {
+        const normX = getNormX(e.clientX);
+        /* Allow grab if near the fold or in the right 30% */
+        if (normX > Math.min(curlPos - 0.15, 0.65)) {
+          isDragging = true;
+          autoAnimate = false;
+          autoStartTime = -1;
+          clearTimeout(autoResumeTimer);
+          e.preventDefault();
+        }
+      });
+
+      window.addEventListener("mousemove", (e) => {
+        if (!isDragging) return;
+        curlTarget = getNormX(e.clientX);
+      });
+
+      window.addEventListener("mouseup", () => {
+        if (!isDragging) return;
+        isDragging = false;
+        /* Snap to nearest end */
+        curlTarget = curlPos < 0.5 ? 0.05 : 1.0;
+        /* Resume auto-animation after delay */
+        autoResumeTimer = setTimeout(() => {
+          autoAnimate = true;
+          autoStartTime = -1;
+        }, AUTO_RESUME_DELAY);
+      });
+
+      /* Touch support */
+      scene.addEventListener(
+        "touchstart",
+        (e) => {
+          const touch = e.touches[0];
+          const normX = getNormX(touch.clientX);
+          if (normX > Math.min(curlPos - 0.15, 0.65)) {
+            isDragging = true;
+            autoAnimate = false;
+            autoStartTime = -1;
+            clearTimeout(autoResumeTimer);
+            e.preventDefault();
+          }
+        },
+        { passive: false },
+      );
+
+      window.addEventListener(
+        "touchmove",
+        (e) => {
+          if (!isDragging) return;
+          curlTarget = getNormX(e.touches[0].clientX);
+        },
+        { passive: true },
+      );
+
+      window.addEventListener("touchend", () => {
+        if (!isDragging) return;
+        isDragging = false;
+        curlTarget = curlPos < 0.5 ? 0.05 : 1.0;
+        autoResumeTimer = setTimeout(() => {
+          autoAnimate = true;
+          autoStartTime = -1;
+        }, AUTO_RESUME_DELAY);
+      });
+
+      /* ==============================================================
+         WebGL setup
+         ============================================================== */
+      const gl = glCanvas.getContext("webgl", {
+        premultipliedAlpha: false,
+        preserveDrawingBuffer: false,
+        alpha: false,
+      });
+
+      if (!gl) {
+        document.body.innerHTML =
+          '<p style="padding:2rem;color:#f44">WebGL is not available in this browser.</p>';
+        throw new Error("WebGL unavailable");
+      }
+
+      /* ----------------------------------------------------------
+         Vertex shader — full-screen quad
+         ---------------------------------------------------------- */
+      const VERT_SRC = `
+attribute vec2 a_position;
+varying vec2 v_texCoord;
+
+void main() {
+  v_texCoord = a_position * 0.5 + 0.5;
+  v_texCoord.y = 1.0 - v_texCoord.y;
+  gl_Position = vec4(a_position, 0.0, 1.0);
+}`;
+
+      /* ----------------------------------------------------------
+         Fragment shader — page curl deformation
+         ---------------------------------------------------------- */
+      const FRAG_SRC = `
+precision highp float;
+
+uniform sampler2D u_page1;
+uniform sampler2D u_page2;
+uniform vec2  u_resolution;
+uniform float u_curlPos;
+uniform float u_time;
+
+varying vec2 v_texCoord;
+
+const float PI = 3.14159265;
+
+void main() {
+  vec2 uv = v_texCoord;
+
+  float foldX = u_curlPos;
+  float turnAmount = 1.0 - foldX;
+
+  /* ---- Cylinder radius: large at start, shrinks as page turns ---- */
+  float R = clamp(turnAmount * 0.25, 0.02, 0.16);
+
+  /* ---- Subtle wave along the fold for organic feel ---- */
+  float wave = sin(uv.y * 6.5 + u_time * 1.2) * 0.004 * turnAmount;
+  float fX = foldX + wave;
+
+  float d = uv.x - fX;
+
+  vec4 color;
+
+  if (d < 0.0) {
+    /* ========== FLAT FRONT PAGE ========== */
+    color = texture2D(u_page1, uv);
+
+    /* Shadow cast by the curl onto the flat page */
+    float shadow = 1.0 - exp(d * 14.0) * 0.28 * turnAmount;
+    color.rgb *= shadow;
+
+  } else if (d <= R) {
+    /* ========== CURL ZONE (cylindrical deformation) ========== */
+
+    /* Upper layer of the cylinder — we see the back of the page */
+    float ratio = min(d / R, 1.0);
+    float theta1 = asin(ratio);
+    float theta2 = PI - theta1;
+
+    /* Arc length from fold to this angle */
+    float arcLen = R * theta2;
+
+    /* Where this point was on the original flat page */
+    float origX = fX + arcLen;
+
+    /* Back face: page 2 content, mirrored so it reads correctly
+       when the page is fully turned */
+    float backX = clamp(1.0 - origX, 0.0, 1.0);
+    color = texture2D(u_page2, vec2(backX, uv.y));
+
+    /* ---- Cylinder lighting ---- */
+    /* Back-face normal z-component: cos(theta1) at the upper layer */
+    float cosN = cos(theta1);
+
+    /* Diffuse: softer lighting with ambient */
+    float diffuse = 0.45 + 0.55 * cosN;
+
+    /* Specular highlight near the crest (theta1 near 0) */
+    float spec = pow(max(cosN, 0.0), 28.0) * 0.22;
+
+    /* Thin bright edge at the fold crease (paper edge catching light) */
+    float crease = (1.0 - smoothstep(0.0, 0.006, d)) * 0.35;
+
+    /* Dark edge at the outer lip of the curl */
+    float lip = (1.0 - smoothstep(R * 0.85, R, d)) * 0.08;
+
+    color.rgb *= diffuse;
+    color.rgb += spec + crease;
+    color.rgb -= lip;
+
+  } else {
+    /* ========== PAGE 2 UNDERNEATH ========== */
+    color = texture2D(u_page2, uv);
+
+    /* Shadow cast by the curl edge onto page 2 */
+    float sDist = d - R;
+    float shadow = 1.0 - exp(-sDist * 12.0) * 0.40;
+    color.rgb *= shadow;
+  }
+
+  /* ---- Subtle vignette for a book-like feel ---- */
+  float vx = (uv.x - 0.5) * 2.0;
+  float vy = (uv.y - 0.5) * 2.0;
+  float vignette = 1.0 - 0.08 * (vx * vx + vy * vy);
+  color.rgb *= vignette;
+
+  gl_FragColor = color;
+}`;
+
+      /* ----------------------------------------------------------
+         Shader compilation helpers
+         ---------------------------------------------------------- */
+      function createShader(type, source) {
+        const s = gl.createShader(type);
+        gl.shaderSource(s, source);
+        gl.compileShader(s);
+        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+          const log = gl.getShaderInfoLog(s);
+          gl.deleteShader(s);
+          return { shader: null, error: log };
+        }
+        return { shader: s, error: null };
+      }
+
+      function createProgram(vert, frag) {
+        const p = gl.createProgram();
+        gl.attachShader(p, vert);
+        gl.attachShader(p, frag);
+        gl.linkProgram(p);
+        if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+          const log = gl.getProgramInfoLog(p);
+          gl.deleteProgram(p);
+          return { program: null, error: log };
+        }
+        return { program: p, error: null };
+      }
+
+      /* ----------------------------------------------------------
+         Build the shader program
+         ---------------------------------------------------------- */
+      const vs = createShader(gl.VERTEX_SHADER, VERT_SRC);
+      if (vs.error) throw new Error("Vertex shader: " + vs.error);
+
+      const fs = createShader(gl.FRAGMENT_SHADER, FRAG_SRC);
+      if (fs.error) throw new Error("Fragment shader: " + fs.error);
+
+      const prog = createProgram(vs.shader, fs.shader);
+      gl.deleteShader(vs.shader);
+      gl.deleteShader(fs.shader);
+      if (prog.error) throw new Error("Program link: " + prog.error);
+
+      const program = prog.program;
+
+      /* Locations */
+      const aPosition = gl.getAttribLocation(program, "a_position");
+      const uPage1 = gl.getUniformLocation(program, "u_page1");
+      const uPage2 = gl.getUniformLocation(program, "u_page2");
+      const uResolution = gl.getUniformLocation(program, "u_resolution");
+      const uCurlPos = gl.getUniformLocation(program, "u_curlPos");
+      const uTime = gl.getUniformLocation(program, "u_time");
+
+      /* Full-screen quad */
+      const quadBuf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+      gl.bufferData(
+        gl.ARRAY_BUFFER,
+        new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
+        gl.STATIC_DRAW,
+      );
+
+      /* Textures for both pages */
+      function createPageTexture() {
+        const tex = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        return tex;
+      }
+
+      const tex1 = createPageTexture();
+      const tex2 = createPageTexture();
+
+      /* ==============================================================
+         Initial setup
+         ============================================================== */
+      syncCanvasSize();
+
+      /* ==============================================================
+         Render loop
+         ============================================================== */
+      const startTime = performance.now();
+
+      function render() {
+        requestAnimationFrame(render);
+
+        const now = performance.now();
+        const time = (now - startTime) / 1000;
+
+        /* ---- Auto-animation when idle ---- */
+        if (autoAnimate && !isDragging) {
+          if (autoStartTime < 0) autoStartTime = time;
+          const elapsed = time - autoStartTime;
+
+          if (elapsed < 1.5) {
+            /* Hold at current position briefly */
+            curlTarget = curlPos;
+          } else {
+            /* Paced turn cycle: turn → hold → turn back → hold */
+            const cycleTime = 7.0;
+            const t = ((elapsed - 1.5) % cycleTime) / cycleTime;
+
+            if (t < 0.35) {
+              /* Turn page: 1 → 0.1 */
+              curlTarget = 1.0 - smoothstep(t / 0.35) * 0.9;
+            } else if (t < 0.5) {
+              /* Hold at page 2 */
+              curlTarget = 0.1;
+            } else if (t < 0.85) {
+              /* Turn back: 0.1 → 1 */
+              curlTarget = 0.1 + smoothstep((t - 0.5) / 0.35) * 0.9;
+            } else {
+              /* Hold at page 1 */
+              curlTarget = 1.0;
+            }
+          }
+        }
+
+        /* ---- Smooth interpolation toward target ---- */
+        const ease = isDragging ? 0.25 : 0.055;
+        curlPos += (curlTarget - curlPos) * ease;
+        curlPos = Math.max(0.0, Math.min(1.0, curlPos));
+
+        /* ---- Upload page textures ---- */
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, tex1);
+        gl.texImage2D(
+          gl.TEXTURE_2D,
+          0,
+          gl.RGBA,
+          gl.RGBA,
+          gl.UNSIGNED_BYTE,
+          page1Canvas,
+        );
+
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, tex2);
+        gl.texImage2D(
+          gl.TEXTURE_2D,
+          0,
+          gl.RGBA,
+          gl.RGBA,
+          gl.UNSIGNED_BYTE,
+          page2Canvas,
+        );
+
+        /* ---- Draw the page curl ---- */
+        gl.viewport(0, 0, glCanvas.width, glCanvas.height);
+        gl.useProgram(program);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+        gl.enableVertexAttribArray(aPosition);
+        gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+
+        gl.uniform1i(uPage1, 0);
+        gl.uniform1i(uPage2, 1);
+        gl.uniform2f(uResolution, glCanvas.width, glCanvas.height);
+        gl.uniform1f(uCurlPos, curlPos);
+        gl.uniform1f(uTime, time);
+
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      }
+
+      requestAnimationFrame(render);
+    </script>
+  </body>
+</html>

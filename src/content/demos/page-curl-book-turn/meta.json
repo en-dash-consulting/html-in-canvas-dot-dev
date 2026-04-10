@@ -1,0 +1,15 @@
+{
+  "title": "Page Curl / Book Turn",
+  "description": "Two HTML pages with rich content drawn as WebGL textures on planes that simulate a realistic page-curl/book-turn animation. Drag to turn the page. The backside shows the next page's content with correct mirroring.",
+  "tags": ["demo", "webgl", "animation", "3d", "interactive"],
+  "author": "En Dash Consulting",
+  "dateCreated": "2026-04-10",
+  "context": "webgl",
+  "difficulty": "advanced",
+  "features": ["layoutsubtree", "drawElementImage", "onpaint", "requestPaint"],
+  "browserSupport": {
+    "chrome": true,
+    "firefox": false,
+    "safari": false
+  }
+}
