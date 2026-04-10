@@ -1,0 +1,23 @@
+---
+/**
+ * Individual doc page — /docs/{slug}/
+ * Renders a spec markdown file with sidebar navigation.
+ */
+import { getCollection, render } from 'astro:content';
+import DocsLayout from '../../layouts/DocsLayout.astro';
+
+export async function getStaticPaths() {
+  const docs = await getCollection('docs');
+  return docs.map((doc) => ({
+    params: { slug: doc.id },
+    props: { doc },
+  }));
+}
+
+const { doc } = Astro.props;
+const { Content } = await render(doc);
+---
+
+<DocsLayout title={doc.data.title} currentSlug={doc.id}>
+  <Content />
+</DocsLayout>

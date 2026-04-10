@@ -174,10 +174,10 @@ npm install</code></pre>
             Set <code>canvas.onpaint</code> to a function that clears and
             redraws. The browser calls it whenever children need re-rendering.
           </p>
-          <pre><code>canvas.onpaint = () =&gt; {
+          <pre><code set:html={`canvas.onpaint = () =&gt; {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawElement(content, 0, 0);
-};</code></pre>
+};`} /></pre>
         </div>
 
         <div class="pattern-card">
@@ -186,12 +186,12 @@ npm install</code></pre>
             Keep the canvas resolution in sync with its CSS size so the output
             stays sharp on high-DPI displays.
           </p>
-          <pre><code>new ResizeObserver(([entry]) =&gt; {
+          <pre><code set:html={`new ResizeObserver(([entry]) =&gt; {
   const { width, height } = entry.contentRect;
   canvas.width = Math.round(width * devicePixelRatio);
   canvas.height = Math.round(height * devicePixelRatio);
   ctx.scale(devicePixelRatio, devicePixelRatio);
-});</code></pre>
+});`} /></pre>
         </div>
       </div>
 

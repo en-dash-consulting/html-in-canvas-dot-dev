@@ -1,0 +1,23 @@
+---
+/**
+ * Docs index — /docs/
+ * Renders a redirect to the first doc page (lowest order value).
+ */
+import { getCollection } from 'astro:content';
+
+const docs = await getCollection('docs');
+const firstDoc = docs.sort((a, b) => a.data.order - b.data.order)[0];
+const target = `/docs/${firstDoc.id}/`;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="refresh" content={`0;url=${target}`} />
+    <link rel="canonical" href={target} />
+    <title>Redirecting…</title>
+  </head>
+  <body>
+    <a href={target}>View documentation</a>
+  </body>
+</html>
