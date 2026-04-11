@@ -1,14 +1,21 @@
 #
-# Build and deploy the Astro site to GitHub Pages on every push to main,
-# and on-demand via the workflow_dispatch button in the Actions tab.
+# CI + Deploy pipeline for html-in-canvas.dev.
+#
+# On every push to main and on every PR targeting main: install deps,
+# run the Playwright suite against a real Chrome Dev channel (the Linux
+# equivalent of Chrome Canary, both tracking Chromium unstable), then
+# build the Astro site. On main pushes only: deploy the built site to
+# GitHub Pages.
 #
 # Repository settings must have Settings → Pages → Source set to
-# "GitHub Actions" for this workflow to be allowed to publish.
+# "GitHub Actions" for the deploy step to be allowed to publish.
 #
 name: Deploy to GitHub Pages
 
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
   workflow_dispatch:
 
@@ -19,12 +26,15 @@ permissions:
   pages: write
   id-token: write
 
-# Serialize deploys: cancel an in-flight run if a newer push lands, but
-# let any currently-deploying run finish so the live site is never in a
-# half-published state.
+# Per-ref concurrency: on PRs, cancel in-flight runs when a new commit
+# lands (no point finishing CI on a superseded commit). On main, let
+# every push complete so the deploy artifact chain stays consistent.
+# The `github-pages` environment naturally serializes deploys on top
+# of this, so two main pushes in quick succession still publish in
+# order without fighting each other.
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # Force the JavaScript actions that run on the runner (checkout,
 # setup-node, upload-pages-artifact, deploy-pages) off the deprecated
@@ -38,6 +48,7 @@ env:
 
 jobs:
   build:
+    name: Test & build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -52,15 +63,62 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # The Playwright config rejects the Chromium that ships with
+      # `@playwright/test` because the HTML-in-Canvas API is only
+      # available behind a Chromium unstable-channel flag. On macOS
+      # that's Chrome Canary; on Linux (where this runner lives) the
+      # closest equivalent is Google Chrome Dev channel (package name
+      # `google-chrome-unstable`). Both track Chromium main, both ship
+      # `--enable-blink-features=CanvasDrawElement`.
+      - name: Install Google Chrome Dev (Chromium unstable)
+        run: |
+          set -euo pipefail
+          wget -q https://dl.google.com/linux/direct/google-chrome-unstable_current_amd64.deb
+          sudo apt-get install -y ./google-chrome-unstable_current_amd64.deb
+          rm google-chrome-unstable_current_amd64.deb
+          google-chrome-unstable --version
+          echo "CHROME_CANARY_PATH=/usr/bin/google-chrome-unstable" >> "$GITHUB_ENV"
+
+      # Pre-install the system packages Playwright expects Chromium to
+      # link against (libnss, libatk, fonts, etc.). google-chrome-unstable
+      # pulls in most of them already, but this belt-and-suspenders step
+      # guarantees a clean launch and takes ~15s.
+      - name: Install Playwright system deps
+        run: npx playwright install-deps chromium
+
+      - name: Run Playwright tests
+        run: npm test
+
+      # Keep the Playwright report around on failure so PR authors can
+      # download it from the Actions tab and inspect screenshots /
+      # traces locally. Retention is short because these runs happen
+      # often.
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
       - name: Build site
         run: npm run build
 
+      # Only upload the Pages artifact on main-branch pushes. PRs run
+      # the build to catch regressions but don't need to publish.
       - name: Upload Pages artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
 
   deploy:
+    name: Deploy to GitHub Pages
+    # Only main-branch pushes publish. PRs stop after the build job.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     environment:
