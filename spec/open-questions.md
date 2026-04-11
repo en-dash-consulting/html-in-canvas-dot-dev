@@ -5,91 +5,102 @@ order: 5
 
 # Open Questions & Issues
 
-Tracked at https://github.com/WICG/html-in-canvas/issues
+_Auto-synced from [`WICG/html-in-canvas` issues](https://github.com/WICG/html-in-canvas/issues) on 2026-04-11 via `scripts/sync-spec-docs.mjs`._
 
-## Active Design Issues
+There are currently **16** open issues on the spec repository. Each heading below links to the upstream discussion — follow the link to read the full thread and leave a comment.
 
-### Hit testing and layer ordering (#94)
-**Author:** jakearchibald  
-How should hit testing work when elements are drawn at different positions or overlapping? Layer ordering between drawn elements and canvas-drawn content isn't well-defined.
+## [#108: Demos are broken](https://github.com/WICG/html-in-canvas/issues/108)
 
-### changedElements should be a map? (#95)
-**Author:** jakearchibald  
-Whether `PaintEvent.changedElements` should be a different data structure to provide more information about what changed.
+**Author:** [@joshpoll](https://github.com/joshpoll)
 
-### Need some way to access all canvas elements in a worker (#96)
-**Author:** jakearchibald  
-Feature request for worker thread access patterns beyond `captureElementImage`. Current worker story requires capturing and transferring individual elements.
+Hey! This seems like a really cool project. I'm excited to try it out. However, all the demos linked in the readme are broken with some variation of this error: `Uncaught TypeError: canvas.requestPaint is not a function`
 
-### Lifetime of ElementImage objects (#88)
-**Author:** foolip  
-Memory management and lifecycle of `ElementImage` snapshots needs clarification.
+## [#107: CSS-in-Canvas: Flexbox layout of canvas renderables](https://github.com/WICG/html-in-canvas/issues/107)
 
-### Feature request: removedElements in paint event (#85)
-**Author:** progers  
-How to know when a canvas child has been removed from the DOM. Currently the paint event only reports changed elements, not removed ones.
+**Author:** [@ShaMan123](https://github.com/ShaMan123)
 
-### Feature request: backdrop-filter effects (#79)
-**Author:** progers  
-Allow effects like backdrop-filter that reference current canvas content, not just element content.
+I am interested in using CSS abilities as part of canvas rendering. Using CSS flexbox to layout canvas renderables is a need I have encountered a number of times in canvas products (a daunting task). The most common use case is the group object, grouping a number of canvas renderables, acting as the canvas counterpart of a div. Another common use case is …
 
-### Surface when cross-origin content has been omitted (#77)
-**Author:** progers  
-Should there be an explicit signal when cross-origin content is excluded from painting for privacy reasons?
+## [#96: Need some way to access all canvas elements in a worker](https://github.com/WICG/html-in-canvas/issues/96)
 
-### Enumerate new fingerprinting vectors (#82)
-**Author:** Kaiido  
-Need a comprehensive analysis of new fingerprinting surface area.
+**Author:** [@jakearchibald](https://github.com/jakearchibald)
 
-## Active Bugs
+If I call `requestPaint()` on an offscreen canvas, the `changedElements` on the paint event is going to be empty, which means I can't update the rendering. Maybe, instead of `changedElements`, it should just be `elements`, and a property on them could indicate if they've changed or not. This would also allow non-2d cases to avoid updating textures that do…
 
-### DOM trees with display: contents fail (#48)
-Elements starting with `display: contents` don't render properly.
+## [#95: changedElements should be a map?](https://github.com/WICG/html-in-canvas/issues/95)
 
-### Blending effects not reflected correctly (#47)
-CSS blending modes like mix-blend-mode aren't accurately captured.
+**Author:** [@jakearchibald](https://github.com/jakearchibald)
 
-### Demos are broken (#108)
-As of April 2026, some live demos need fixes.
+From the demo: ```js onmessage = ({data}) => {
 
-## API Design Discussions (Closed but informative)
+## [#94: Hit testing and layer ordering](https://github.com/WICG/html-in-canvas/issues/94)
 
-### drawHTMLElement naming (#32) — Closed
-Debated renaming to `drawHTMLElement`/`texHTMLElement` but settled on `drawElementImage`/`texElementImage2D`.
+**Author:** [@jakearchibald](https://github.com/jakearchibald)
 
-### texSubImage2D-like vs texImage2D-like (#33) — Reopened
-Whether WebGL API should be more like `texSubImage2D` for partial updates.
+The current API has a somewhat high-level model for resolving hit testing, by giving you a transform that you can apply to your elements that puts them in the correct place. However, this doesn't cater for layer order, which is obviously an important part of getting hit-testing right. It feels like the high-level model should cater for this somehow.
 
-### Async drawing (#62) — Closed
-Explored making drawing async with full render steps but rejected for complexity.
+## [#88: Lifetime of ElementImage objects](https://github.com/WICG/html-in-canvas/issues/88)
 
-### devicePixelRatio interaction (#30) — Closed
-Clarified how canvas grid coordinates relate to CSS pixels and DPR.
+**Author:** [@foolip](https://github.com/foolip)
 
-### OffscreenCanvas support (#2) — Closed
-Led to the `captureElementImage()` + transferable `ElementImage` design.
+@Kaiido asked in https://github.com/WICG/html-in-canvas/pull/84#discussion_r2934398521 about the lifetime of `ElementImage` objects. For the `ElementImage` objects themselves, the options are to create new objects every time the "paint" event is fired, or to maintain one `ElementImage` object for every `Element` and make it "live", so that it's updated in…
 
-### Nested canvas (#46) — Closed
-Nested canvas with layoutsubtree is not supported.
+## [#85: Feature request: add `removedElements` to the `paint` event](https://github.com/WICG/html-in-canvas/issues/85)
 
-## Feature Requests
+**Author:** [@progers](https://github.com/progers)
 
-### CSS-in-Canvas / Flexbox layout (#107)
-Request for CSS layout primitives (flexbox) for canvas rendering, separate from HTML elements.
+When granular invalidation is used to only re-draw the parts of the canvas that have changed, it would be convenient to provide a list of removed elements, in addition to the current list of changed elements. Here is an example that works with the current `changedElements`, but would be much simpler if we added `removedElements`:
 
-### Animated images / video support (#31) — Reopened
-Whether `<video>` and animated GIF/APNG should work inside drawn elements.
+## [#82: Enumerate new fingeprinting vectors](https://github.com/WICG/html-in-canvas/issues/82)
 
-### Interactive WebGL demo (#71)
-Request to make the WebGL example interactive rather than just display.
+**Author:** [@Kaiido](https://github.com/Kaiido)
 
-### DOM capture / snapdom use case (#81)
-Using the API for screenshot/DOM capture libraries.
+There is already a section about privacy, which focuses on the new read-back capabilities. However, the `onpaint` event also brings new fingerprinting vectors, even without readback, for instance it is now possible to determine the rate of the cursor blinking by appending an `<input>` element, focus it and then measure at what frequency the `onpaint` even…
 
-## Future Considerations (from the spec)
+## [#81: Use case: DOM capture / screenshot library (snapdom)](https://github.com/WICG/html-in-canvas/issues/81)
 
-### Auto-updating canvas mode
-For threaded effects (scrolling, animations), the spec envisions a future mode where `drawElementImage` records placeholders and the canvas command buffer auto-replays with updated content after scroll/animation updates, without blocking on script. Viable for 2D, possibly WebGPU.
+**Author:** [@tinchox5](https://github.com/tinchox5)
 
-### Worker thread effects
-A design was explored where canvas children snapshots are sent to workers for threaded scroll/animation rendering, but rejected because it requires synchronous JS execution on scroll updates, which is architecturally difficult in restricted processes.
+I’m the author of [snapdom](https://github.com/zumerlab/snapdom) a DOM capture library similar to html2canvas. The library converts DOM elements into images (PNG, JPEG, etc.) for things like screenshots, exports, and thumbnails. Right now snapdom renders through **SVG + `<foreignObject>`**, but we’re experimenting with a different path using **`drawElemen…
+
+## [#79: Feature request: allow effects like backdrop-filter, using the current canvas content as the backdrop root](https://github.com/WICG/html-in-canvas/issues/79)
+
+**Author:** [@progers](https://github.com/progers)
+
+Maybe this should work? ``` <canvas id="canvas" width="200" height="200" layoutsubtree>
+
+## [#77: Surface when cross-origin content has been omitted](https://github.com/WICG/html-in-canvas/issues/77)
+
+**Author:** [@progers](https://github.com/progers)
+
+With privacy-preserving painting, we do not draw cross-origin content. It would be helpful to surface when this happens to developers. An exception is too disruptive, and a console warning might be too noisy, but reporting this via the devtools "Issues" tab could be a useful middle ground.
+
+## [#71: Replace webGL demo with one that is interactive](https://github.com/WICG/html-in-canvas/issues/71)
+
+**Author:** [@progers](https://github.com/progers)
+
+The current webGL demo draws the html content multiple times (once for each face of a cube), which cannot support interactivity. We should replace this demo with one that supports interactivity, such as a liquid glass effect.
+
+## [#48: DOM trees that start with an element of "display: contents" fail to be drawn into the canvas](https://github.com/WICG/html-in-canvas/issues/48)
+
+**Author:** [@itsdouges](https://github.com/itsdouges)
+
+Take HTML that looks like this: ``` <canvas layoutubtree="true">
+
+## [#47: Blending effects aren't correctly reflected in the canvas](https://github.com/WICG/html-in-canvas/issues/47)
+
+**Author:** [@itsdouges](https://github.com/itsdouges)
+
+From my explorations I've noticed that these styles don't get correctly reflected in the canvas: - `mix-blend-mode` (seems to be applied twice, something's going on) - `backdrop-filter` (not applied at all)
+
+## [#33: texHTMLElement should be texSubImage2D like, not texImage2D like or both should exist](https://github.com/WICG/html-in-canvas/issues/33)
+
+**Author:** [@greggman](https://github.com/greggman)
+
+`texImage2D` both allocates a mip level of a texture AND, optionally copies data into mip level. `texSubImage2D` only copies data. `texSubImage2D` is usable with immutable textures (textures created with `texStorage2D`). `texImage2D` is not. `texStorage2D` created textures can use less memory and be more efficient than `texImage2D` created textures.
+
+## [#31: Support for animated images or videos?](https://github.com/WICG/html-in-canvas/issues/31)
+
+**Author:** [@MaksymPylypenko](https://github.com/MaksymPylypenko)
+
+How hard would it be to support animated stuff (eg. gifs, webp, webm, mp4) in the future?

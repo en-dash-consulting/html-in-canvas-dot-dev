@@ -28,6 +28,13 @@ playwright/.cache/
 .hench/
 .sourcevision/
 .n-dx-web.port
+# Project-shared Claude skills are an exception — they live under
+# .claude/skills/ but are checked in so every contributor can invoke
+# them via slash commands in Claude Code.
+!.claude/
+!.claude/skills/
+!.claude/skills/sync-spec-docs/
+!.claude/skills/sync-spec-docs/**
 
 # Hench / Rex
 .rex/n-dx_workflow.md

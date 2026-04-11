@@ -77,12 +77,32 @@
       }
 
       /* ============================================================
-         Off-screen staging canvases
+         Staging canvases
+         ------------------------------------------------------------
+         Wrapped in a 1×1 visible container pinned to the corner of
+         the stage. Chrome's <canvas layoutsubtree> silently skips
+         paint records for elements at `left: -9999px`, which is
+         what the site previously used here — the WebGL shader ended
+         up sampling blank textures and the demo rendered black.
+         Each canvas is absolute-positioned at (0, 0) of the container
+         so all of them share the same visible 1×1 spot (stacking
+         vertically was ALSO broken — only the first canvas got paint
+         records).
          ============================================================ */
+      .staging-container {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
       .staging {
         position: absolute;
-        left: -9999px;
-        top: -9999px;
+        top: 0;
+        left: 0;
       }
 
       #page1-canvas,
@@ -364,8 +384,12 @@
     </div>
 
     <!-- ============================================================
-         Off-screen staging canvases — HTML content rendered here
+         Staging canvases — HTML pages rendered into these via
+         drawElementImage, then read into WebGL textures. Wrapped
+         in a 1×1 visible container so Chrome keeps their paint
+         records alive (see the .staging-container CSS comment).
          ============================================================ -->
+    <div class="staging-container">
 
     <!-- Page 1: Chapter opening -->
     <canvas
@@ -446,6 +470,7 @@
         <div class="page-watermark">HC</div>
       </div>
     </canvas>
+    </div><!-- /staging-container -->
 
     <p class="hint">
       <kbd>drag</kbd> from the right edge to turn the page &mdash; or watch the

@@ -286,9 +286,9 @@
       );
 
       function paintBarChart() {
-        const dpr = devicePixelRatio;
-        const cssW = barCanvas.width / dpr;
-        const cssH = barCanvas.height / dpr;
+        // Bitmap is 1:1 with CSS pixels for layoutsubtree layout.
+        const cssW = barCanvas.width;
+        const cssH = barCanvas.height;
 
         barCtx.clearRect(0, 0, cssW, cssH);
 
@@ -390,9 +390,9 @@
       );
 
       function paintPieChart() {
-        const dpr = devicePixelRatio;
-        const cssW = pieCanvas.width / dpr;
-        const cssH = pieCanvas.height / dpr;
+        // Bitmap is 1:1 with CSS pixels for layoutsubtree layout.
+        const cssW = pieCanvas.width;
+        const cssH = pieCanvas.height;
 
         pieCtx.clearRect(0, 0, cssW, cssH);
 
@@ -495,16 +495,16 @@
 
       // =============================================================
       // RESIZE OBSERVER
-      // Keeps the canvas bitmap in sync with CSS layout size so the
-      // output stays crisp at any viewport width or device pixel ratio.
+      // Keep the bitmap 1:1 with CSS pixels. Chrome's layoutsubtree
+      // uses canvas.width as the layout viewport for children, so a
+      // DPR-scaled bitmap breaks child layout on Retina displays
+      // (see project_layoutsubtree_bitmap_layout memory).
       // =============================================================
       function observeResize(canvas, paintFn) {
-        const ctx = canvas.getContext("2d");
         const ro = new ResizeObserver(([entry]) => {
           const { width, height } = entry.contentRect;
-          canvas.width = Math.round(width * devicePixelRatio);
-          canvas.height = Math.round(height * devicePixelRatio);
-          ctx.scale(devicePixelRatio, devicePixelRatio);
+          canvas.width = Math.round(width);
+          canvas.height = Math.round(height);
           // requestPaint() instead of onpaint() so the browser's paint
           // pipeline runs and generates the cached paint records that
           // drawElementImage() depends on.

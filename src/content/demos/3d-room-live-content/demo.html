@@ -864,8 +864,9 @@
       </p>
 
       <div class="key-hints">
-        <div class="key-hint"><kbd>W A S D</kbd> Move</div>
+        <div class="key-hint"><kbd>W A S D</kbd> / <kbd>←↑↓→</kbd> Move</div>
         <div class="key-hint"><kbd>Mouse</kbd> Look</div>
+        <div class="key-hint"><kbd>Click</kbd> a form field to type</div>
         <div class="key-hint"><kbd>ESC</kbd> Exit</div>
       </div>
 
@@ -999,17 +1000,17 @@
     >
       <div id="poster-content">
         <div class="poster-form-header">
-          <div class="poster-form-eyebrow">Beta access</div>
-          <h2 class="poster-form-title">Sign up for the<br />HTML-in-Canvas<br />newsletter</h2>
+          <div class="poster-form-eyebrow">Contact En Dash</div>
+          <h2 class="poster-form-title">Drop us<br />a note</h2>
           <p class="poster-form-subtitle">
-            Real DOM, painted into a 3D scene. This entire form is one
-            HTML element drawn onto the wall via drawElementImage.
+            This form is one real HTML element drawn onto the wall
+            via drawElementImage. Aim at a field and click to type.
           </p>
         </div>
 
         <form class="poster-form" id="poster-form" onsubmit="return false">
           <div class="poster-field">
-            <label for="poster-name">Name</label>
+            <label for="poster-name">Your name</label>
             <input
               type="text"
               id="poster-name"
@@ -1027,20 +1028,16 @@
             />
           </div>
           <div class="poster-field">
-            <label for="poster-role">Role</label>
-            <select id="poster-role">
-              <option>Frontend engineer</option>
-              <option>Designer</option>
-              <option>Product manager</option>
-              <option>Other</option>
+            <label for="poster-topic">What's on your mind?</label>
+            <select id="poster-topic">
+              <option>HTML-in-Canvas spec feedback</option>
+              <option>A demo idea</option>
+              <option>Consulting inquiry</option>
+              <option>Just saying hi</option>
             </select>
           </div>
-          <label class="poster-checkbox-row">
-            <input type="checkbox" id="poster-notify" checked />
-            <span>Email me when the spec ships in stable Chrome</span>
-          </label>
-          <button type="submit" class="poster-submit">
-            Get Early Access →
+          <button type="submit" class="poster-submit" id="poster-submit">
+            Drop us a note →
           </button>
         </form>
 
@@ -1501,7 +1498,7 @@
       scene.add(posterLight);
 
       /* ==============================================================
-         First-person controls (Pointer Lock + WASD)
+         First-person controls (Pointer Lock + WASD / arrows)
          ============================================================== */
       let isLocked = false;
       let interactiveTarget = null; // currently-focused form field
@@ -1510,15 +1507,32 @@
       const lookSpeed = 0.002;
       const keys = {};
 
+      // Arrow keys ALWAYS drive movement. WASD drives movement only
+      // when no form field is focused — when the user is typing into
+      // the poster form we let W/A/S/D (and every other printable
+      // key) flow through to the input unchanged so they can type
+      // without walking. The user then moves around with the arrow
+      // keys while still typing if they want.
+      const MOVEMENT_KEYS = new Set([
+        'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+        'KeyW', 'KeyA', 'KeyS', 'KeyD',
+      ]);
+      function isMovementKey(code) {
+        if (!MOVEMENT_KEYS.has(code)) return false;
+        if (!interactiveTarget) return true;
+        // Typing mode: arrows still move, WASD goes to the input.
+        return code.startsWith('Arrow');
+      }
+
       document.addEventListener("keydown", (e) => {
-        // While typing into a focused form field, let the keystrokes
-        // pass through to the field — don't capture them for movement.
-        if (interactiveTarget) return;
-        keys[e.code] = true;
+        if (isMovementKey(e.code)) {
+          keys[e.code] = true;
+        }
       });
       document.addEventListener("keyup", (e) => {
-        if (interactiveTarget) return;
-        keys[e.code] = false;
+        if (isMovementKey(e.code)) {
+          keys[e.code] = false;
+        }
       });
 
       document.addEventListener("pointerlockchange", () => {
@@ -1540,8 +1554,13 @@
         viewport.requestPointerLock();
       });
 
+      // Mouse look runs whenever pointer lock is active — including
+      // while the user is typing into a form field. The form field
+      // only receives keystrokes; the mouse still drives the camera
+      // so the player can look around the room while composing
+      // their message.
       document.addEventListener("mousemove", (e) => {
-        if (!isLocked || interactiveTarget) return;
+        if (!isLocked) return;
         euler.setFromQuaternion(camera.quaternion);
         euler.y -= e.movementX * lookSpeed;
         euler.x -= e.movementY * lookSpeed;
@@ -1580,41 +1599,86 @@
 
       function focusFormElement(uv) {
         const stagingCanvas = getStagingCanvas();
-        // The staging canvas is in a 1×1 container but its layout
-        // box is the canvas's full intrinsic size at the container
-        // origin. Use clientWidth/clientHeight (CSS pixels).
+        // Convert the UV hit on the 3D poster mesh into pixel
+        // coordinates inside the staging canvas's CSS layout box.
+        // Three.js UV.y is bottom-up; CSS coords are top-down.
         const w = stagingCanvas.clientWidth || stagingCanvas.width;
         const h = stagingCanvas.clientHeight || stagingCanvas.height;
         const px = uv.x * w;
-        // Three.js UV.y is bottom-up; canvas pixels are top-down.
         const py = (1 - uv.y) * h;
-        const stagingRect = stagingCanvas.getBoundingClientRect();
-        const sx = stagingRect.left + px;
-        const sy = stagingRect.top + py;
-        const target = root.elementFromPoint
-          ? root.elementFromPoint(sx, sy)
-          : document.elementFromPoint(sx, sy);
+
+        // Manual rect-based hit test instead of document.elementFromPoint.
+        // The staging canvas lives in an `overflow: hidden` 1×1
+        // container for layoutsubtree paint-record reasons, which
+        // clips the canvas visually and makes elementFromPoint
+        // return null for anything overflowing the container. We
+        // walk the form's interactive children directly and pick
+        // whichever one contains the local (px, py) point.
+        const canvasRect = stagingCanvas.getBoundingClientRect();
+        const candidates = stagingCanvas.querySelectorAll(
+          'input, select, textarea, button',
+        );
+        let target = null;
+        for (const el of candidates) {
+          const r = el.getBoundingClientRect();
+          const lx = r.left - canvasRect.left;
+          const ly = r.top - canvasRect.top;
+          if (
+            px >= lx &&
+            px < lx + r.width &&
+            py >= ly &&
+            py < ly + r.height
+          ) {
+            target = el;
+            break;
+          }
+        }
         if (!target) return false;
+
         const tag = target.tagName;
-        const interactive = ['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'];
-        if (!interactive.includes(tag)) return false;
         if (tag === 'BUTTON') {
           target.click();
           return false;
         }
-        target.focus();
         if (tag === 'INPUT' && target.type === 'checkbox') {
           target.checked = !target.checked;
           target.dispatchEvent(new Event('change', { bubbles: true }));
-          target.blur();
           return false;
         }
+        if (tag === 'SELECT') {
+          // Native <select> dropdowns don't open under pointer lock
+          // (the browser suppresses the popup because the cursor is
+          // hidden), so each click on a select cycles forward
+          // through its options instead. The poster form has a
+          // small fixed set of topics, so a click-to-cycle UX is
+          // actually quite natural.
+          const sel = target;
+          const count = sel.options.length;
+          if (count > 0) {
+            sel.selectedIndex = (sel.selectedIndex + 1) % count;
+            sel.dispatchEvent(new Event('change', { bubbles: true }));
+            posterCanvas.requestPaint?.();
+          }
+          return false;
+        }
+        // preventScroll so the browser doesn't scroll the page to
+        // bring the off-screen staging canvas into view — the
+        // staging canvas lives in a 1×1 overflow:hidden container
+        // that extends off the stage.
+        target.focus({ preventScroll: true });
         interactiveTarget = target;
         target.addEventListener(
           'blur',
           () => {
             if (interactiveTarget === target) interactiveTarget = null;
             updateInteractionHint();
+            // If pointer lock was released (e.g. user hit Esc to
+            // exit typing), bring the Enter overlay back so they
+            // can re-enter. If lock is still active (normal click-
+            // to-blur path), just return to game mode.
+            if (!isLocked) {
+              overlay.classList.remove('hidden');
+            }
           },
           { once: true },
         );
@@ -1625,53 +1689,108 @@
         if (!interactionHint) return;
         if (interactiveTarget) {
           interactionHint.textContent =
-            'Typing into form — press Esc to release';
+            'Typing — arrows move, click to exit';
           interactionHint.classList.add('visible');
         } else {
           interactionHint.classList.remove('visible');
         }
       }
 
-      // The crosshair-aim click. In pointer-locked mode the cursor
-      // is fixed at screen center, so NDC = (0, 0).
+      // Crosshair-aim click. In pointer-locked mode the cursor is
+      // fixed at screen center, so the raycast ray is NDC (0, 0).
+      //
+      // We do NOT exit pointer lock when focusing a form field. The
+      // user stays in the room and keeps playing — arrow keys move,
+      // WASD goes into the input, the camera holds its current
+      // orientation. Clicking elsewhere on the viewport blurs the
+      // field without leaving the room.
       viewport.addEventListener('click', () => {
-        // If a field is focused and the user clicks anywhere, blur it.
+        if (!isLocked) return;
+        raycaster.setFromCamera({ x: 0, y: 0 }, camera);
+        const hits = raycaster.intersectObjects([posterMesh], false);
+        const hit = hits.length > 0 && hits[0].uv ? hits[0] : null;
+
+        // If a form field is currently focused:
+        //   • clicking on another form field → focus that field
+        //     instead (the raycast hit the poster again).
+        //   • clicking anywhere else → blur and continue playing.
         if (interactiveTarget) {
+          if (hit) {
+            const focused = focusFormElement(hit.uv);
+            if (focused) {
+              updateInteractionHint();
+              return;
+            }
+          }
           interactiveTarget.blur();
           interactiveTarget = null;
           updateInteractionHint();
           return;
         }
-        if (!isLocked) return;
-        raycaster.setFromCamera({ x: 0, y: 0 }, camera);
-        const hits = raycaster.intersectObjects([posterMesh], false);
-        if (hits.length === 0 || !hits[0].uv) return;
-        const focused = focusFormElement(hits[0].uv);
-        if (focused) {
-          // Exit pointer lock so the user can move the cursor away
-          // when done; the entry overlay is suppressed because
-          // interactiveTarget is set.
-          if (root.exitPointerLock) {
-            root.exitPointerLock();
-          } else {
-            document.exitPointerLock();
-          }
-          updateInteractionHint();
-        }
+
+        if (!hit) return;
+        const focused = focusFormElement(hit.uv);
+        if (focused) updateInteractionHint();
       });
 
-      // Esc while typing → blur (browser default for Esc inside an
-      // input is no-op, so we wire it explicitly).
+      // Esc while typing → the browser exits pointer lock as its
+      // default response. That fires `pointerlockchange` which
+      // already handles the cleanup (showing the Enter overlay,
+      // hiding the crosshair). We also blur the focused field here
+      // so the blur listener can run its own tidy-up.
       document.addEventListener('keydown', (e) => {
         if (interactiveTarget && e.key === 'Escape') {
           interactiveTarget.blur();
-          interactiveTarget = null;
-          updateInteractionHint();
         }
       });
 
+      /* ==============================================================
+         Poster form submit — hand off to endash.us contact form
+         with the user's intent pre-filled via query parameters.
+         ============================================================== */
+      const posterNameEl = $('poster-name');
+      const posterEmailEl = $('poster-email');
+      const posterTopicEl = $('poster-topic');
+      const posterSubmitBtn = $('poster-submit');
+      if (posterSubmitBtn) {
+        posterSubmitBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const name = (posterNameEl?.value || '').trim();
+          const email = (posterEmailEl?.value || '').trim();
+          const topic = (posterTopicEl?.value || 'Just saying hi').trim();
+          // Build the pre-filled endash.us contact URL. The contact
+          // modal on endash.us reads `showContact`, `contactTitle`,
+          // `contactSubtitle`, and `contactMessage` from the query
+          // string and opens itself with those values pre-populated.
+          const base = 'https://endash.us/';
+          const subtitle =
+            'From the HTML-in-Canvas 3D room demo — ' + topic;
+          const message = [
+            'Hi En Dash,',
+            '',
+            'I dropped this note from the 3D room in html-in-canvas.dev.',
+            '',
+            'Name: ' + (name || '(not provided)'),
+            'Email: ' + (email || '(not provided)'),
+            'Topic: ' + topic,
+          ].join('\n');
+          const params = new URLSearchParams({
+            showContact: 'true',
+            contactTitle: 'A note from html-in-canvas.dev',
+            contactSubtitle: subtitle,
+            contactMessage: message,
+          });
+          // Open in a new tab so the user doesn't lose the 3D scene.
+          window.open(base + '?' + params.toString(), '_blank', 'noopener');
+        });
+      }
+
       function updateMovement(dt) {
-        if (!isLocked || interactiveTarget) return;
+        // Movement keeps running while the user is typing into a
+        // form field — `isMovementKey()` already filters which
+        // codes enter `keys` based on interactiveTarget, so this
+        // function only needs to gate on pointer lock.
+        if (!isLocked) return;
 
         const forward = new THREE.Vector3(0, 0, -1);
         forward.applyQuaternion(camera.quaternion);
@@ -1825,10 +1944,16 @@
       /* Update TV time every 10 seconds (animations update via requestPaint in render loop) */
       setInterval(updateTvContent, 10000);
 
-      /* Poster is mostly static; refresh occasionally for the gradient orbs */
+      /* Poster repaints slowly when idle (just refresh the gradient
+       * orbs every 2s), but while the user is typing into a form
+       * field we bump to ~10 Hz so the caret and live text updates
+       * show up in the 3D scene promptly. */
       setInterval(() => {
         posterCanvas.requestPaint();
       }, 2000);
+      setInterval(() => {
+        if (interactiveTarget) posterCanvas.requestPaint();
+      }, 100);
 
       /* ==============================================================
          Render loop

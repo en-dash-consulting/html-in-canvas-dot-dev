@@ -588,12 +588,7 @@
       // captures these painted frames as video.
       // =============================================================
       function paintScene() {
-        const dpr = devicePixelRatio;
-        const w = canvas.width / dpr;
-        const h = canvas.height / dpr;
-
-        ctx.clearRect(0, 0, w, h);
-
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         const transform = ctx.drawElementImage(scene, 0, 0);
         if (transform) {
           scene.style.transform = transform.toString();
@@ -604,13 +599,15 @@
 
       // =============================================================
       // RESIZE OBSERVER
-      // Keeps the canvas bitmap in sync with its CSS layout size.
+      // Keep the bitmap sized 1:1 with CSS pixels. Chrome's
+      // layoutsubtree uses canvas.width as the layout viewport for
+      // children, so a DPR-scaled bitmap breaks child layout on
+      // Retina displays (see project_layoutsubtree_bitmap_layout).
       // =============================================================
       const ro = new ResizeObserver(([entry]) => {
         const { width, height } = entry.contentRect;
-        canvas.width = Math.round(width * devicePixelRatio);
-        canvas.height = Math.round(height * devicePixelRatio);
-        ctx.scale(devicePixelRatio, devicePixelRatio);
+        canvas.width = Math.round(width);
+        canvas.height = Math.round(height);
         canvas.requestPaint?.();
       });
       ro.observe(canvas);

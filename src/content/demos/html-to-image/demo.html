@@ -85,10 +85,10 @@
         );
         font-family: "Montserrat", system-ui, sans-serif;
         font-size: clamp(11px, 1.8vw, 16px);
+        padding: 8%;
         display: flex;
         flex-direction: column;
         justify-content: flex-end;
-        padding: 8%;
         position: relative;
         overflow: hidden;
       }
@@ -399,24 +399,29 @@
       // Paint callback — drawElementImage() captures the entire HTML
       // card (gradients, custom fonts, layered shapes, everything) in
       // a single call. This is the native replacement for html2canvas.
+      //
+      // Reset + re-scale on every paint so the transform state is
+      // deterministic. Previously the DPR scale lived in the
+      // ResizeObserver, which meant the first frame (before any
+      // resize) drew at 1x, producing a quarter-size image in the
+      // top-left of the DPR=2 bitmap.
       function paintCard() {
-        const dpr = devicePixelRatio;
-        const w = canvas.width / dpr;
-        const h = canvas.height / dpr;
-        ctx.clearRect(0, 0, w, h);
-        const transform = ctx.drawElementImage(card, 0, 0);
-        if (transform) card.style.transform = transform.toString();
+        ctx.reset();
+        ctx.drawElementImage(card, 0, 0);
       }
       canvas.onpaint = paintCard;
 
-      // ResizeObserver: keep the canvas bitmap synced to its CSS size
-      // at devicePixelRatio. requestPaint() so the browser's paint
-      // pipeline runs and generates the cached paint records.
+      // ResizeObserver: keep the canvas bitmap at its CSS pixel size
+      // (not CSS × DPR). Chrome's <canvas layoutsubtree> uses the
+      // canvas's bitmap width as the layout viewport for child
+      // elements, so multiplying by DPR makes the children lay out
+      // at 2× their intended width and overflow the bitmap. Keeping
+      // the bitmap at CSS size means slightly less crisp text on
+      // Retina, but the layout is correct.
       new ResizeObserver(([entry]) => {
         const { width, height } = entry.contentRect;
-        canvas.width = Math.round(width * devicePixelRatio);
-        canvas.height = Math.round(height * devicePixelRatio);
-        ctx.scale(devicePixelRatio, devicePixelRatio);
+        canvas.width = Math.round(width);
+        canvas.height = Math.round(height);
         canvas.requestPaint?.();
       }).observe(canvas);
 

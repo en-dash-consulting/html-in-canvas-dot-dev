@@ -77,6 +77,15 @@
         margin-bottom: 1rem;
       }
 
+      /* The source lives inside a <canvas layoutsubtree> so we can
+         capture it as an ImageBitmap. The canvas itself is visually
+         transparent — the source div is laid out as a child and is
+         the thing the user sees and edits. */
+      #source-canvas {
+        display: block;
+        width: 100%;
+      }
+
       #source {
         background: #0d0d18;
         border-radius: 8px;
@@ -290,24 +299,29 @@
       <div class="demo-panel">
         <h2>Live Result</h2>
 
-        <!-- Source HTML element to capture -->
+        <!-- Source HTML element to capture. Wrapping it in a
+             <canvas layoutsubtree> means the card is a real, editable
+             DOM element AND lives in a canvas whose bitmap we can
+             transfer to the worker via createImageBitmap(). -->
         <div class="source-area">
           <div class="section-label">
             Source Element
             <span class="edit-hint">(click to edit, then re-capture)</span>
           </div>
-          <div id="source" contenteditable="true">
-            <div class="source-card">
-              <div class="source-card-icon">&#x1F3A8;</div>
-              <h3>HTML Content</h3>
-              <p>
-                This DOM element is captured as a transferable
-                <code>ElementImage</code> and sent to a Web Worker
-                for off-thread rendering.
-              </p>
-              <div class="source-card-badge">Transferable</div>
+          <canvas id="source-canvas" layoutsubtree>
+            <div id="source" contenteditable="true">
+              <div class="source-card">
+                <div class="source-card-icon">&#x1F3A8;</div>
+                <h3>HTML Content</h3>
+                <p>
+                  This DOM element is captured as a transferable
+                  <code>ElementImage</code> and sent to a Web Worker
+                  for off-thread rendering.
+                </p>
+                <div class="source-card-badge">Transferable</div>
+              </div>
             </div>
-          </div>
+          </canvas>
         </div>
 
         <!-- Controls -->
@@ -361,12 +375,78 @@
 
       /* ── DOM references ────────────────────────────── */
       const canvas = $("output");
+      const sourceCanvas = $("source-canvas");
       const source = $("source");
       const captureBtn = $("capture-btn");
       const animateToggle = $("animate-toggle");
       const transformDisplay = $("transform-display");
       const fpsDisplay = $("fps-display");
       const logPanel = $("log");
+
+      /* ──────────────────────────────────────────────────
+       * captureElementImage polyfill
+       * ──────────────────────────────────────────────────
+       * The WICG spec proposes `canvas.captureElementImage(element)`
+       * which returns a transferable `ElementImage` that can be
+       * posted to a worker. Chrome Canary doesn't implement it yet.
+       *
+       * Polyfill: the source element already lives inside a
+       * `<canvas layoutsubtree>` in the DOM (see #source-canvas in
+       * the HTML). On capture:
+       *   1. Size the source canvas's bitmap to match the source
+       *      element's natural layout dimensions.
+       *   2. Paint the source element into the canvas via
+       *      drawElementImage.
+       *   3. Call `createImageBitmap(sourceCanvas)` to pull a
+       *      transferable ImageBitmap out of the canvas bitmap.
+       *   4. Post that ImageBitmap to the worker.
+       *
+       * The worker draws the ImageBitmap the same way it would have
+       * drawn an ElementImage — the shape of the API is different
+       * but the semantics are equivalent.
+       */
+      const sourceCtx = sourceCanvas.getContext("2d");
+
+      async function captureElementImage(element) {
+        // Resize the source canvas bitmap to match the source div's
+        // current natural dimensions. We read getBoundingClientRect()
+        // BEFORE mutating canvas.width (which would reset the
+        // layoutsubtree children's layout mid-measurement).
+        const rect = element.getBoundingClientRect();
+        const w = Math.max(1, Math.round(rect.width));
+        const h = Math.max(1, Math.round(rect.height));
+        if (sourceCanvas.width !== w || sourceCanvas.height !== h) {
+          sourceCanvas.width = w;
+          sourceCanvas.height = h;
+        }
+
+        // Paint the element into the canvas bitmap and wait for the
+        // paint cycle to complete before reading pixels.
+        await new Promise((resolve) => {
+          sourceCanvas.onpaint = () => {
+            sourceCtx.clearRect(0, 0, w, h);
+            sourceCtx.drawElementImage(element, 0, 0);
+            resolve();
+          };
+          if (sourceCanvas.requestPaint) sourceCanvas.requestPaint();
+          else resolve();
+        });
+
+        // Pull a transferable ImageBitmap out of the canvas. We go
+        // through toBlob() + createImageBitmap(blob) instead of
+        // createImageBitmap(canvas) because Chrome Canary crashes the
+        // renderer when you pass a <canvas layoutsubtree> element
+        // directly to createImageBitmap. Routing through a Blob adds
+        // a small amount of overhead but produces a valid, safely
+        // transferable ImageBitmap.
+        const blob = await new Promise((resolve, reject) => {
+          sourceCanvas.toBlob((b) => {
+            if (b) resolve(b);
+            else reject(new Error('canvas.toBlob returned null'));
+          }, 'image/png');
+        });
+        return await createImageBitmap(blob);
+      }
 
       /* ── Message log utility ───────────────────────── */
       function log(direction, text) {
@@ -637,6 +717,27 @@
         worker.postMessage({ type: "animate", value: val });
         log("to", "animate: " + val);
       });
+
+      /* ── Auto-run the first capture after the worker boots ──
+       * The demo is self-demoing: the visitor arrives and sees the
+       * worker thread already rendering the captured element image
+       * with the rotating animation running. They can then click
+       * Capture again to re-send a snapshot after editing the
+       * source element. A 700ms delay lets the demo fonts load and
+       * the captureElementImage first paint cycle settle before we
+       * transfer the image into the worker.
+       */
+      setTimeout(() => {
+        // Honor the default `checked` state of the animate toggle
+        // by posting the initial animate message before the first
+        // capture, so the worker's render loop is already running
+        // when the image arrives.
+        worker.postMessage({
+          type: "animate",
+          value: animateToggle.checked,
+        });
+        captureBtn.click();
+      }, 700);
 
       /* ── Receive messages from worker ──────────────── */
       let transformThrottle = 0;
