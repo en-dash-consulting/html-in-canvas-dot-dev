@@ -3,45 +3,38 @@ title: Browser Support
 order: 6
 ---
 
-# Browser Support & How to Try It
+# Browser Support
 
-## Current Status (April 2026)
+_Auto-synced from [`WICG/html-in-canvas` README](https://github.com/WICG/html-in-canvas/blob/main/README.md) on 2026-04-11 via `scripts/sync-spec-docs.mjs`._
 
-- **Chromium/Chrome Canary:** Available behind a flag
-  - Navigate to `chrome://flags/#canvas-draw-element`
-  - Enable the flag and restart
-- **Firefox:** No implementation announced
-- **Safari/WebKit:** No implementation announced
-- **Standards track:** WICG proposal (Web Incubator Community Group) — not yet a W3C spec
+## Status
 
-## Spec Maturity
+This is a living explainer which is continuously updated as we receive feedback.
 
-This is a **living explainer**, not a formal spec yet. The API surface may change. Current areas of active iteration include:
+The APIs described here are implemented behind a flag in Chromium and can be enabled with `chrome://flags/#canvas-draw-element`.
 
-- Hit testing model (issue #94)
-- PaintEvent data structure (issue #95)
-- Worker access patterns (issue #96)
-- ElementImage lifecycle (issue #88)
+## Developer Trial (dev trial) Information
+The HTML-in-Canvas features may be enabled with `chrome://flags/#canvas-draw-element` in Chrome Canary.
 
-## Three.js Integration
+We are most interested in feedback on the following topics:
+* What content works, and what fails? Which failure modes are most important to fix?
+* How does the feature interact with accessibility features? How can accessibility support be improved?
 
-An experimental branch of three.js adds support:
-- PR: https://github.com/mrdoob/three.js/pull/31233
-- Adds HTML content as textures in three.js scenes
-- Uses `texElementImage2D` under the hood
+Please file bugs or design issues [here](https://github.com/WICG/html-in-canvas/issues/new).
 
-## Related Chrome Features
+## How to try it
 
-- `chrome://flags/#canvas-draw-element` — the main feature flag
-- The feature participates in Chrome's origin trial / dev trial process
-- Feedback requested at https://github.com/WICG/html-in-canvas/issues
+1. Install [Chrome Canary](https://www.google.com/chrome/canary/) — the feature ships in Chromium's unstable channel.
+2. Visit `chrome://flags/#canvas-draw-element` and enable the flag.
+3. Restart the browser.
+4. Load any demo from the [demo gallery](/demos/).
 
-## Key Chromium Contributors
+## Other browsers
 
-- Philip Rogers (pdr@chromium.org) — primary author
-- Chris Harrelson (chrishtr@chromium.org)
-- Philip Jagenstedt (foolip@chromium.org)
-- Khushal Sagar (khushalsagar@chromium.org)
-- Vladimir Levin (vmpstr@chromium.org)
-- Fernando Serboncini (fserb@chromium.org)
-- Stephen Chenney (schenney@igalia.com) — Igalia
+- **Firefox:** no implementation announced.
+- **Safari / WebKit:** no implementation announced.
+- **Other Chromium forks:** the feature rides along wherever the Chromium unstable channel is shipped (Edge Canary, etc.).
+
+## Feedback
+
+Browser vendors and contributors track discussion at <https://github.com/WICG/html-in-canvas/issues> — see the [Open Questions](/docs/open-questions/) page for the current list.
