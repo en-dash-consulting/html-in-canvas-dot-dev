@@ -25,6 +25,17 @@ const DEFAULT_DESCRIPTION =
   'Interactive demos and documentation for the WICG HTML-in-Canvas specification — render real DOM elements directly into a <canvas> via drawElementImage().';
 const DEFAULT_OG_IMAGE = '/og-image.png';
 
+// Google Analytics 4 measurement ID. Read from an env var if set so
+// forks can point the site at their own property without touching
+// source; falls back to the canonical html-in-canvas.dev ID. Set to an
+// empty string (`PUBLIC_GA_MEASUREMENT_ID=`) to disable.
+const GA_MEASUREMENT_ID =
+  (import.meta.env.PUBLIC_GA_MEASUREMENT_ID ?? 'G-GZ5SK3LLBF') as string;
+
+// Only inject GA in production builds so `npm run dev` doesn't pollute
+// analytics and so local work never shows up in the dashboard.
+const enableGa = import.meta.env.PROD && GA_MEASUREMENT_ID.length > 0;
+
 const {
   title = SITE_NAME,
   description = DEFAULT_DESCRIPTION,
@@ -101,6 +112,23 @@ const websiteJsonLd = {
 
     {/* Per-page slot for additional <link>, <meta>, or JSON-LD */}
     <slot name="head" />
+
+    {/* Google Analytics 4 — production only, gated on env var */}
+    {enableGa && (
+      <>
+        <script
+          is:inline
+          async
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+        />
+        <script is:inline define:vars={{ GA_MEASUREMENT_ID }}>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', GA_MEASUREMENT_ID);
+        </script>
+      </>
+    )}
 
     {/* Prevent FOUC: apply saved theme before first paint */}
     <script is:inline>

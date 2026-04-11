@@ -26,6 +26,16 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
+# Force the JavaScript actions that run on the runner (checkout,
+# setup-node, upload-pages-artifact, deploy-pages) off the deprecated
+# Node.js 20 runtime and onto Node.js 24. Node 22 is what our own
+# project code builds against (see the `node-version` input below);
+# this env var is about the *wrapper action* runtime that GitHub
+# itself provides. Both are forward compatible. Opting in early keeps
+# the Actions log free of deprecation warnings.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   build:
     runs-on: ubuntu-latest

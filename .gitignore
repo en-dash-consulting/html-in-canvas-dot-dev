@@ -20,6 +20,15 @@ playwright/.cache/
 # OS
 .DS_Store
 
+# Local AI / development tooling — these directories hold session
+# transcripts, PRD state, codebase caches, and skill definitions that
+# are specific to a developer's machine. They should never be
+# committed. Keeping them explicitly listed so `git add -A` stays safe.
+.claude/
+.hench/
+.sourcevision/
+.n-dx-web.port
+
 # Hench / Rex
 .rex/n-dx_workflow.md
 .rex/execution-log*.jsonl

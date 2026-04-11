@@ -34,6 +34,9 @@ const GITHUB_REPO =
     >
       Learn more about En Dash <span aria-hidden="true">→</span>
     </a>
+    <p class="footer-colophon">
+      Built with <a href="https://n-dx.dev" target="_blank" rel="noopener noreferrer">n-dx</a> and <a href="https://claude.com" target="_blank" rel="noopener noreferrer">Claude</a>.
+    </p>
   </div>
 </footer>
 
@@ -151,5 +154,25 @@ const GITHUB_REPO =
   .footer-cta:focus-visible {
     outline: 2px solid var(--color-purple);
     outline-offset: var(--focus-offset);
+  }
+
+  .footer-colophon {
+    margin: 1.75rem 0 0;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .footer-colophon a {
+    color: var(--text-secondary);
+    font-weight: 500;
+    text-decoration: none;
+    border-bottom: 1px solid var(--border-color);
+    transition: color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .footer-colophon a:hover {
+    color: var(--color-teal);
+    border-bottom-color: var(--color-teal);
+    text-decoration: none;
   }
 </style>
