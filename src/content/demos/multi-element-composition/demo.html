@@ -344,8 +344,9 @@
       // Each element is drawn at its own position with its own
       // transform. The array order determines z-stacking.
       canvas.onpaint = (event) => {
+        // Bitmap is 1:1 with CSS pixels — see memory
+        // project_layoutsubtree_bitmap_layout. No ctx.scale(dpr).
         ctx.reset();
-        ctx.scale(devicePixelRatio, devicePixelRatio);
 
         drawGrid(ctx, cssW, cssH);
 
@@ -488,17 +489,17 @@
         canvas.requestPaint?.();
       });
 
-      // ResizeObserver: keep the canvas resolution synced to its CSS
-      // layout size. requestPaint() (not onpaint() directly) so the
-      // browser's paint pipeline runs and generates the cached paint
-      // records that drawElementImage depends on.
+      // ResizeObserver: keep the bitmap 1:1 with CSS pixels. Chrome's
+      // layoutsubtree uses canvas.width as the layout viewport for
+      // child elements — DPR scaling would break card layout.
+      // requestPaint() so the browser's paint pipeline generates the
+      // cached paint records that drawElementImage depends on.
       new ResizeObserver(([entry]) => {
-        const dp = devicePixelRatio;
         const { width, height } = entry.contentRect;
         cssW = width;
         cssH = height;
-        canvas.width = Math.round(width * dp);
-        canvas.height = Math.round(height * dp);
+        canvas.width = Math.round(width);
+        canvas.height = Math.round(height);
         canvas.requestPaint?.();
       }).observe(canvas);
     </script>

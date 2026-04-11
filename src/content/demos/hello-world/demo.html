@@ -272,16 +272,19 @@
       // returned DOMMatrix is applied back to the source element so
       // that DOM hit testing and text selection line up with pixels.
       canvas.onpaint = () => {
-        const dpr = devicePixelRatio;
-        const cssW = canvas.width / dpr;
-        const cssH = canvas.height / dpr;
+        // Chrome's <canvas layoutsubtree> uses the canvas's bitmap
+        // dimensions as the layout viewport for children, so we size
+        // the bitmap 1:1 with CSS pixels — see
+        // project_layoutsubtree_bitmap_layout memory. The trade-off
+        // is slightly softer rendering on Retina displays.
+        const cssW = canvas.width;
+        const cssH = canvas.height;
 
         // Smoothly chase the cursor target
         mouseX += (targetX - mouseX) * 0.08;
         mouseY += (targetY - mouseY) * 0.08;
 
         ctx.reset();
-        ctx.scale(dpr, dpr);
 
         // Soft motion-trail wash. Filling with translucent black each
         // frame produces ghostly trails behind moving copies.
@@ -352,12 +355,15 @@
         loop(t);
       });
 
-      // ── ResizeObserver: keep the bitmap synced to CSS size ──────
+      // ── ResizeObserver: keep the bitmap sized 1:1 with CSS pixels.
+      // We do NOT scale by devicePixelRatio because Chrome's
+      // layoutsubtree uses canvas.width as the layout viewport for
+      // children — a DPR-scaled bitmap doubles the layout width and
+      // breaks text wrapping / percentage padding on Retina displays.
       new ResizeObserver(([entry]) => {
-        const dpr = devicePixelRatio;
         const { width, height } = entry.contentRect;
-        canvas.width = Math.round(width * dpr);
-        canvas.height = Math.round(height * dpr);
+        canvas.width = Math.round(width);
+        canvas.height = Math.round(height);
         canvas.requestPaint?.();
       }).observe(canvas);
     </script>

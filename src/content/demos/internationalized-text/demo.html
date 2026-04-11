@@ -662,11 +662,10 @@
         const content = canvas.firstElementChild;
 
         function paint() {
-          const dpr = devicePixelRatio;
-          const w = canvas.width / dpr;
-          const h = canvas.height / dpr;
-          ctx.clearRect(0, 0, w, h);
-
+          // Bitmap is 1:1 with CSS pixels — see memory
+          // project_layoutsubtree_bitmap_layout. Layoutsubtree uses
+          // canvas.width as the layout viewport for child elements.
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
           const transform = ctx.drawElementImage(content, 0, 0);
           if (transform) {
             content.style.transform = transform.toString();
@@ -677,9 +676,8 @@
 
         const ro = new ResizeObserver(([entry]) => {
           const { width, height } = entry.contentRect;
-          canvas.width = Math.round(width * devicePixelRatio);
-          canvas.height = Math.round(height * devicePixelRatio);
-          ctx.scale(devicePixelRatio, devicePixelRatio);
+          canvas.width = Math.round(width);
+          canvas.height = Math.round(height);
           canvas.requestPaint?.();
         });
         ro.observe(canvas);

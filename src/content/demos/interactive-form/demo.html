@@ -579,12 +579,12 @@
       // Center the form once we know its measured size, then sync its
       // CSS transform to the painted matrix on every frame.
       canvas.onpaint = () => {
-        const dpr = devicePixelRatio;
-        const cssW = canvas.width / dpr;
-        const cssH = canvas.height / dpr;
+        // Bitmap is 1:1 with CSS pixels; see project memory
+        // `project_layoutsubtree_bitmap_layout`. No DPR scaling.
+        const cssW = canvas.width;
+        const cssH = canvas.height;
 
         ctx.reset();
-        ctx.scale(dpr, dpr);
 
         // Background decorations and dot grid (drawn first, behind form)
         drawDotGrid(cssW, cssH);
@@ -604,15 +604,14 @@
         paintCountEl.textContent = paintCount;
       };
 
-      // ResizeObserver: keep the bitmap sized to the stage at DPR.
-      // requestPaint() (not onpaint() directly) so the browser's paint
-      // pipeline runs and generates the cached paint records that
-      // drawElementImage depends on.
+      // ResizeObserver: keep the bitmap 1:1 with CSS pixels. We do NOT
+      // scale by devicePixelRatio because Chrome's layoutsubtree uses
+      // canvas.width as the layout viewport for child elements — a
+      // DPR-scaled bitmap breaks child layout on Retina.
       new ResizeObserver(([entry]) => {
-        const dp = devicePixelRatio;
         const { width, height } = entry.contentRect;
-        canvas.width = Math.round(width * dp);
-        canvas.height = Math.round(height * dp);
+        canvas.width = Math.round(width);
+        canvas.height = Math.round(height);
         canvas.requestPaint?.();
       }).observe(canvas);
 

@@ -999,17 +999,17 @@
     >
       <div id="poster-content">
         <div class="poster-form-header">
-          <div class="poster-form-eyebrow">Beta access</div>
-          <h2 class="poster-form-title">Sign up for the<br />HTML-in-Canvas<br />newsletter</h2>
+          <div class="poster-form-eyebrow">Contact En Dash</div>
+          <h2 class="poster-form-title">Drop us<br />a note</h2>
           <p class="poster-form-subtitle">
-            Real DOM, painted into a 3D scene. This entire form is one
-            HTML element drawn onto the wall via drawElementImage.
+            This form is one real HTML element drawn onto the wall
+            via drawElementImage. Aim at a field and click to type.
           </p>
         </div>
 
         <form class="poster-form" id="poster-form" onsubmit="return false">
           <div class="poster-field">
-            <label for="poster-name">Name</label>
+            <label for="poster-name">Your name</label>
             <input
               type="text"
               id="poster-name"
@@ -1027,20 +1027,16 @@
             />
           </div>
           <div class="poster-field">
-            <label for="poster-role">Role</label>
-            <select id="poster-role">
-              <option>Frontend engineer</option>
-              <option>Designer</option>
-              <option>Product manager</option>
-              <option>Other</option>
+            <label for="poster-topic">What's on your mind?</label>
+            <select id="poster-topic">
+              <option>HTML-in-Canvas spec feedback</option>
+              <option>A demo idea</option>
+              <option>Consulting inquiry</option>
+              <option>Just saying hi</option>
             </select>
           </div>
-          <label class="poster-checkbox-row">
-            <input type="checkbox" id="poster-notify" checked />
-            <span>Email me when the spec ships in stable Chrome</span>
-          </label>
-          <button type="submit" class="poster-submit">
-            Get Early Access →
+          <button type="submit" class="poster-submit" id="poster-submit">
+            Drop us a note →
           </button>
         </form>
 
@@ -1580,35 +1576,53 @@
 
       function focusFormElement(uv) {
         const stagingCanvas = getStagingCanvas();
-        // The staging canvas is in a 1×1 container but its layout
-        // box is the canvas's full intrinsic size at the container
-        // origin. Use clientWidth/clientHeight (CSS pixels).
+        // Convert the UV hit on the 3D poster mesh into pixel
+        // coordinates inside the staging canvas's CSS layout box.
+        // Three.js UV.y is bottom-up; CSS coords are top-down.
         const w = stagingCanvas.clientWidth || stagingCanvas.width;
         const h = stagingCanvas.clientHeight || stagingCanvas.height;
         const px = uv.x * w;
-        // Three.js UV.y is bottom-up; canvas pixels are top-down.
         const py = (1 - uv.y) * h;
-        const stagingRect = stagingCanvas.getBoundingClientRect();
-        const sx = stagingRect.left + px;
-        const sy = stagingRect.top + py;
-        const target = root.elementFromPoint
-          ? root.elementFromPoint(sx, sy)
-          : document.elementFromPoint(sx, sy);
+
+        // Manual rect-based hit test instead of document.elementFromPoint.
+        // The staging canvas lives in an `overflow: hidden` 1×1
+        // container for layoutsubtree paint-record reasons, which
+        // clips the canvas visually and makes elementFromPoint
+        // return null for anything overflowing the container. We
+        // walk the form's interactive children directly and pick
+        // whichever one contains the local (px, py) point.
+        const canvasRect = stagingCanvas.getBoundingClientRect();
+        const candidates = stagingCanvas.querySelectorAll(
+          'input, select, textarea, button',
+        );
+        let target = null;
+        for (const el of candidates) {
+          const r = el.getBoundingClientRect();
+          const lx = r.left - canvasRect.left;
+          const ly = r.top - canvasRect.top;
+          if (
+            px >= lx &&
+            px < lx + r.width &&
+            py >= ly &&
+            py < ly + r.height
+          ) {
+            target = el;
+            break;
+          }
+        }
         if (!target) return false;
+
         const tag = target.tagName;
-        const interactive = ['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'];
-        if (!interactive.includes(tag)) return false;
         if (tag === 'BUTTON') {
           target.click();
           return false;
         }
-        target.focus();
         if (tag === 'INPUT' && target.type === 'checkbox') {
           target.checked = !target.checked;
           target.dispatchEvent(new Event('change', { bubbles: true }));
-          target.blur();
           return false;
         }
+        target.focus();
         interactiveTarget = target;
         target.addEventListener(
           'blur',
@@ -1669,6 +1683,47 @@
           updateInteractionHint();
         }
       });
+
+      /* ==============================================================
+         Poster form submit — hand off to endash.us contact form
+         with the user's intent pre-filled via query parameters.
+         ============================================================== */
+      const posterNameEl = $('poster-name');
+      const posterEmailEl = $('poster-email');
+      const posterTopicEl = $('poster-topic');
+      const posterSubmitBtn = $('poster-submit');
+      if (posterSubmitBtn) {
+        posterSubmitBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const name = (posterNameEl?.value || '').trim();
+          const email = (posterEmailEl?.value || '').trim();
+          const topic = (posterTopicEl?.value || 'Just saying hi').trim();
+          // Build the pre-filled endash.us contact URL. The contact
+          // modal on endash.us reads `showContact`, `contactTitle`,
+          // `contactSubtitle`, and `contactMessage` from the query
+          // string and opens itself with those values pre-populated.
+          const base = 'https://endash.us/';
+          const subtitle =
+            'From the HTML-in-Canvas 3D room demo — ' + topic;
+          const message = [
+            'Hi En Dash,',
+            '',
+            'I dropped this note from the 3D room in html-in-canvas.dev.',
+            '',
+            'Name: ' + (name || '(not provided)'),
+            'Email: ' + (email || '(not provided)'),
+            'Topic: ' + topic,
+          ].join('\n');
+          const params = new URLSearchParams({
+            showContact: 'true',
+            contactTitle: 'A note from html-in-canvas.dev',
+            contactSubtitle: subtitle,
+            contactMessage: message,
+          });
+          // Open in a new tab so the user doesn't lose the 3D scene.
+          window.open(base + '?' + params.toString(), '_blank', 'noopener');
+        });
+      }
 
       function updateMovement(dt) {
         if (!isLocked || interactiveTarget) return;

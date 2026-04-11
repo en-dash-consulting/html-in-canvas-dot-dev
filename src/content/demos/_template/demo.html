@@ -75,17 +75,20 @@
 
       // ---------------------------------------------------------------
       // ResizeObserver
-      // Keeps the canvas resolution in sync with its CSS layout size
-      // so the output stays crisp at any viewport width. Use
-      // requestPaint() (not onpaint() directly) so the browser's paint
-      // pipeline runs and generates the cached paint records that
-      // drawElementImage depends on.
+      // Keeps the canvas resolution in sync with its CSS layout size.
+      // IMPORTANT: we size the bitmap 1:1 with CSS pixels (NOT CSS ×
+      // devicePixelRatio). Chrome's <canvas layoutsubtree> uses
+      // canvas.width as the layout viewport for child elements, so
+      // a DPR-scaled bitmap doubles the layout width and breaks
+      // percentage-based sizing, text wrapping, and flex layout on
+      // Retina displays. Trade-off: slightly softer rendering on
+      // Retina. Use requestPaint() so the browser's paint pipeline
+      // runs and generates cached paint records.
       // ---------------------------------------------------------------
       const ro = new ResizeObserver(([entry]) => {
         const { width, height } = entry.contentRect;
-        canvas.width = Math.round(width * devicePixelRatio);
-        canvas.height = Math.round(height * devicePixelRatio);
-        ctx.scale(devicePixelRatio, devicePixelRatio);
+        canvas.width = Math.round(width);
+        canvas.height = Math.round(height);
         canvas.requestPaint?.();
       });
       ro.observe(canvas);

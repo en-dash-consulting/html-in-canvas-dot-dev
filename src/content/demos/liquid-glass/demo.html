@@ -449,13 +449,20 @@
       };
 
       /* ==============================================================
-         Resize: keep both canvases matched to CSS size at device DPR
+         Resize: keep both canvases matched to the scene's CSS size.
+         We do NOT scale by devicePixelRatio because the source
+         canvas uses <canvas layoutsubtree>, and Chrome lays out its
+         children against canvas.width as the viewport — a DPR-scaled
+         bitmap would double the card's layout width and garble the
+         rendered image (see project_layoutsubtree_bitmap_layout).
+         The WebGL output canvas is kept at the same CSS-pixel size
+         so the 1:1 texture sample in the refraction shader stays
+         crisp.
          ============================================================== */
       function syncCanvasSize() {
         const rect = scene.getBoundingClientRect();
-        const dpr = devicePixelRatio;
-        const w = Math.round(rect.width * dpr);
-        const h = Math.round(rect.height * dpr);
+        const w = Math.round(rect.width);
+        const h = Math.round(rect.height);
 
         if (sourceCanvas.width !== w || sourceCanvas.height !== h) {
           sourceCanvas.width = w;

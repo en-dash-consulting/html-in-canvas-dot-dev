@@ -578,9 +578,11 @@
       //   text-shadow can't replicate on mixed HTML content.
       // =============================================================
       function paint() {
-        const dpr = devicePixelRatio;
-        const w = canvas.width / dpr;
-        const h = canvas.height / dpr;
+        // Canvas bitmap is 1:1 with CSS pixels — Chrome layoutsubtree
+        // needs that for child layout. See memory
+        // `project_layoutsubtree_bitmap_layout`.
+        const w = canvas.width;
+        const h = canvas.height;
 
         ctx.clearRect(0, 0, w, h);
 
@@ -664,15 +666,14 @@
 
       // =============================================================
       // RESIZE OBSERVER
-      // Keeps the canvas bitmap in sync with its CSS layout size so
-      // output stays crisp at any viewport width or device pixel
-      // ratio.
+      // Keep the bitmap 1:1 with CSS pixels. No DPR scaling because
+      // Chrome's layoutsubtree lays out children against canvas.width
+      // — doubling it breaks child layout on Retina displays.
       // =============================================================
       const ro = new ResizeObserver(([entry]) => {
         const { width, height } = entry.contentRect;
-        canvas.width = Math.round(width * devicePixelRatio);
-        canvas.height = Math.round(height * devicePixelRatio);
-        ctx.scale(devicePixelRatio, devicePixelRatio);
+        canvas.width = Math.round(width);
+        canvas.height = Math.round(height);
         canvas.requestPaint?.();
       });
       ro.observe(canvas);
