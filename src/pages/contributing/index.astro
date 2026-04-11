@@ -124,8 +124,9 @@ npm install</code></pre>
               <td>
                 Spec features exercised:
                 <code>"layoutsubtree"</code>,
-                <code>"drawElement"</code>,
-                <code>"onpaint"</code>, etc.
+                <code>"drawElementImage"</code>,
+                <code>"onpaint"</code>,
+                <code>"requestPaint"</code>, etc.
               </td>
             </tr>
             <tr>
@@ -151,8 +152,11 @@ npm install</code></pre>
     <section>
       <h2><span class="step-number">4</span> Build your <code>demo.html</code></h2>
       <p>
-        This is a standalone HTML file that runs inside an iframe. The template
-        includes working boilerplate with the three key patterns:
+        Each demo is a single self-contained HTML file. It's served two ways:
+        as a standalone document at <code>/demos/&#123;slug&#125;/demo.html</code>,
+        and mounted inside a shadow root on the wrapped
+        <code>/demos/&#123;slug&#125;/</code> page. Your demo needs to work in
+        both contexts — the template handles this for you.
       </p>
 
       <div class="pattern-grid">
@@ -172,33 +176,67 @@ npm install</code></pre>
           <h3><code>onpaint</code> callback</h3>
           <p>
             Set <code>canvas.onpaint</code> to a function that clears and
-            redraws. The browser calls it whenever children need re-rendering.
+            redraws via <code>ctx.drawElementImage()</code>. The browser
+            calls it whenever children need re-rendering.
           </p>
           <pre><code set:html={`canvas.onpaint = () =&gt; {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawElement(content, 0, 0);
+  ctx.drawElementImage(content, 0, 0);
 };`} /></pre>
         </div>
 
         <div class="pattern-card">
-          <h3><code>ResizeObserver</code></h3>
+          <h3><code>ResizeObserver</code> + <code>requestPaint</code></h3>
           <p>
-            Keep the canvas resolution in sync with its CSS size so the output
-            stays sharp on high-DPI displays.
+            Keep the canvas resolution in sync with its CSS size, then call
+            <code>requestPaint()</code> so the browser generates fresh
+            cached paint records that <code>drawElementImage</code> depends on.
           </p>
           <pre><code set:html={`new ResizeObserver(([entry]) =&gt; {
-  const { width, height } = entry.contentRect;
+  const &#123; width, height &#125; = entry.contentRect;
   canvas.width = Math.round(width * devicePixelRatio);
   canvas.height = Math.round(height * devicePixelRatio);
   ctx.scale(devicePixelRatio, devicePixelRatio);
-});`} /></pre>
+  canvas.requestPaint?.();
+&#125;).observe(canvas);`} /></pre>
+        </div>
+
+        <div class="pattern-card">
+          <h3><code>body, :host</code> selector list</h3>
+          <p>
+            Use a <code>body, :host</code> selector list for any rule that
+            should style the document root. <code>body</code> matches in
+            standalone, <code>:host</code> matches inside the shadow mount.
+            Both have the same specificity, so one rule covers both.
+          </p>
+          <pre><code set:html={`body,
+:host &#123;
+  margin: 0;
+  min-height: min(78vh, 820px);
+  background: #0a0a0f;
+&#125;`} /></pre>
+        </div>
+
+        <div class="pattern-card">
+          <h3><code>window.__demoRoot</code></h3>
+          <p>
+            Resolve element lookups against this root, not <code>document</code>.
+            The wrapper page sets it to the shadow root before running your
+            script; in standalone mode it's <code>undefined</code> and falls
+            back to <code>document</code>.
+          </p>
+          <pre><code set:html={`const root = window.__demoRoot ?? document;
+const canvas = root.getElementById("canvas");`} /></pre>
         </div>
       </div>
 
       <p>
         You can add extra <code>.css</code>, <code>.js</code>, or other files
         alongside <code>demo.html</code> — they'll show up in the Source
-        Viewer automatically.
+        Viewer automatically. The wrapper page also handles the demo stage
+        size for you: aim for <code>min-height: min(78vh, 820px)</code> on
+        <code>body, :host</code> so small demos fill the area while larger
+        ones can grow naturally.
       </p>
     </section>
 
@@ -251,8 +289,9 @@ git push origin my-branch
           third-party hosts.
         </li>
         <li>
-          The iframe has a dark background (<code>#111</code>) by default;
-          match it in your <code>demo.html</code> for a seamless look.
+          The demo stage has a dark background (<code>#0a0a0a</code>) by
+          default; match it in your <code>demo.html</code> for a seamless
+          look.
         </li>
         <li>
           Text files (<code>.html</code>, <code>.css</code>, <code>.js</code>,

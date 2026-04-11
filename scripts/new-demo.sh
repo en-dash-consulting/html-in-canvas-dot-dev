@@ -54,28 +54,39 @@ fi
 # -----------------------------------------------------------------------
 cp -r "$TEMPLATE_DIR" "$TARGET_DIR"
 
-# Pre-fill the slug into meta.json title and demo.html title
-TODAY=$(date +%Y-%m-%d)
-
 # Convert slug to title case: "gradient-text" -> "Gradient Text"
-TITLE=$(echo "$SLUG" | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2))}1')
+TITLE=$(echo "$SLUG" | awk -F'-' '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2))} 1' OFS=' ')
 
-# Update meta.json: replace placeholder title, set dateCreated, remove _field_docs
-python3 -c "
-import json, sys
-with open('$TARGET_DIR/meta.json') as f:
-    data = json.load(f)
-data['title'] = '$TITLE'
-data['dateCreated'] = '$TODAY'
-data['author'] = ''
-data.pop('_field_docs', None)
-with open('$TARGET_DIR/meta.json', 'w') as f:
-    json.dump(data, f, indent=2)
-    f.write('\n')
-"
+# Use node (which the project already requires) instead of python+sed so
+# the script runs identically on macOS, Linux, and Windows-via-WSL.
+TARGET_DIR="$TARGET_DIR" TITLE="$TITLE" node --input-type=module -e '
+import { readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 
-# Update demo.html title
-sed -i '' "s|<title>Demo Title</title>|<title>$TITLE — HTML-in-Canvas</title>|" "$TARGET_DIR/demo.html"
+const dir = process.env.TARGET_DIR;
+const title = process.env.TITLE;
+const today = new Date().toISOString().slice(0, 10);
+
+// Update meta.json: replace placeholder title, set dateCreated, remove _field_docs
+const metaPath = join(dir, "meta.json");
+const meta = JSON.parse(await readFile(metaPath, "utf8"));
+meta.title = title;
+meta.dateCreated = today;
+meta.author = "";
+delete meta._field_docs;
+await writeFile(metaPath, JSON.stringify(meta, null, 2) + "\n");
+
+// Update demo.html title
+const htmlPath = join(dir, "demo.html");
+const html = await readFile(htmlPath, "utf8");
+await writeFile(
+  htmlPath,
+  html.replace(
+    "<title>Demo Title</title>",
+    `<title>${title} — HTML-in-Canvas</title>`,
+  ),
+);
+'
 
 echo "Created: $TARGET_DIR/"
 echo "  meta.json  — fill in description, tags, features"

@@ -6,7 +6,7 @@
   "dateCreated": "2026-04-10",
   "context": "2d",
   "difficulty": "intermediate",
-  "features": ["layoutsubtree", "drawElement", "drawFocusIfNeeded", "onpaint", "requestPaint"],
+  "features": ["layoutsubtree", "drawElementImage", "drawFocusIfNeeded", "onpaint", "requestPaint"],
   "browserSupport": {
     "chrome": true,
     "firefox": false,

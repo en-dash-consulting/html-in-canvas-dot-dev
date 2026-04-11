@@ -27,8 +27,8 @@
         background: #0a0a0f;
         color: #f0f0f0;
         font-family: system-ui, -apple-system, sans-serif;
-        padding: 1rem;
-        overflow-y: auto;
+        padding: 1.5rem;
+        overflow-x: hidden;
       }
 
       h1 {
@@ -55,8 +55,12 @@
         grid-template-columns: 1fr 1fr;
         grid-template-rows: auto 1fr;
         gap: 0.75rem;
-        height: calc(100vh - 5rem);
-        min-height: 500px;
+        /*
+         * Fixed pixel height instead of `100vh - 5rem` so the layout
+         * survives the shadow-DOM mount inside the demo wrapper, which
+         * sizes the host with min-height instead of viewport units.
+         */
+        height: 620px;
       }
 
       .panel {

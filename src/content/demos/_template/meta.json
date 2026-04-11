@@ -6,7 +6,7 @@
   "dateCreated": "YYYY-MM-DD",
   "context": "2d",
   "difficulty": "beginner",
-  "features": ["layoutsubtree", "drawElement"],
+  "features": ["layoutsubtree", "drawElementImage", "onpaint", "requestPaint"],
   "browserSupport": {
     "chrome": true,
     "firefox": false,
@@ -22,7 +22,7 @@
     "dateUpdated":    "Optional. ISO date string (YYYY-MM-DD) of the last significant update.",
     "context":        "Canvas API: '2d' (default) | 'webgl' | 'webgpu'.",
     "difficulty":     "'beginner' (default) | 'intermediate' | 'advanced'.",
-    "features":       "HTML-in-Canvas spec features used: 'layoutsubtree', 'drawElement', 'onpaint', etc.",
+    "features":       "HTML-in-Canvas spec features used: 'layoutsubtree', 'drawElementImage', 'onpaint', 'requestPaint', etc.",
     "browserSupport": "Which browsers currently run this demo. Set to true once verified.",
     "_field_docs":    "DELETE THIS BLOCK before submitting — it is only for reference."
   }

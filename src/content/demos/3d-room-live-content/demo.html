@@ -166,7 +166,7 @@
          Crosshair
          ============================================================ */
       #crosshair {
-        position: fixed;
+        position: absolute;
         top: 50%;
         left: 50%;
         width: 4px;
@@ -181,6 +181,31 @@
 
       #crosshair.visible {
         display: block;
+      }
+
+      /* ============================================================
+         Interaction hint (form focus indicator)
+         ============================================================ */
+      #interaction-hint {
+        position: absolute;
+        bottom: 1.25rem;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 0.5rem 1rem;
+        background: rgba(15, 15, 22, 0.9);
+        border: 1px solid rgba(108, 65, 240, 0.5);
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #a78bfa;
+        z-index: 8;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+
+      #interaction-hint.visible {
+        opacity: 1;
       }
 
       /* ============================================================
@@ -215,6 +240,14 @@
        * skips painting for all of those, which leaves the layoutsubtree
        * children with no cached paint record and silently produces
        * blank pixels.
+       *
+       * Each staging canvas is `position: absolute` at the container's
+       * (0, 0) so they all stack at the same visible 1×1 spot. With
+       * default static layout the canvases would line-wrap and stack
+       * vertically (1650+ px tall), pushing the second and third ones
+       * far below the visible region — and Chrome would silently skip
+       * painting their layoutsubtree children, just like it does for
+       * `left: -9999px`.
        */
       .staging-container {
         position: absolute;
@@ -224,6 +257,12 @@
         height: 1px;
         overflow: hidden;
         pointer-events: none;
+      }
+
+      .staging {
+        position: absolute;
+        top: 0;
+        left: 0;
       }
 
       #monitor-canvas {
@@ -864,6 +903,11 @@
     <div id="crosshair"></div>
 
     <!-- ============================================================
+         Interaction hint (visible while typing into a focused field)
+         ============================================================ -->
+    <div id="interaction-hint">Typing into form — press Esc to release</div>
+
+    <!-- ============================================================
          Staging canvases — HTML content rendered here, then read into
          CanvasTextures and used as 3D surface materials. Wrapped in a
          1x1 visible container so the browser paints them (see CSS).
@@ -1298,70 +1342,45 @@
       /* ==============================================================
          Content surfaces with HTML-in-Canvas textures.
 
-         Three.js's CanvasTexture upload pipeline doesn't reliably
-         re-upload from a <canvas layoutsubtree>-derived canvas (even
-         with needsUpdate=true and a plain mirror canvas in the
-         middle). The texture sticks at its first-frame contents,
-         which are empty.
-
-         Workaround: use a bare THREE.Texture as the wrapper so the
-         material picks up filtering / mip settings, then bypass
-         Three.js's upload entirely each frame by binding the texture
-         and calling raw gl.texImage2D ourselves. This is the same
-         pattern css-to-shader uses, and it works reliably.
+         The dance: each <canvas layoutsubtree> staging canvas hosts a
+         DOM tree that drawElementImage paints onto its bitmap. We
+         can't hand that bitmap directly to Three.js's CanvasTexture
+         pipeline — when we do, the texture sticks at its first-frame
+         contents because Three.js's upload path doesn't see the
+         layoutsubtree-driven repaint as a content change.
+         The workaround is to copy the staging bitmap into a regular
+         intermediate canvas via drawImage each frame, and use THAT
+         as the CanvasTexture source. Three.js sees a regular canvas
+         and re-uploads on `needsUpdate = true` like usual.
          ============================================================== */
 
-      const gl = renderer.getContext();
-
       function makeStagingTexture(srcCanvas) {
-        // Build the placeholder at the staging canvas's exact size so
-        // Three.js's initTexture allocates immutable storage at the
-        // right dimensions. Subsequent texSubImage2D calls update the
-        // contents in place without reallocating.
-        const placeholder = document.createElement('canvas');
-        placeholder.width = srcCanvas.width;
-        placeholder.height = srcCanvas.height;
-        const pctx = placeholder.getContext('2d');
-        pctx.fillStyle = '#000';
-        pctx.fillRect(0, 0, placeholder.width, placeholder.height);
+        // Mirror canvas: a regular HTMLCanvas we copy the layoutsubtree
+        // canvas's pixels into each frame via drawImage. Three.js's
+        // CanvasTexture upload pipeline works reliably with regular
+        // canvases, but stalls when handed a `<canvas layoutsubtree>`
+        // directly — the texture sticks at its first-frame contents.
+        // The intermediate copy decouples the two.
+        const mirror = document.createElement('canvas');
+        mirror.width = srcCanvas.width;
+        mirror.height = srcCanvas.height;
+        const mctx = mirror.getContext('2d');
 
-        const tex = new THREE.Texture(placeholder);
+        const tex = new THREE.CanvasTexture(mirror);
         tex.minFilter = THREE.LinearFilter;
         tex.magFilter = THREE.LinearFilter;
         tex.generateMipmaps = false;
-        tex.format = THREE.RGBAFormat;
-        tex.type = THREE.UnsignedByteType;
-        tex.flipY = false;
-        tex.needsUpdate = true;
-        renderer.initTexture(tex);
+        tex.colorSpace = THREE.SRGBColorSpace;
 
         return {
           tex,
           sync() {
-            const props = renderer.properties.get(tex);
-            const webglTex = props && props.__webglTexture;
-            if (!webglTex) return;
-            gl.bindTexture(gl.TEXTURE_2D, webglTex);
-            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-            gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
-            try {
-              // texSubImage2D (not texImage2D) so we don't try to
-              // reallocate the texture's immutable storage that
-              // Three.js's initTexture set up via texStorage2D.
-              gl.texSubImage2D(
-                gl.TEXTURE_2D,
-                0,
-                0,
-                0,
-                gl.RGBA,
-                gl.UNSIGNED_BYTE,
-                srcCanvas,
-              );
-            } catch {
-              // Silent — sometimes the canvas isn't ready on the
-              // very first frame; subsequent frames succeed.
-            }
-            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+            // Copy current pixels from the layoutsubtree staging
+            // canvas into the regular mirror canvas, then mark the
+            // texture dirty so Three.js's normal upload path runs.
+            mctx.clearRect(0, 0, mirror.width, mirror.height);
+            mctx.drawImage(srcCanvas, 0, 0);
+            tex.needsUpdate = true;
           },
         };
       }
@@ -1485,15 +1504,20 @@
          First-person controls (Pointer Lock + WASD)
          ============================================================== */
       let isLocked = false;
+      let interactiveTarget = null; // currently-focused form field
       const euler = new THREE.Euler(0, 0, 0, "YXZ");
       const moveSpeed = 3.0;
       const lookSpeed = 0.002;
       const keys = {};
 
       document.addEventListener("keydown", (e) => {
+        // While typing into a focused form field, let the keystrokes
+        // pass through to the field — don't capture them for movement.
+        if (interactiveTarget) return;
         keys[e.code] = true;
       });
       document.addEventListener("keyup", (e) => {
+        if (interactiveTarget) return;
         keys[e.code] = false;
       });
 
@@ -1503,7 +1527,12 @@
         // script's root — document in standalone, the shadow root in
         // wrapped — to get the actual locked element.
         isLocked = root.pointerLockElement === viewport;
-        overlay.classList.toggle("hidden", isLocked);
+        // Suppress the entry overlay when the user is interacting with
+        // a form (we exited pointer lock on purpose, not as a "leave"
+        // gesture).
+        if (!interactiveTarget) {
+          overlay.classList.toggle("hidden", isLocked);
+        }
         crosshair.classList.toggle("visible", isLocked);
       });
 
@@ -1512,7 +1541,7 @@
       });
 
       document.addEventListener("mousemove", (e) => {
-        if (!isLocked) return;
+        if (!isLocked || interactiveTarget) return;
         euler.setFromQuaternion(camera.quaternion);
         euler.y -= e.movementX * lookSpeed;
         euler.x -= e.movementY * lookSpeed;
@@ -1523,8 +1552,126 @@
         camera.quaternion.setFromEuler(euler);
       });
 
-      function updateMovement(dt) {
+      /* ==============================================================
+         Form interaction via raycasting
+
+         The poster on the left wall is rendered into the canvas via
+         drawElementImage, but the underlying <form> element is laid
+         out in a 1×1 staging container in the document. When the
+         user aims at the form and clicks, we raycast from the camera
+         through the screen center, find the UV intersection on the
+         posterMesh, convert that UV to screen coordinates over the
+         hidden staging form, and focus the underlying element via
+         elementFromPoint. From that point, normal browser behavior
+         takes over: the focused field receives keystrokes, the
+         submit button is clickable, etc.
+
+         While a field is focused, we exit pointer lock so the user
+         can move the cursor freely if they want, suppress WASD so
+         typing doesn't walk, and skip the entry overlay so the
+         scene stays visible.
+         ============================================================== */
+      const raycaster = new THREE.Raycaster();
+      const interactionHint = $("interaction-hint");
+
+      function getStagingCanvas() {
+        return posterCanvas;
+      }
+
+      function focusFormElement(uv) {
+        const stagingCanvas = getStagingCanvas();
+        // The staging canvas is in a 1×1 container but its layout
+        // box is the canvas's full intrinsic size at the container
+        // origin. Use clientWidth/clientHeight (CSS pixels).
+        const w = stagingCanvas.clientWidth || stagingCanvas.width;
+        const h = stagingCanvas.clientHeight || stagingCanvas.height;
+        const px = uv.x * w;
+        // Three.js UV.y is bottom-up; canvas pixels are top-down.
+        const py = (1 - uv.y) * h;
+        const stagingRect = stagingCanvas.getBoundingClientRect();
+        const sx = stagingRect.left + px;
+        const sy = stagingRect.top + py;
+        const target = root.elementFromPoint
+          ? root.elementFromPoint(sx, sy)
+          : document.elementFromPoint(sx, sy);
+        if (!target) return false;
+        const tag = target.tagName;
+        const interactive = ['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'];
+        if (!interactive.includes(tag)) return false;
+        if (tag === 'BUTTON') {
+          target.click();
+          return false;
+        }
+        target.focus();
+        if (tag === 'INPUT' && target.type === 'checkbox') {
+          target.checked = !target.checked;
+          target.dispatchEvent(new Event('change', { bubbles: true }));
+          target.blur();
+          return false;
+        }
+        interactiveTarget = target;
+        target.addEventListener(
+          'blur',
+          () => {
+            if (interactiveTarget === target) interactiveTarget = null;
+            updateInteractionHint();
+          },
+          { once: true },
+        );
+        return true;
+      }
+
+      function updateInteractionHint() {
+        if (!interactionHint) return;
+        if (interactiveTarget) {
+          interactionHint.textContent =
+            'Typing into form — press Esc to release';
+          interactionHint.classList.add('visible');
+        } else {
+          interactionHint.classList.remove('visible');
+        }
+      }
+
+      // The crosshair-aim click. In pointer-locked mode the cursor
+      // is fixed at screen center, so NDC = (0, 0).
+      viewport.addEventListener('click', () => {
+        // If a field is focused and the user clicks anywhere, blur it.
+        if (interactiveTarget) {
+          interactiveTarget.blur();
+          interactiveTarget = null;
+          updateInteractionHint();
+          return;
+        }
         if (!isLocked) return;
+        raycaster.setFromCamera({ x: 0, y: 0 }, camera);
+        const hits = raycaster.intersectObjects([posterMesh], false);
+        if (hits.length === 0 || !hits[0].uv) return;
+        const focused = focusFormElement(hits[0].uv);
+        if (focused) {
+          // Exit pointer lock so the user can move the cursor away
+          // when done; the entry overlay is suppressed because
+          // interactiveTarget is set.
+          if (root.exitPointerLock) {
+            root.exitPointerLock();
+          } else {
+            document.exitPointerLock();
+          }
+          updateInteractionHint();
+        }
+      });
+
+      // Esc while typing → blur (browser default for Esc inside an
+      // input is no-op, so we wire it explicitly).
+      document.addEventListener('keydown', (e) => {
+        if (interactiveTarget && e.key === 'Escape') {
+          interactiveTarget.blur();
+          interactiveTarget = null;
+          updateInteractionHint();
+        }
+      });
+
+      function updateMovement(dt) {
+        if (!isLocked || interactiveTarget) return;
 
         const forward = new THREE.Vector3(0, 0, -1);
         forward.applyQuaternion(camera.quaternion);
@@ -1705,10 +1852,10 @@
           lastTvPaint = now;
         }
 
-        /* Upload each staging canvas's pixels to its WebGL texture
-         * via raw gl.texImage2D — bypassing Three.js's CanvasTexture
-         * upload pipeline. The render call below is when those
-         * texture binds actually take effect. */
+        /* Pull the latest pixels from each layoutsubtree staging
+         * canvas into its mirror canvas, then mark the texture
+         * dirty. Three.js handles the GPU upload itself on the
+         * render call below. */
         monitorStaging.sync();
         posterStaging.sync();
         tvStaging.sync();
