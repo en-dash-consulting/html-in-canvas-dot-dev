@@ -1622,13 +1622,22 @@
           target.dispatchEvent(new Event('change', { bubbles: true }));
           return false;
         }
-        target.focus();
+        // preventScroll so the browser doesn't scroll the page to
+        // bring the off-screen staging canvas into view — the
+        // staging canvas lives in a 1×1 overflow:hidden container
+        // that extends off the stage.
+        target.focus({ preventScroll: true });
         interactiveTarget = target;
         target.addEventListener(
           'blur',
           () => {
             if (interactiveTarget === target) interactiveTarget = null;
             updateInteractionHint();
+            // Bring the Enter overlay back so the user can re-enter
+            // the game after finishing with the form field.
+            if (!isLocked) {
+              overlay.classList.remove('hidden');
+            }
           },
           { once: true },
         );
