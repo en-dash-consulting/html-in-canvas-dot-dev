@@ -1,0 +1,602 @@
+{
+  "schema": "rex/v1",
+  "title": "html-in-canvas-dot-dev",
+  "items": [
+    {
+      "id": "2e17b8b7-1823-4c48-8ee7-09d3fb07c300",
+      "title": "Site Skeleton & Contributor Infrastructure",
+      "status": "completed",
+      "level": "epic",
+      "description": "Build the foundational Astro-based website skeleton for html-in-canvas.dev — an open-source demo showcase for the WICG HTML-in-Canvas spec. Convention-based demo system where contributors drop a folder with meta.json + demo.html into src/content/demos/ and it appears automatically. En Dash Consulting branding matching endash.us. Dark-mode-first, Montserrat typography, minimal dependencies.",
+      "priority": "critical",
+      "tags": [
+        "infrastructure",
+        "skeleton",
+        "astro"
+      ],
+      "startedAt": "2026-04-10T05:34:35.581Z",
+      "completedAt": "2026-04-10T15:15:41.411Z",
+      "children": [
+        {
+          "id": "5c6efdae-8d44-4a8a-8051-a3c8d05281b6",
+          "title": "Astro Project Setup & Content Collections",
+          "status": "completed",
+          "level": "feature",
+          "description": "Initialize Astro 6 project with content collection config, Zod schemas for demos (meta.json) and docs (spec/*.md), build integration to copy demo files to /demos/{slug}/, and tsconfig. Minimal deps: astro + @astrojs/sitemap.",
+          "acceptanceCriteria": [
+            "Astro project initializes and runs with `npm run dev`",
+            "Content collection for demos validates meta.json via Zod schema",
+            "Content collection for docs renders spec/*.md with frontmatter",
+            "Build integration copies demo assets (demo.html + co-located files) to /demos/{slug}/",
+            "Template demo in src/content/demos/_template/ with starter meta.json + demo.html"
+          ],
+          "priority": "critical",
+          "tags": [
+            "astro",
+            "setup"
+          ],
+          "startedAt": "2026-04-10T04:32:19.709Z",
+          "completedAt": "2026-04-10T04:53:28.870Z"
+        },
+        {
+          "id": "28d8485d-a770-41ad-9844-8686a5f71bf8",
+          "title": "Site Shell, Layout & En Dash Branding",
+          "status": "completed",
+          "level": "feature",
+          "description": "BaseLayout with Nav, Footer, global styles matching endash.us branding. Dark-mode-first with light mode toggle (localStorage). Montserrat typography. En Dash color palette (blue #001769, purple #6C41F0, teal #00e5b9, green #00BD81, orange #ff5926). Favicon from endash.us. Footer attribution: \"An En Dash Consulting project\" linking to endash.us, similar to learn-pretext.com messaging.",
+          "acceptanceCriteria": [
+            "BaseLayout.astro renders nav, footer, and global styles on all pages",
+            "Color palette matches endash.us CSS variables",
+            "Montserrat loaded for body and headings",
+            "Dark mode default with light mode toggle persisted to localStorage",
+            "Footer shows En Dash attribution with link to endash.us",
+            "Favicon matches endash.us"
+          ],
+          "priority": "critical",
+          "tags": [
+            "layout",
+            "branding",
+            "styling"
+          ],
+          "blockedBy": [
+            "5c6efdae-8d44-4a8a-8051-a3c8d05281b6"
+          ],
+          "startedAt": "2026-04-10T04:53:30.911Z",
+          "completedAt": "2026-04-10T04:57:34.920Z"
+        },
+        {
+          "id": "e99e61b7-56fa-4ed7-bb54-8e0ae676de33",
+          "title": "Browser Support Banner",
+          "status": "completed",
+          "level": "feature",
+          "description": "Persistent banner on every page indicating Chrome Canary + canvas-draw-element flag requirement. Feature detection via `'drawElementImage' in CanvasRenderingContext2D.prototype`. Dismissible via localStorage but always visible on demo pages. Links to /docs/browser-support/ for setup instructions.",
+          "acceptanceCriteria": [
+            "Banner appears on all pages with clear messaging about Chrome Canary requirement",
+            "Feature detection script checks for drawElementImage support",
+            "Banner is dismissible, state persisted to localStorage",
+            "Banner links to setup instructions",
+            "Demo pages show fallback state when API unavailable"
+          ],
+          "priority": "high",
+          "tags": [
+            "ux",
+            "browser-support"
+          ],
+          "blockedBy": [
+            "28d8485d-a770-41ad-9844-8686a5f71bf8"
+          ],
+          "startedAt": "2026-04-10T05:13:37.053Z",
+          "completedAt": "2026-04-10T05:18:06.455Z"
+        },
+        {
+          "id": "9a67fa92-c769-4821-bc38-d4c982281d53",
+          "title": "Demo System: Gallery, Demo Pages, Source Viewer",
+          "status": "completed",
+          "level": "feature",
+          "description": "Demo gallery page (/demos/) with filterable grid of DemoCard components. Filters by API context (2D/WebGL/WebGPU), tags, and difficulty. Individual demo pages (/demos/{slug}/) with iframe-embedded demo.html, SourceViewer component showing syntax-highlighted code (Shiki), and metadata sidebar. \"Open in new tab\" and \"View on GitHub\" links.",
+          "acceptanceCriteria": [
+            "Gallery page at /demos/ lists all demos as cards",
+            "Cards show title, description, tags, API context badge (color-coded)",
+            "Filtering works by context, tags, and difficulty",
+            "Demo page at /demos/{slug}/ loads demo.html in iframe",
+            "SourceViewer displays syntax-highlighted source code with tabs",
+            "Open in new tab button opens raw demo.html",
+            "Adding a new folder to src/content/demos/ automatically appears in gallery"
+          ],
+          "priority": "critical",
+          "tags": [
+            "demos",
+            "gallery",
+            "source-viewer"
+          ],
+          "blockedBy": [
+            "5c6efdae-8d44-4a8a-8051-a3c8d05281b6",
+            "28d8485d-a770-41ad-9844-8686a5f71bf8"
+          ],
+          "startedAt": "2026-04-10T04:57:36.958Z",
+          "completedAt": "2026-04-10T15:15:41.402Z",
+          "children": [
+            {
+              "id": "c9b33373-23bb-4438-b142-fd3e610101ac",
+              "title": "Collapse demo source viewer behind an Expand toggle",
+              "status": "completed",
+              "level": "task",
+              "description": "On demo pages, the SourceViewer below the live demo currently shows every source file in full, which pushes the live demo well above the fold and dilutes attention from the live experience. Replace the always-expanded view with a short preview (~8 lines) plus an \"Expand\" button that reveals the full file. This keeps the demo wrapper page focused on the demo while still letting curious visitors read the code.",
+              "acceptanceCriteria": [
+                "Each file in the SourceViewer renders only ~8 lines by default with a fade-out gradient at the bottom of the preview region",
+                "An 'Expand' button below the preview reveals the full source on click",
+                "Once expanded, the button label changes to 'Collapse' and clicking it returns the file to the preview state",
+                "Expand/collapse state is independent per file (multiple files in the viewer can be in different states simultaneously)",
+                "The button is keyboard-accessible (focusable, Enter/Space toggles)",
+                "Line numbers and syntax highlighting work identically in preview and expanded states (no relayout flicker on toggle)",
+                "File tab switching (if SourceViewer supports it) preserves each file's expanded state"
+              ],
+              "priority": "medium",
+              "tags": [
+                "ui",
+                "ux",
+                "demo-page",
+                "source-viewer"
+              ],
+              "source": "conversation 2026-04-10: user observed that the SourceViewer below demos shows full source upfront and dilutes attention from the live demo",
+              "startedAt": "2026-04-10T15:09:46.367Z",
+              "completedAt": "2026-04-10T15:15:41.387Z",
+              "resolutionType": "code-change",
+              "resolutionDetail": "SourceViewer.astro now clips each panel to ~8 lines with a fade-out gradient and an Expand/Collapse button. State is per-panel via .is-expanded class so tab switching preserves it. Two Playwright tests cover the toggle behavior and keyboard activation. Folded in the pre-existing CodeLanguage TS error fix and the is:inline hint cleanup since both were inside the same blast radius. Astro check clean, all 4 tests pass."
+            }
+          ]
+        },
+        {
+          "id": "18c2f17e-1bd1-48d1-8a96-c03b095034b0",
+          "title": "Docs Section",
+          "status": "completed",
+          "level": "feature",
+          "description": "Docs pages at /docs/ rendering from spec/*.md via content collection. DocsLayout with sidebar navigation between doc pages. Pages: overview, api-reference, browser-support, design-decisions, open-questions. Add frontmatter (title, order) to spec/*.md files.",
+          "acceptanceCriteria": [
+            "Docs pages render at /docs/{slug}/",
+            "Sidebar navigation lists all doc pages in order",
+            "Existing spec/*.md content renders correctly with proper formatting",
+            "Code blocks in docs are syntax-highlighted"
+          ],
+          "priority": "high",
+          "tags": [
+            "docs",
+            "content"
+          ],
+          "blockedBy": [
+            "5c6efdae-8d44-4a8a-8051-a3c8d05281b6",
+            "28d8485d-a770-41ad-9844-8686a5f71bf8"
+          ],
+          "startedAt": "2026-04-10T05:23:51.080Z",
+          "completedAt": "2026-04-10T05:29:42.783Z"
+        },
+        {
+          "id": "a7e3fa47-a867-461d-9de8-76cd2b68766d",
+          "title": "Landing Page",
+          "status": "completed",
+          "level": "feature",
+          "description": "Landing page at / with hero section (\"Render HTML into Canvas — natively\"), visual explanation of the 3 API primitives (layoutsubtree, drawElementImage, paint event), featured demos grid, getting started CTA, and link to WICG spec repo. En Dash branding throughout.",
+          "acceptanceCriteria": [
+            "Hero section with clear tagline and value proposition",
+            "Visual overview of the 3 API primitives",
+            "Featured demos section (even if empty/placeholder initially)",
+            "Getting started CTA linking to browser support + first demo",
+            "Link to WICG spec repo"
+          ],
+          "priority": "high",
+          "tags": [
+            "landing",
+            "content"
+          ],
+          "blockedBy": [
+            "28d8485d-a770-41ad-9844-8686a5f71bf8",
+            "e99e61b7-56fa-4ed7-bb54-8e0ae676de33"
+          ],
+          "startedAt": "2026-04-10T05:29:44.829Z",
+          "completedAt": "2026-04-10T05:34:35.574Z"
+        },
+        {
+          "id": "787687ed-f81b-40d3-b264-4b7d6ec803f1",
+          "title": "Contributor DX: Guide, Template, Scaffold Script",
+          "status": "completed",
+          "level": "feature",
+          "description": "Contributing page at /contributing/ with step-by-step guide to adding a demo. Template demo directory at src/content/demos/_template/ with starter meta.json and demo.html (includes layoutsubtree boilerplate, ResizeObserver, paint event pattern). scripts/new-demo.sh scaffold script that creates a new demo directory from the template.",
+          "acceptanceCriteria": [
+            "Contributing page explains the full workflow: fork, create dir, add meta.json + demo.html, test, PR",
+            "Template meta.json documents all fields with descriptions",
+            "Template demo.html includes working boilerplate (layoutsubtree, paint event, ResizeObserver)",
+            "scripts/new-demo.sh creates a new demo directory from template",
+            "Scaffold script accepts a slug argument and pre-fills meta.json"
+          ],
+          "priority": "high",
+          "tags": [
+            "dx",
+            "contributing",
+            "templates"
+          ],
+          "blockedBy": [
+            "5c6efdae-8d44-4a8a-8051-a3c8d05281b6"
+          ],
+          "startedAt": "2026-04-10T05:18:08.500Z",
+          "completedAt": "2026-04-10T05:23:49.035Z"
+        }
+      ]
+    },
+    {
+      "id": "97bf11af-cd07-42df-a4b2-8773e47848a4",
+      "title": "Demos: Core API Showcases",
+      "status": "completed",
+      "level": "epic",
+      "description": "Foundational demos that teach the core HTML-in-Canvas API primitives. Each demo isolates one concept and demonstrates it clearly. These are the \"learn by example\" demos that help developers understand the basics.",
+      "priority": "high",
+      "tags": [
+        "demos",
+        "educational"
+      ],
+      "startedAt": "2026-04-10T10:54:28.464Z",
+      "completedAt": "2026-04-10T10:54:28.464Z",
+      "children": [
+        {
+          "id": "8efb7743-b1f7-4fe1-b4c8-1cfc4a95b15e",
+          "title": "Hello World: Minimal drawElementImage",
+          "status": "completed",
+          "level": "feature",
+          "description": "The simplest possible demo — a styled div drawn into canvas with drawElementImage. Shows the minimal boilerplate: layoutsubtree, paint event, ResizeObserver, transform sync. Side-by-side annotated code.",
+          "priority": "high",
+          "tags": [
+            "demo",
+            "beginner",
+            "2d"
+          ],
+          "startedAt": "2026-04-10T06:25:28.339Z",
+          "completedAt": "2026-04-10T06:30:17.042Z"
+        },
+        {
+          "id": "72b4024e-4150-4de0-823d-4797aef36237",
+          "title": "Interactive Form in Canvas",
+          "status": "completed",
+          "level": "feature",
+          "description": "Full HTML form (inputs, checkboxes, selects, sliders, buttons) rendered inside canvas. Demonstrates that interactivity is preserved — typing, clicking, tabbing all work natively. Shows cursor blinking triggering paint events.",
+          "priority": "high",
+          "tags": [
+            "demo",
+            "beginner",
+            "2d",
+            "interactive"
+          ],
+          "startedAt": "2026-04-10T06:30:19.093Z",
+          "completedAt": "2026-04-10T06:35:18.457Z"
+        },
+        {
+          "id": "c7d3b62b-9288-4f9b-92bd-2dad6920e17a",
+          "title": "Multi-Element Composition",
+          "status": "completed",
+          "level": "feature",
+          "description": "Multiple canvas children drawn at different positions with different transforms. Shows how to manage multiple elements, z-ordering, and the changedElements paint event data. Draggable elements that reposition via drawElementImage.",
+          "priority": "medium",
+          "tags": [
+            "demo",
+            "intermediate",
+            "2d"
+          ],
+          "startedAt": "2026-04-10T06:49:12.692Z",
+          "completedAt": "2026-04-10T06:54:24.308Z"
+        },
+        {
+          "id": "777703af-d760-45c7-84e4-3e10ab540567",
+          "title": "OffscreenCanvas Worker Demo",
+          "status": "completed",
+          "level": "feature",
+          "description": "Demonstrates captureElementImage + transferable ElementImage + OffscreenCanvas in a worker. Shows the worker communication pattern with postMessage for both the ElementImage and the sync transform.",
+          "priority": "medium",
+          "tags": [
+            "demo",
+            "advanced",
+            "workers",
+            "offscreen"
+          ],
+          "startedAt": "2026-04-10T06:54:26.366Z",
+          "completedAt": "2026-04-10T10:54:28.453Z"
+        }
+      ]
+    },
+    {
+      "id": "eeb75055-2fd4-41b3-ac98-54f4290cb030",
+      "title": "Demos: Creative & Visual Effects",
+      "status": "completed",
+      "level": "epic",
+      "description": "Visually striking demos that show what's newly possible with HTML-in-Canvas — things that were previously impossible or required heavy workarounds. These are the \"wow factor\" demos that get people excited about the API.",
+      "priority": "high",
+      "tags": [
+        "demos",
+        "creative",
+        "effects"
+      ],
+      "startedAt": "2026-04-10T11:47:32.068Z",
+      "completedAt": "2026-04-10T11:47:32.068Z",
+      "children": [
+        {
+          "id": "a3949be7-29ed-4dc4-a1f5-d68bbb7cef86",
+          "title": "Liquid Glass Distortion",
+          "status": "completed",
+          "level": "feature",
+          "description": "A richly styled HTML card drawn into a WebGL canvas with a real-time liquid glass refraction shader applied. Mouse movement warps the glass. The HTML content underneath is live and interactive — click through the distortion. Inspired by Apple's liquid glass aesthetic.",
+          "priority": "high",
+          "tags": [
+            "demo",
+            "webgl",
+            "shader",
+            "visual"
+          ],
+          "startedAt": "2026-04-10T06:08:21.824Z",
+          "completedAt": "2026-04-10T06:20:23.815Z"
+        },
+        {
+          "id": "84cbad92-58da-4c4d-9e75-24a7e7a6e6a9",
+          "title": "Page Curl / Book Turn",
+          "status": "completed",
+          "level": "feature",
+          "description": "Two HTML \"pages\" with rich content drawn as WebGL textures on planes that simulate a realistic page-curl/book-turn animation. Drag to turn the page. The backside shows the next page's content with correct mirroring. Previously impossible without rasterizing HTML manually.",
+          "priority": "medium",
+          "tags": [
+            "demo",
+            "webgl",
+            "animation",
+            "3d"
+          ],
+          "startedAt": "2026-04-10T11:31:44.645Z",
+          "completedAt": "2026-04-10T11:47:32.061Z"
+        },
+        {
+          "id": "172f8efa-423e-48db-8e47-e2907208fee8",
+          "title": "Pixel Disintegration / Particle Explosion",
+          "status": "completed",
+          "level": "feature",
+          "description": "An HTML element (a tweet card, a profile card, etc.) drawn into canvas, then on click its pixels explode into particles that drift away. Uses getImageData on the drawn element to seed particle positions and colors. Reassembles on second click. Thanos snap effect for HTML.",
+          "priority": "high",
+          "tags": [
+            "demo",
+            "2d",
+            "particles",
+            "animation"
+          ],
+          "startedAt": "2026-04-10T06:20:25.872Z",
+          "completedAt": "2026-04-10T06:25:26.285Z"
+        },
+        {
+          "id": "926d8282-316a-407d-be9d-cd5bc0303fd3",
+          "title": "CSS-to-Shader Pipeline",
+          "status": "completed",
+          "level": "feature",
+          "description": "A live GLSL shader editor where any HTML element is the texture input. Type CSS on the left, see the styled element on the right, then apply fragment shaders (chromatic aberration, glitch, CRT scanlines, VHS, halftone) in real-time. Inspired by tomasferrerasdev/try-html-in-canvas Chrome extension but as an in-page demo.",
+          "priority": "high",
+          "tags": [
+            "demo",
+            "webgl",
+            "shader",
+            "editor",
+            "creative-tool"
+          ],
+          "startedAt": "2026-04-10T06:02:05.497Z",
+          "completedAt": "2026-04-10T06:08:19.776Z"
+        },
+        {
+          "id": "750a44e0-b352-4f7a-a553-30bd4714be7a",
+          "title": "3D Room with Live Web Content",
+          "status": "completed",
+          "level": "feature",
+          "description": "A Three.js (or raw WebGL) first-person 3D room with HTML content rendered as textures on surfaces — a monitor showing a live form, a poster on the wall with styled text, a TV playing a CSS animation. Walk around and interact with the HTML through the 3D surfaces. Inspired by SawyerHood/html-in-canvas-room.",
+          "priority": "medium",
+          "tags": [
+            "demo",
+            "webgl",
+            "three-js",
+            "3d",
+            "interactive"
+          ],
+          "startedAt": "2026-04-10T10:54:30.524Z",
+          "completedAt": "2026-04-10T11:06:29.208Z"
+        },
+        {
+          "id": "2b6da3d2-2ab6-480a-b384-ac423efffe1b",
+          "title": "Morphing Text Transitions",
+          "status": "completed",
+          "level": "feature",
+          "description": "Two different HTML text layouts morph between each other using canvas pixel manipulation — crossfade, dissolve, wave wipe, pixel sort. Shows how drawElementImage + getImageData enables transitions between arbitrary HTML states that CSS transitions can't handle (different DOM structures, different text content).",
+          "priority": "medium",
+          "tags": [
+            "demo",
+            "2d",
+            "animation",
+            "text"
+          ],
+          "startedAt": "2026-04-10T11:26:27.955Z",
+          "completedAt": "2026-04-10T11:31:42.582Z"
+        },
+        {
+          "id": "7115412c-0e67-4208-b045-67195daf019f",
+          "title": "Frosted Glass Backdrop with Custom Blur",
+          "status": "completed",
+          "level": "feature",
+          "description": "Multiple overlapping HTML cards where one applies a custom gaussian blur + color tint to the content behind it — going beyond what CSS backdrop-filter can do with custom blur kernels, directional blur, or tilt-shift effects. Demonstrates compositing HTML elements with canvas effects between layers.",
+          "priority": "medium",
+          "tags": [
+            "demo",
+            "2d",
+            "blur",
+            "compositing"
+          ],
+          "startedAt": "2026-04-10T11:06:31.267Z",
+          "completedAt": "2026-04-10T11:26:25.887Z"
+        }
+      ]
+    },
+    {
+      "id": "806419fb-07d7-491a-b3a4-34f40e8c660d",
+      "title": "Demos: Practical Applications",
+      "status": "completed",
+      "level": "epic",
+      "description": "Real-world use case demos showing how HTML-in-Canvas solves actual problems — accessible charts, exportable designs, 3D UI, interactive editors. These convince library authors and product teams to adopt the API.",
+      "priority": "high",
+      "tags": [
+        "demos",
+        "practical",
+        "real-world"
+      ],
+      "startedAt": "2026-04-10T06:49:10.641Z",
+      "completedAt": "2026-04-10T06:49:10.641Z",
+      "children": [
+        {
+          "id": "c01b0bcd-43ab-4b0c-be05-0d79db161c7a",
+          "title": "Accessible Chart Library Pattern",
+          "status": "completed",
+          "level": "feature",
+          "description": "A bar chart and pie chart where labels are real HTML elements with ARIA roles, keyboard navigation, and screen reader support — drawn into canvas with proper focus rings via drawFocusIfNeeded. Demonstrates the primary accessibility value prop: the drawn content IS the fallback content.",
+          "priority": "high",
+          "tags": [
+            "demo",
+            "2d",
+            "accessibility",
+            "charts"
+          ],
+          "startedAt": "2026-04-10T05:34:37.613Z",
+          "completedAt": "2026-04-10T05:42:56.048Z"
+        },
+        {
+          "id": "f167ba8f-7618-48f1-9542-133c37d1a8b2",
+          "title": "HTML-to-Image Export",
+          "status": "completed",
+          "level": "feature",
+          "description": "A social card / OG image generator — edit rich HTML content (text, images, gradients, custom fonts) and export as PNG/JPEG via canvas.toBlob(). Shows how drawElementImage replaces html2canvas for pixel-perfect HTML screenshot/export. Include a \"download\" button.",
+          "priority": "high",
+          "tags": [
+            "demo",
+            "2d",
+            "export",
+            "practical"
+          ],
+          "startedAt": "2026-04-10T05:42:58.094Z",
+          "completedAt": "2026-04-10T05:57:19.100Z"
+        },
+        {
+          "id": "cbfa56b8-fe2a-436a-afad-9de50fec0150",
+          "title": "HTML Video Recording",
+          "status": "completed",
+          "level": "feature",
+          "description": "Record an animated HTML element (CSS animations, transitions, or user interaction) as a WebM video using canvas.captureStream() + MediaRecorder. Type in a text box, watch it animate, hit record, download the video. The \"media export\" use case from the spec come to life.",
+          "priority": "medium",
+          "tags": [
+            "demo",
+            "2d",
+            "video",
+            "export",
+            "media"
+          ],
+          "startedAt": "2026-04-10T06:35:20.509Z",
+          "completedAt": "2026-04-10T06:41:08.578Z"
+        },
+        {
+          "id": "eee2cc67-012f-4a10-affe-1750c7e22daa",
+          "title": "Rich Text Canvas Editor",
+          "status": "completed",
+          "level": "feature",
+          "description": "A contenteditable div rendered into canvas with real-time effects applied — drop shadow, glow, outline — that go beyond CSS. The text is fully editable with native browser editing (selection, copy/paste, undo). Shows how canvas-based creative tools can now use real text editing instead of simulating it.",
+          "priority": "medium",
+          "tags": [
+            "demo",
+            "2d",
+            "text",
+            "editor",
+            "creative-tool"
+          ],
+          "startedAt": "2026-04-10T06:41:10.634Z",
+          "completedAt": "2026-04-10T06:49:10.633Z"
+        },
+        {
+          "id": "6f15f154-e79c-4dd5-9a90-78c29bd5510c",
+          "title": "Internationalized Text Showcase",
+          "status": "completed",
+          "level": "feature",
+          "description": "A side-by-side comparison: ctx.fillText() vs drawElementImage for complex text — RTL Arabic/Hebrew, vertical CJK, Thai script with stacking diacritics, mixed-direction text, emoji with skin tones, ruby annotations. Demonstrates that drawElementImage handles every script the browser handles, solving canvas i18n permanently.",
+          "priority": "high",
+          "tags": [
+            "demo",
+            "2d",
+            "i18n",
+            "text",
+            "accessibility"
+          ],
+          "startedAt": "2026-04-10T05:57:21.154Z",
+          "completedAt": "2026-04-10T06:02:03.447Z"
+        }
+      ]
+    },
+    {
+      "id": "020c205e-6e8c-410c-a143-3ec5d47c390b",
+      "title": "SEO & Discoverability",
+      "status": "pending",
+      "level": "epic",
+      "source": "smart-add",
+      "children": [
+        {
+          "id": "0c604e43-91f9-44da-a6bb-5f03514de5c9",
+          "title": "Open Graph & Social Sharing Meta Tags",
+          "status": "pending",
+          "level": "feature",
+          "description": "Add structured Open Graph and Twitter Card meta tags with a branded OG image so links shared on social platforms render rich previews with relevant titles, descriptions, and imagery.",
+          "source": "smart-add",
+          "children": [
+            {
+              "id": "772b33f0-0a11-4343-870c-6a84abcbf696",
+              "title": "Add OG and Twitter Card meta tags to site layouts",
+              "status": "completed",
+              "level": "task",
+              "description": "Insert Open Graph (og:title, og:description, og:url, og:image, og:type, og:site_name) and Twitter Card (twitter:card, twitter:title, twitter:description, twitter:image) meta tags into the base Astro layout and per-page overrides. Demo pages should pull title and description from their meta.json; doc pages and the homepage use their own copy. Every page needs an absolute canonical og:url.",
+              "acceptanceCriteria": [
+                "All pages include og:title, og:description, og:url, og:image, og:type, and og:site_name",
+                "All pages include twitter:card set to 'summary_large_image', twitter:title, twitter:description, and twitter:image",
+                "Demo pages derive og:title and og:description from their meta.json title and description fields",
+                "og:url is an absolute canonical URL on every page (no relative paths)",
+                "og:type is 'website' for homepage and docs pages, 'article' for individual demo pages",
+                "Validated with the OpenGraph.xyz debugger or Facebook Sharing Debugger — no missing required fields reported"
+              ],
+              "priority": "high",
+              "tags": [
+                "seo",
+                "meta",
+                "layout"
+              ],
+              "source": "smart-add",
+              "startedAt": "2026-04-13T12:54:41.998Z",
+              "completedAt": "2026-04-13T12:57:53.556Z",
+              "resolutionType": "code-change",
+              "resolutionDetail": "Added ogType=\"article\" to demo detail pages. All OG and Twitter Card meta tags were already implemented in BaseLayout.astro — the only gap was demo pages defaulting to og:type=\"website\" instead of \"article\"."
+            },
+            {
+              "id": "a95baf26-f49f-4c8e-b8b1-63942e64c283",
+              "title": "Create and wire in a branded OG image",
+              "status": "pending",
+              "level": "task",
+              "description": "Design and produce a default OG image (1200×630 px) representing the site brand for use as the social preview fallback across all pages. The image should incorporate the site name, tagline, and En Dash branding (colors and fonts matching endash.us). Wire it into the meta tag implementation as the default og:image and twitter:image, including the required og:image:width and og:image:height companion tags.",
+              "acceptanceCriteria": [
+                "A default OG image (1200×630 px) exists in the repo under the public/ directory and is served at a stable absolute path",
+                "The image includes the site name ('html-in-canvas.dev'), a brief tagline, and En Dash brand colors/fonts",
+                "og:image, twitter:image, og:image:width (1200), and og:image:height (630) meta tags are present on every page",
+                "Image file size is ≤ 300 KB (optimized PNG or JPEG)",
+                "Social preview renders correctly in the OpenGraph.xyz or LinkedIn Post Inspector preview tool"
+              ],
+              "priority": "medium",
+              "tags": [
+                "seo",
+                "design",
+                "images",
+                "branding"
+              ],
+              "source": "smart-add"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
