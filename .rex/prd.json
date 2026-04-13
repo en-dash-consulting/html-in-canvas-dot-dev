@@ -534,17 +534,19 @@
     {
       "id": "020c205e-6e8c-410c-a143-3ec5d47c390b",
       "title": "SEO & Discoverability",
-      "status": "pending",
+      "status": "completed",
       "level": "epic",
       "source": "smart-add",
       "children": [
         {
           "id": "0c604e43-91f9-44da-a6bb-5f03514de5c9",
           "title": "Open Graph & Social Sharing Meta Tags",
-          "status": "pending",
+          "status": "completed",
           "level": "feature",
           "description": "Add structured Open Graph and Twitter Card meta tags with a branded OG image so links shared on social platforms render rich previews with relevant titles, descriptions, and imagery.",
           "source": "smart-add",
+          "startedAt": "2026-04-13T13:01:47.250Z",
+          "completedAt": "2026-04-13T13:01:47.250Z",
           "children": [
             {
               "id": "772b33f0-0a11-4343-870c-6a84abcbf696",
@@ -575,7 +577,7 @@
             {
               "id": "a95baf26-f49f-4c8e-b8b1-63942e64c283",
               "title": "Create and wire in a branded OG image",
-              "status": "pending",
+              "status": "completed",
               "level": "task",
               "description": "Design and produce a default OG image (1200×630 px) representing the site brand for use as the social preview fallback across all pages. The image should incorporate the site name, tagline, and En Dash branding (colors and fonts matching endash.us). Wire it into the meta tag implementation as the default og:image and twitter:image, including the required og:image:width and og:image:height companion tags.",
               "acceptanceCriteria": [
@@ -592,11 +594,17 @@
                 "images",
                 "branding"
               ],
-              "source": "smart-add"
+              "source": "smart-add",
+              "startedAt": "2026-04-13T12:58:23.997Z",
+              "completedAt": "2026-04-13T13:01:47.228Z",
+              "resolutionType": "code-change",
+              "resolutionDetail": "Created branded 1200×630 OG image (108 KB PNG) using Playwright screenshot of an HTML design with En Dash brand colors, Montserrat font, purple/teal gradient accents. Added og:image:width and og:image:height meta tags to BaseLayout.astro."
             }
           ]
         }
-      ]
+      ],
+      "startedAt": "2026-04-13T13:01:47.259Z",
+      "completedAt": "2026-04-13T13:01:47.259Z"
     }
   ]
 }
