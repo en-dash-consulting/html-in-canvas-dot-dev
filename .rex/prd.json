@@ -609,7 +609,7 @@
     {
       "id": "3216e75c-e417-44bc-9e70-70403507ce37",
       "title": "Accessibility Compliance & Automated Checks",
-      "status": "pending",
+      "status": "completed",
       "level": "epic",
       "description": "Bring the site to WCAG 2.1 AA conformance and enforce it with automated checks in CI so regressions are caught pre-merge.",
       "priority": "high",
@@ -645,7 +645,7 @@
         {
           "id": "3f011861-aea2-4f17-949c-60a3384262fb",
           "title": "Automated a11y checks in CI",
-          "status": "pending",
+          "status": "completed",
           "level": "feature",
           "description": "Integrate @axe-core/playwright into the existing Playwright suite and run it in CI so a11y regressions block merges.",
           "acceptanceCriteria": [
@@ -662,9 +662,15 @@
           "source": "conversation",
           "blockedBy": [
             "5acf3a6c-e7b0-45ac-8de6-be3130d31aca"
-          ]
+          ],
+          "startedAt": "2026-04-14T16:03:28.867Z",
+          "completedAt": "2026-04-14T16:15:19.147Z",
+          "resolutionType": "code-change",
+          "resolutionDetail": "CI wiring complete via minimum-scope changes. Harness already ran via deploy.yml's npm test step; the refactor makes failure output clean (throw with formatted report rather than array diff)."
         }
-      ]
+      ],
+      "startedAt": "2026-04-14T16:15:19.160Z",
+      "completedAt": "2026-04-14T16:15:19.160Z"
     }
   ]
 }

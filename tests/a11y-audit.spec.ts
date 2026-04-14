@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import type { Result as AxeViolation } from 'axe-core';
 import { readdirSync } from 'node:fs';
@@ -46,9 +46,8 @@ function formatTarget(target: unknown): string {
   return String(target);
 }
 
-function formatViolations(route: string, violations: AxeViolation[]): string {
-  if (violations.length === 0) return `${route}: no violations`;
-  const lines: string[] = [`${route}:`];
+function formatViolations(violations: AxeViolation[]): string {
+  const lines: string[] = [];
   for (const v of violations) {
     lines.push(
       `  [${v.impact ?? 'n/a'}] ${v.id} — ${v.help}`,
@@ -79,15 +78,19 @@ test.describe('a11y audit (WCAG 2.1 AA)', () => {
         .withTags(WCAG_TAGS)
         .analyze();
 
-      const report = formatViolations(route, results.violations);
-      // Always emit the full report to the test log so baseline runs are
-      // useful even when no violations exist.
-      console.log(report);
-
       const gating = results.violations.filter((v) =>
         GATING_IMPACTS.has(v.impact ?? ''),
       );
-      expect(gating, `Critical/serious a11y violations on ${route}`).toEqual([]);
+      if (gating.length === 0) return;
+
+      // Fail with the full rule / impact / selector / help-URL report as
+      // the error message. Surfacing violations here (rather than through
+      // `expect(...).toEqual([])`) avoids Playwright's noisy Result-object
+      // diff and puts the actionable detail in the CI log annotation.
+      const header = `${gating.length} critical/serious a11y violation${
+        gating.length === 1 ? '' : 's'
+      } on ${route}`;
+      throw new Error(`${header}\n${formatViolations(gating)}`);
     });
   }
 });
