@@ -1,6 +1,18 @@
 # Build output
 dist/
 
+# Generated OG cards — re-rendered by `npm run prebuild` (and CI) from
+# scripts/generate-og-image.mjs + each demo's meta.json. Don't commit
+# them: PNG bytes drift between renders and the build always produces
+# a fresh set anyway.
+public/og-image.png
+public/og-docs.png
+public/og-demos.png
+public/og-demo-*.png
+public/apple-touch-icon.png
+public/pwa-icon-512.png
+public/llms-full.txt
+
 # Dependencies
 node_modules/
 

@@ -21,8 +21,8 @@ The very short version is below.
 4. Edit `src/content/demos/my-demo-name/demo.html` — that's the demo
    itself, a single self-contained HTML file. Authoring conventions
    are documented inline in the template.
-5. Run the dev server in **Chrome Canary** (with the
-   `canvas-draw-element` flag enabled):
+5. Run the dev server in **Chrome Canary** or **Brave Stable**
+   (Chromium 147+) with the `canvas-draw-element` flag enabled:
    ```bash
    npm run dev
    ```
@@ -93,7 +93,7 @@ A few more gotchas worth knowing about:
 Open an issue with:
 
 - Which demo / page is affected
-- Chrome Canary version (`chrome://version`)
+- Browser + version (e.g. `chrome://version` or `brave://version`)
 - Whether the `canvas-draw-element` flag is enabled
 - Console errors (DevTools → Console)
 - Steps to reproduce

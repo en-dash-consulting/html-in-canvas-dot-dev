@@ -7,6 +7,9 @@
   },
   "scripts": {
     "dev": "astro dev",
+    "og": "node scripts/generate-og-image.mjs",
+    "llms-full": "node scripts/generate-llms-full.mjs",
+    "prebuild": "npm run og && npm run llms-full",
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",

@@ -1,4 +1,45 @@
 User-agent: *
 Allow: /
 
+# This is an educational reference site for the WICG HTML-in-Canvas
+# spec. Explicitly allow major LLM and AI-search crawlers so the demos
+# and spec docs can be cited accurately by AI assistants. To opt out a
+# specific crawler later, replace its `Allow: /` with `Disallow: /`.
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
 Sitemap: https://html-in-canvas.dev/sitemap-index.xml

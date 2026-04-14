@@ -15,6 +15,9 @@ interface Props {
   description?: string;
   /** Path to a per-page social card image (relative to /). */
   ogImage?: string;
+  /** Alt text for the social card image. Defaults to the social title
+   *  (which mirrors what the card itself displays). */
+  ogImageAlt?: string;
   /** Override the default page type for Open Graph. */
   ogType?: 'website' | 'article';
 }
@@ -24,6 +27,16 @@ const SITE_URL = 'https://html-in-canvas.dev';
 const DEFAULT_DESCRIPTION =
   'Interactive demos and documentation for the WICG HTML-in-Canvas specification — render real DOM elements directly into a <canvas> via drawElementImage().';
 const DEFAULT_OG_IMAGE = '/og-image.png';
+// Short site tagline appended to the social title when the page-level
+// title alone would fall under social platforms' ~30-char minimum.
+// Keeps og:title / twitter:title descriptive even on short-named pages
+// like "Demos" or the home page.
+const SOCIAL_TAGLINE = 'Render HTML into <canvas> — natively';
+
+// Twitter handles. The site doesn't have its own dedicated handle, so
+// twitter:site reuses the maintainer's handle — the standard fallback
+// when an organization brand handle doesn't exist.
+const TWITTER_HANDLE = '@the_duke_nd';
 
 // Google Analytics 4 measurement ID. Read from an env var if set so
 // forks can point the site at their own property without touching
@@ -40,15 +53,36 @@ const {
   title = SITE_NAME,
   description = DEFAULT_DESCRIPTION,
   ogImage = DEFAULT_OG_IMAGE,
+  ogImageAlt,
   ogType = 'website',
 } = Astro.props;
 
 const pageTitle =
   title === SITE_NAME ? SITE_NAME : `${title} | ${SITE_NAME}`;
 
-// Canonical URL — falls back to the site root for the home page.
-const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? SITE_URL).href;
-const ogImageURL = new URL(ogImage, Astro.site ?? SITE_URL).href;
+// Social title is decoupled from the browser-tab <title> so it can be
+// padded to clear social platforms' ~30-char minimum without bloating
+// the tab label. Pad with the site tagline whenever pageTitle is
+// short; otherwise reuse pageTitle as-is.
+const SOCIAL_TITLE_MIN = 30;
+const socialTitle =
+  pageTitle === SITE_NAME
+    ? `${SITE_NAME} — ${SOCIAL_TAGLINE}`
+    : pageTitle.length >= SOCIAL_TITLE_MIN
+      ? pageTitle
+      : `${title} — ${SOCIAL_TAGLINE} | ${SITE_NAME}`;
+
+// Default the image alt text to the social title so the alt always
+// matches what the card visually displays. Per-page overrides via prop.
+const socialImageAlt = ogImageAlt ?? socialTitle;
+
+// In dev, resolve URLs against the actual request origin (e.g.
+// http://localhost:4321) so social-preview tooling pointed at the
+// local server can fetch the image. In prod, use the configured
+// `Astro.site` so canonical/OG URLs match the published domain.
+const baseURL = import.meta.env.DEV ? Astro.url.origin : (Astro.site ?? SITE_URL);
+const canonicalURL = new URL(Astro.url.pathname, baseURL).href;
+const ogImageURL = new URL(ogImage, baseURL).href;
 
 // JSON-LD only included on the home page; demo pages emit their own
 // CreativeWork JSON-LD via a slot.
@@ -79,29 +113,38 @@ const websiteJsonLd = {
     <link rel="canonical" href={canonicalURL} />
     <meta name="generator" content={Astro.generator} />
     <meta name="author" content="En Dash Consulting" />
+    {/* Allow indexing + crawling, and let Google show large image
+        previews in search results (powers the OG image in SERPs). */}
+    <meta name="robots" content="index, follow, max-image-preview:large" />
     <meta name="theme-color" content="#0a0a0f" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)" />
 
-    {/* Favicons */}
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="icon" href="/favicon.ico" />
+    {/* Favicon — En Dash brand mark, copied from endash.us. */}
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
 
     {/* Open Graph */}
     <meta property="og:type" content={ogType} />
     <meta property="og:site_name" content={SITE_NAME} />
-    <meta property="og:title" content={pageTitle} />
+    <meta property="og:title" content={socialTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonicalURL} />
     <meta property="og:image" content={ogImageURL} />
+    <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={socialImageAlt} />
     <meta property="og:locale" content="en_US" />
 
     {/* Twitter Card */}
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:site" content={TWITTER_HANDLE} />
+    <meta name="twitter:creator" content={TWITTER_HANDLE} />
+    <meta name="twitter:title" content={socialTitle} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImageURL} />
+    <meta name="twitter:image:alt" content={socialImageAlt} />
 
     {/* JSON-LD on the home page */}
     {isHome && (
