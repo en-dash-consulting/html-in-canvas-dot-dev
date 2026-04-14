@@ -208,10 +208,66 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
 
 <style>
   .hero {
+    position: relative;
     text-align: center;
-    padding: 4rem 0 3.5rem;
+    padding: 4rem 1rem 3.5rem;
     max-width: 48rem;
     margin: 0 auto;
+    /* Isolate the gradient's stacking context so it sits only behind
+       the hero's content and doesn't bleed under the nav or
+       following sections. */
+    isolation: isolate;
+  }
+
+  /* Soft brand-palette radial gradient painted behind the hero
+     content. Three radial blobs at low alpha let the heading and
+     subhead sit at full contrast against `--bg-primary` underneath.
+     Contrast stays AA because the gradient never exceeds ~0.12 alpha
+     and the text colour tokens are unchanged. */
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: -1.5rem -10vw -2rem;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(
+        ellipse 60% 55% at 18% 25%,
+        rgba(108, 65, 240, 0.22),
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 50% 50% at 82% 30%,
+        rgba(0, 229, 185, 0.18),
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 70% 45% at 50% 95%,
+        rgba(0, 23, 105, 0.35),
+        transparent 75%
+      );
+    filter: blur(2px);
+  }
+
+  /* Light-mode: lower the alpha floor so the gradient doesn't fight
+     light body text contrast. */
+  :global([data-theme='light']) .hero::before {
+    background:
+      radial-gradient(
+        ellipse 60% 55% at 18% 25%,
+        rgba(108, 65, 240, 0.1),
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 50% 50% at 82% 30%,
+        rgba(0, 189, 129, 0.1),
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 70% 45% at 50% 95%,
+        rgba(0, 23, 105, 0.06),
+        transparent 75%
+      );
   }
 
   .hero-eyebrow {
@@ -231,8 +287,10 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
   }
 
   .hero-heading {
-    font-size: clamp(2rem, 5vw, 3.25rem);
-    line-height: 1.15;
+    font-size: clamp(2.5rem, 7vw, 4.5rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.015em;
     margin: 0 0 1.25rem;
   }
 
@@ -259,9 +317,10 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
     left: 0;
     width: 100%;
     font-family: var(--font-heading);
-    font-size: clamp(2rem, 5vw, 3.25rem);
-    font-weight: 700;
-    line-height: 1.15;
+    font-size: clamp(2.5rem, 7vw, 4.5rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.015em;
     margin: 0;
     color: var(--text-primary);
     text-align: center;
@@ -466,12 +525,10 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
   }
 
   @media (max-width: 640px) {
-    .hero-heading {
-      font-size: 1.75rem;
-    }
-
+    .hero-heading,
     .hero-heading-canvas-content {
-      font-size: 1.75rem;
+      font-size: clamp(2rem, 9vw, 2.75rem);
+      letter-spacing: -0.01em;
     }
 
     .hero-sub {

@@ -177,6 +177,160 @@ element.style.transform =
   </section>
 </BaseLayout>
 
+<script>
+  /**
+   * One scroll-driven dogfooding moment: when the primitives grid
+   * enters the viewport on a flag-on, non-reduced-motion browser,
+   * each card's content is re-drawn via `drawElementImage` from a
+   * transient overlay canvas, animating a small vertical "settle"
+   * plus alpha fade. Runs exactly once per page load — observer is
+   * disconnected after the first intersection.
+   */
+  type DrawElementFn = (el: Element, x: number, y: number) => void;
+  interface DrawElementContext extends CanvasRenderingContext2D {
+    drawElementImage?: DrawElementFn;
+    drawElement?: DrawElementFn;
+  }
+  interface LayoutsubtreeCanvas extends HTMLCanvasElement {
+    requestPaint?: () => void;
+    onpaint: ((this: LayoutsubtreeCanvas, ev: Event) => void) | null;
+  }
+
+  function initPrimitivesDogfooding() {
+    if (document.documentElement.dataset.flagSupported !== 'true') return;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const grid = document.querySelector<HTMLElement>('.primitives-grid');
+    if (!grid) return;
+
+    const cards = Array.from(
+      grid.querySelectorAll<HTMLElement>('.primitive-card'),
+    );
+    if (cards.length === 0) return;
+
+    // Guard against re-firing if a previous run already played (e.g.
+    // an Astro view-swap re-runs initialization).
+    if (grid.dataset.dogfoodPlayed === 'true') return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          observer.disconnect();
+          grid.dataset.dogfoodPlayed = 'true';
+          playOnce(cards);
+          break;
+        }
+      },
+      { threshold: 0.25 },
+    );
+
+    observer.observe(grid);
+  }
+
+  function playOnce(cards: HTMLElement[]) {
+    const STAGGER_MS = 150;
+    const DURATION_MS = 500;
+
+    cards.forEach((card, i) => {
+      window.setTimeout(() => runCardAnimation(card), i * STAGGER_MS);
+    });
+
+    // Cleanup timer — give every card its full stagger + animation
+    // duration, with a small safety margin.
+    const total = cards.length * STAGGER_MS + DURATION_MS + 100;
+    window.setTimeout(() => {
+      for (const card of cards) {
+        card.querySelector('[data-dogfood-overlay]')?.remove();
+      }
+    }, total);
+  }
+
+  function runCardAnimation(card: HTMLElement) {
+    // The card is a position:relative (or will be) so the overlay
+    // lines up over it. Record and restore any existing inline
+    // position so this stays non-destructive.
+    const priorPosition = card.style.position;
+    if (getComputedStyle(card).position === 'static') {
+      card.style.position = 'relative';
+    }
+
+    const rect = card.getBoundingClientRect();
+    const w = Math.round(rect.width);
+    const h = Math.round(rect.height);
+    if (w === 0 || h === 0) return;
+
+    const canvas = document.createElement('canvas');
+    canvas.dataset.dogfoodOverlay = 'true';
+    canvas.setAttribute('aria-hidden', 'true');
+    canvas.setAttribute('layoutsubtree', '');
+    canvas.width = w;
+    canvas.height = h;
+    canvas.style.cssText =
+      'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;';
+
+    // Runtime clone of the card's content as a layoutsubtree child.
+    // Strip IDs from the clone so we don't collide with the real
+    // card's IDs in the DOM.
+    const clone = card.cloneNode(true) as HTMLElement;
+    clone.removeAttribute('id');
+    clone.querySelectorAll('[id]').forEach((el) => el.removeAttribute('id'));
+    clone.setAttribute('aria-hidden', 'true');
+    clone.style.cssText =
+      'position:absolute;inset:0;width:100%;margin:0;pointer-events:none;';
+    canvas.appendChild(clone);
+
+    card.appendChild(canvas);
+
+    const ctx = canvas.getContext('2d') as DrawElementContext | null;
+    if (!ctx) {
+      canvas.remove();
+      card.style.position = priorPosition;
+      return;
+    }
+
+    const draw: DrawElementFn | undefined =
+      ctx.drawElementImage?.bind(ctx) ?? ctx.drawElement?.bind(ctx);
+    if (!draw) {
+      canvas.remove();
+      card.style.position = priorPosition;
+      return;
+    }
+
+    const start = performance.now();
+    const DURATION = 500;
+
+    function frame(now: number) {
+      const t = Math.min(1, (now - start) / DURATION);
+      // easeOutCubic for a gentle "settling" feel.
+      const eased = 1 - Math.pow(1 - t, 3);
+
+      const offsetY = (1 - eased) * 24;
+      const alpha = (1 - eased) * 0.8;
+
+      ctx!.reset();
+      ctx!.clearRect(0, 0, w, h);
+      ctx!.globalAlpha = alpha;
+      draw!(clone, 0, offsetY);
+
+      if (t < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        canvas.remove();
+        card.style.position = priorPosition;
+      }
+    }
+
+    // requestPaint kicks the browser's paint pipeline so
+    // drawElementImage has a current layout snapshot to read from.
+    (canvas as LayoutsubtreeCanvas).requestPaint?.();
+    requestAnimationFrame(frame);
+  }
+
+  initPrimitivesDogfooding();
+  document.addEventListener('astro:after-swap', initPrimitivesDogfooding);
+</script>
+
 <style>
   /* Hero styles live in src/components/LandingHero.astro. */
 

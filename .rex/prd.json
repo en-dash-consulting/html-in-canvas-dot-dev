@@ -753,7 +753,7 @@
         {
           "id": "eea56bd2-5b06-4c7d-8f19-811e8cfc9ec3",
           "title": "Responsive mobile navigation with hamburger disclosure",
-          "status": "in_progress",
+          "status": "completed",
           "level": "feature",
           "description": "Current Nav (src/components/Nav.astro) has no mobile collapse — links crowd and wrap below ~720px. Replace with a hamburger disclosure below 720px.\n\nLayout at mobile: logo + theme toggle + hamburger on the bar. Theme toggle stays OUTSIDE the menu so it works without opening it. The panel slides down as position: absolute under the sticky header (doesn't push content). Button uses aria-expanded; panel is focus-trapped while open; closes on Escape, outside click, and route change (astro:after-swap). Animation is gated on `prefers-reduced-motion: no-preference`.\n\nAbove 720px, behavior is unchanged from today.",
           "acceptanceCriteria": [
@@ -773,12 +773,15 @@
             "a11y"
           ],
           "source": "User request, 2026-04-14",
-          "startedAt": "2026-04-14T18:49:18.091Z"
+          "startedAt": "2026-04-14T18:49:18.091Z",
+          "completedAt": "2026-04-14T19:22:22.395Z",
+          "resolutionType": "code-change",
+          "resolutionDetail": "Nav now collapses to a disclosure panel below 720px with full keyboard + a11y support. Theme toggle stays outside the menu. Focus-trapped; closes on Escape, outside click, route change, resize above breakpoint. 10/10 nav specs passing, a11y audit still 26/26. Pre-existing page-level 320px overflow from primitive-card code blocks is explicitly deferred to the next feature (025d1ded)."
         },
         {
           "id": "51375a8f-4f67-4448-9e9a-1347d473ffa4",
           "title": "Visual punch-up: gradient, typography, one scroll dogfooding moment",
-          "status": "pending",
+          "status": "in_progress",
           "level": "feature",
           "description": "Bring more visual energy to the landing without abandoning En Dash branding.\n\n- Hero background: soft radial gradient using brand palette (blue #001769 → purple #6C41F0 → teal #00e5b9) at low opacity over `--bg-primary`. Dark-mode-first; lighter variant for light mode.\n- Headline typography: bump to `clamp(2.5rem, 7vw, 4.5rem)`, tighter line-height, stronger optical weight. Accent word uses existing `--accent-teal-text`.\n- Add ONE scroll-driven dogfooding moment further down the page on flag-on browsers — e.g., the three primitive cards subtly extrude with a shader via `drawElementImage`. Exactly one, to keep focus and avoid motion overload.\n\nRespect `prefers-reduced-motion`; preserve contrast ratios for WCAG 2.1 AA.",
           "acceptanceCriteria": [
@@ -797,7 +800,8 @@
           "source": "User request, 2026-04-14",
           "blockedBy": [
             "f043a0dd-fb86-46ef-9aed-5f46b5086886"
-          ]
+          ],
+          "startedAt": "2026-04-14T20:15:08.072Z"
         },
         {
           "id": "025d1ded-8311-48f9-8a62-a4be6726656b",
