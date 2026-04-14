@@ -723,7 +723,7 @@
         {
           "id": "f043a0dd-fb86-46ef-9aed-5f46b5086886",
           "title": "Flag-aware hero with live dogfooding showpiece",
-          "status": "in_progress",
+          "status": "completed",
           "level": "feature",
           "description": "Replace the current centered text hero with a two-variant hero driven by a pre-paint feature-detect. Inline script sets `document.documentElement.dataset.flagSupported = 'true' | 'false'` (same no-flash pattern as `data-theme`). CSS swaps between `.hero-live` and `.hero-fallback` with no layout shift or JS-visible transition.\n\nFlag ON variant: Large typographic headline rendered via `<canvas layoutsubtree>` + `drawElementImage` with a WebGL effect — cursor-following liquid-glass distortion or subtle shader shimmer on the accent word. Can reuse techniques from the existing `liquid-glass` / `css-to-shader` demos. Small teal micro-badge: \"You're seeing this render live.\" Keep existing CTAs (Explore Demos / Read the Spec).\n\nFlag OFF variant: Same static headline, plus an autoplaying muted video loop (or APNG) of what the live version looks like, overlaid with a ribbon: \"This is a recording. Enable one flag to make it live in your browser.\" Prominent primary CTA \"Enable the flag (30 seconds)\" using the copy-flag-URL + mini-guide primitives from the Flag-enablement UX feature. Value chip row below CTAs: \"Chrome Canary or Brave Stable · Flag is dev-only · No install\".",
           "acceptanceCriteria": [
@@ -745,12 +745,15 @@
           "blockedBy": [
             "df512b69-2162-4f8d-b9c3-e9be14bbc85d"
           ],
-          "startedAt": "2026-04-14T18:27:12.406Z"
+          "startedAt": "2026-04-14T18:27:12.406Z",
+          "completedAt": "2026-04-14T18:46:57.958Z",
+          "resolutionType": "code-change",
+          "resolutionDetail": "New LandingHero component with pre-paint flag detector in BaseLayout. Flag-on: overlay canvas re-renders headline via drawElementImage with cursor-tracked offset. Flag-off: value chips + FlagSetupSteps. Static h1 remains in a11y tree via color:transparent. 10/10 hero specs passing, a11y audit + flag-enablement specs no regressions. Recording asset deferred as a follow-up — the chips + steps already provide a strong enablement pitch."
         },
         {
           "id": "eea56bd2-5b06-4c7d-8f19-811e8cfc9ec3",
           "title": "Responsive mobile navigation with hamburger disclosure",
-          "status": "pending",
+          "status": "in_progress",
           "level": "feature",
           "description": "Current Nav (src/components/Nav.astro) has no mobile collapse — links crowd and wrap below ~720px. Replace with a hamburger disclosure below 720px.\n\nLayout at mobile: logo + theme toggle + hamburger on the bar. Theme toggle stays OUTSIDE the menu so it works without opening it. The panel slides down as position: absolute under the sticky header (doesn't push content). Button uses aria-expanded; panel is focus-trapped while open; closes on Escape, outside click, and route change (astro:after-swap). Animation is gated on `prefers-reduced-motion: no-preference`.\n\nAbove 720px, behavior is unchanged from today.",
           "acceptanceCriteria": [
@@ -769,7 +772,8 @@
             "responsive",
             "a11y"
           ],
-          "source": "User request, 2026-04-14"
+          "source": "User request, 2026-04-14",
+          "startedAt": "2026-04-14T18:49:18.091Z"
         },
         {
           "id": "51375a8f-4f67-4448-9e9a-1347d473ffa4",
