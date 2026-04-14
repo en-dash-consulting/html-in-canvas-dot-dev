@@ -618,6 +618,8 @@
         "quality"
       ],
       "source": "conversation",
+      "startedAt": "2026-04-14T16:15:19.160Z",
+      "completedAt": "2026-04-14T16:15:19.160Z",
       "children": [
         {
           "id": "5acf3a6c-e7b0-45ac-8de6-be3130d31aca",
@@ -668,9 +670,154 @@
           "resolutionType": "code-change",
           "resolutionDetail": "CI wiring complete via minimum-scope changes. Harness already ran via deploy.yml's npm test step; the refactor makes failure output clean (throw with formatted report rather than array diff)."
         }
+      ]
+    },
+    {
+      "id": "7cd276c8-8d8d-4713-af30-c8dfbfa7d2f5",
+      "title": "Landing page redesign: flag-aware, responsive, dogfooding",
+      "status": "pending",
+      "level": "epic",
+      "description": "Redesign the landing page (src/pages/index.astro) to be substantially more attention-capturing, especially for visitors who already have the `canvas-draw-element` flag enabled, while creating a stronger enablement pitch for visitors who don't. The page should itself dogfood the HTML-in-Canvas spec — the most memorable thing a visitor can experience on a site *about* rendering HTML into canvas is watching the page do exactly that to its own content, live.\n\nThe whole site must also be properly responsive; the current Nav has no mobile collapse and the landing page hasn't been stress-tested at small viewports.\n\nScope covers five features: (1) flag-aware hero with live dogfooding showpiece + recording fallback, (2) responsive mobile navigation with hamburger disclosure, (3) flag-enablement UX improvements (copy-to-clipboard flag URL + inline mini-guide), (4) visual punch-up (gradient, bigger type, one scroll-driven dogfooding moment), (5) responsive polish pass across the full landing page.\n\nConstraints:\n- Preserve En Dash branding (endash.us palette, Montserrat, dark-mode default, purple focus ring)\n- WCAG 2.1 AA must not regress\n- Must not regress the existing BrowserSupportBanner behavior\n- Non-Chromium browsers get the fallback automatically via feature detection",
+      "acceptanceCriteria": [
+        "Landing page has two distinct hero variants (flag-on vs flag-off) with no flash between them",
+        "Mobile nav is usable at 320px with no overflow and meets WCAG 2.1 AA disclosure pattern",
+        "Flag-off visitors have a one-click path (copy flag URL + inline steps) to enable the flag from the landing page itself",
+        "Landing page has no horizontal scroll at 320 / 375 / 414 / 768 / 1024 / 1280",
+        "Existing a11y audit still passes",
+        "Existing BrowserSupportBanner still functions unchanged on non-landing pages"
       ],
-      "startedAt": "2026-04-14T16:15:19.160Z",
-      "completedAt": "2026-04-14T16:15:19.160Z"
+      "priority": "high",
+      "tags": [
+        "landing",
+        "redesign",
+        "responsive",
+        "a11y"
+      ],
+      "source": "User request, 2026-04-14",
+      "children": [
+        {
+          "id": "df512b69-2162-4f8d-b9c3-e9be14bbc85d",
+          "title": "Flag-enablement UX: copy-flag-URL + inline mini-guide",
+          "status": "in_progress",
+          "level": "feature",
+          "description": "Improve the path from \"I see the prompt\" to \"flag is enabled.\" Chrome blocks direct navigation to `chrome://` URLs, so the best we can do is a one-click \"Copy `chrome://flags/#canvas-draw-element`\" button. Also surface a 3-step inline mini-guide on the landing-page flag-off fallback, not just buried in /docs/browser-support/.\n\nApply the copy-button enhancement to the existing BrowserSupportBanner too so the fix lands everywhere the user encounters the flag prompt. These are the reusable primitives that the flag-off hero (separate feature) depends on.",
+          "acceptanceCriteria": [
+            "One-click 'Copy flag URL' button copies `chrome://flags/#canvas-draw-element` to clipboard with visible confirmation state",
+            "Copy button has accessible label and keyboard-operable",
+            "3-step inline mini-guide component exists and is reused by both the landing hero fallback and docs/browser-support",
+            "BrowserSupportBanner also gets the copy-button enhancement without behavior regression",
+            "Works for keyboard, touch, and mouse users; no regression to a11y audit"
+          ],
+          "priority": "high",
+          "tags": [
+            "flag",
+            "enablement",
+            "banner"
+          ],
+          "source": "User request, 2026-04-14",
+          "startedAt": "2026-04-14T17:24:52.063Z"
+        },
+        {
+          "id": "f043a0dd-fb86-46ef-9aed-5f46b5086886",
+          "title": "Flag-aware hero with live dogfooding showpiece",
+          "status": "pending",
+          "level": "feature",
+          "description": "Replace the current centered text hero with a two-variant hero driven by a pre-paint feature-detect. Inline script sets `document.documentElement.dataset.flagSupported = 'true' | 'false'` (same no-flash pattern as `data-theme`). CSS swaps between `.hero-live` and `.hero-fallback` with no layout shift or JS-visible transition.\n\nFlag ON variant: Large typographic headline rendered via `<canvas layoutsubtree>` + `drawElementImage` with a WebGL effect — cursor-following liquid-glass distortion or subtle shader shimmer on the accent word. Can reuse techniques from the existing `liquid-glass` / `css-to-shader` demos. Small teal micro-badge: \"You're seeing this render live.\" Keep existing CTAs (Explore Demos / Read the Spec).\n\nFlag OFF variant: Same static headline, plus an autoplaying muted video loop (or APNG) of what the live version looks like, overlaid with a ribbon: \"This is a recording. Enable one flag to make it live in your browser.\" Prominent primary CTA \"Enable the flag (30 seconds)\" using the copy-flag-URL + mini-guide primitives from the Flag-enablement UX feature. Value chip row below CTAs: \"Chrome Canary or Brave Stable · Flag is dev-only · No install\".",
+          "acceptanceCriteria": [
+            "`data-flag-supported` attribute set on <html> before first paint via inline script (no flash)",
+            "Two hero variants render with no layout shift when switching; correct variant shows on load without JS-visible transition",
+            "Flag-on variant renders the headline via drawElementImage with a visible, cursor-responsive effect at 60fps on mid-range hardware",
+            "Flag-off variant shows recording + ribbon + prominent 'Enable the flag' CTA + copy-flag-URL button + inline 3-step guide",
+            "Non-Chromium browsers automatically see the flag-off variant (feature detection fails cleanly)",
+            "Hero is keyboard-operable and meets WCAG 2.1 AA (no motion trap, respects prefers-reduced-motion)",
+            "Existing hero copy tone/brand preserved"
+          ],
+          "priority": "high",
+          "tags": [
+            "hero",
+            "dogfooding",
+            "flag"
+          ],
+          "source": "User request, 2026-04-14",
+          "blockedBy": [
+            "df512b69-2162-4f8d-b9c3-e9be14bbc85d"
+          ]
+        },
+        {
+          "id": "eea56bd2-5b06-4c7d-8f19-811e8cfc9ec3",
+          "title": "Responsive mobile navigation with hamburger disclosure",
+          "status": "pending",
+          "level": "feature",
+          "description": "Current Nav (src/components/Nav.astro) has no mobile collapse — links crowd and wrap below ~720px. Replace with a hamburger disclosure below 720px.\n\nLayout at mobile: logo + theme toggle + hamburger on the bar. Theme toggle stays OUTSIDE the menu so it works without opening it. The panel slides down as position: absolute under the sticky header (doesn't push content). Button uses aria-expanded; panel is focus-trapped while open; closes on Escape, outside click, and route change (astro:after-swap). Animation is gated on `prefers-reduced-motion: no-preference`.\n\nAbove 720px, behavior is unchanged from today.",
+          "acceptanceCriteria": [
+            "Below 720px viewport: logo, theme toggle, and hamburger button visible with no overflow at 320px",
+            "Hamburger disclosure panel toggles via button with aria-expanded correctly reflected",
+            "Focus is trapped inside open panel and restored to the trigger on close",
+            "Panel closes on Escape, outside click, and route change (astro:after-swap)",
+            "Theme toggle remains usable without opening the menu",
+            "Animation respects prefers-reduced-motion",
+            "Meets WCAG 2.1 AA (disclosure pattern, visible focus, keyboard-operable) — existing a11y audit still passes",
+            "Above 720px: no behavior change from current Nav"
+          ],
+          "priority": "high",
+          "tags": [
+            "nav",
+            "responsive",
+            "a11y"
+          ],
+          "source": "User request, 2026-04-14"
+        },
+        {
+          "id": "51375a8f-4f67-4448-9e9a-1347d473ffa4",
+          "title": "Visual punch-up: gradient, typography, one scroll dogfooding moment",
+          "status": "pending",
+          "level": "feature",
+          "description": "Bring more visual energy to the landing without abandoning En Dash branding.\n\n- Hero background: soft radial gradient using brand palette (blue #001769 → purple #6C41F0 → teal #00e5b9) at low opacity over `--bg-primary`. Dark-mode-first; lighter variant for light mode.\n- Headline typography: bump to `clamp(2.5rem, 7vw, 4.5rem)`, tighter line-height, stronger optical weight. Accent word uses existing `--accent-teal-text`.\n- Add ONE scroll-driven dogfooding moment further down the page on flag-on browsers — e.g., the three primitive cards subtly extrude with a shader via `drawElementImage`. Exactly one, to keep focus and avoid motion overload.\n\nRespect `prefers-reduced-motion`; preserve contrast ratios for WCAG 2.1 AA.",
+          "acceptanceCriteria": [
+            "Hero has a brand-palette radial gradient background in both dark and light modes with preserved text contrast (AA)",
+            "Headline typography uses clamp(2.5rem, 7vw, 4.5rem) with appropriate line-height and weight",
+            "Exactly one scroll-driven dogfooding moment is present on flag-on browsers; none when flag is off or when prefers-reduced-motion is set",
+            "No regression to a11y audit or contrast ratios",
+            "No increase in CLS from the new hero styling"
+          ],
+          "priority": "medium",
+          "tags": [
+            "visual",
+            "branding",
+            "dogfooding"
+          ],
+          "source": "User request, 2026-04-14",
+          "blockedBy": [
+            "f043a0dd-fb86-46ef-9aed-5f46b5086886"
+          ]
+        },
+        {
+          "id": "025d1ded-8311-48f9-8a62-a4be6726656b",
+          "title": "Responsive polish pass across full landing page",
+          "status": "pending",
+          "level": "feature",
+          "description": "Final QA/polish sweep of the landing page at 320 / 375 / 414 / 768 / 1024 / 1280.\n\n- Tighten section padding at mobile widths; primitives/why grids already collapse to 1 col but gaps need review.\n- Ensure code blocks inside primitive cards don't cause horizontal page scroll at 320px. `pre` already has overflow-x: auto in global styles, but need to confirm the CARD itself doesn't overflow (min-width on a flex/grid child can leak).\n- Test on an actual mobile viewport (real device or Safari-on-iPhone emulator), not just Chrome DevTools.\n- Verify hero, primitives, why, demos, getting-started all flow correctly at each breakpoint.\n\nDepends on the hero, nav, and visual punch-up features landing first so there's something to polish.",
+          "acceptanceCriteria": [
+            "No horizontal page scroll on the landing page at 320 / 375 / 414 / 768 / 1024 / 1280",
+            "Code blocks in primitive cards do not cause their parent card to overflow",
+            "Section padding and grid gaps feel consistent at every tested breakpoint (no cramped or overly-airy sections)",
+            "Verified on at least one real mobile device/browser, not just DevTools emulation",
+            "No regressions to the existing a11y audit"
+          ],
+          "priority": "medium",
+          "tags": [
+            "responsive",
+            "qa",
+            "mobile"
+          ],
+          "source": "User request, 2026-04-14",
+          "blockedBy": [
+            "f043a0dd-fb86-46ef-9aed-5f46b5086886",
+            "eea56bd2-5b06-4c7d-8f19-811e8cfc9ec3",
+            "51375a8f-4f67-4448-9e9a-1347d473ffa4"
+          ]
+        }
+      ]
     }
   ]
 }
