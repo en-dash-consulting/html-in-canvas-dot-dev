@@ -1,205 +1,685 @@
 ---
 /**
- * Landing-page hero with two CSS-swapped variants driven by the
- * `data-flag-supported` attribute that BaseLayout's pre-paint script
- * sets on <html>.
+ * Landing-page hero — flag-aware immersive WebGL stage.
  *
- *  - Flag ON: the headline is re-rendered via `drawElementImage` into
- *    an overlay `<canvas layoutsubtree>`. Cursor position nudges the
- *    draw offset so the text subtly tracks the pointer — dogfooding
- *    the spec against its own headline. The static <h1> stays in the
- *    DOM (visibility:hidden) so screen readers and search engines still
- *    see a real heading.
- *  - Flag OFF (default): no canvas overlay; visitors see a value-chip
- *    row, the existing CTAs, and the shared FlagSetupSteps component so
- *    they can enable the flag without leaving the page.
+ * Flag ON: a full-width WebGL canvas renders the headline through
+ * `drawElementImage` → WebGL texture upload, with a shader pipeline
+ * producing (1) an animated gradient/noise back plate, (2) a 3D-tilting
+ * plane for the headline that tracks the cursor, and (3) a draggable
+ * liquid-glass lens with chromatic aberration, caustics, and a bright
+ * rim. A second lens drifts slowly on auto-pilot until the user grabs
+ * one, making the interactivity discoverable without a "drag me" label.
+ *
+ * Flag OFF (and non-Chromium): the static headline remains, plus a
+ * preview animation + the shared `FlagSetupSteps` CTA so visitors can
+ * enable the flag in ~30 seconds and come back for the live version.
+ *
+ * The static <h1> stays in the DOM and the a11y tree in both modes —
+ * on flag-on its text becomes `color: transparent` so the WebGL output
+ * provides the visible pixels while screen readers still see a real
+ * heading.
  */
 import FlagSetupSteps from './FlagSetupSteps.astro';
 
 const WICG_REPO = 'https://github.com/WICG/html-in-canvas';
 
-// The `layoutsubtree` attribute isn't in Astro's typed HTML attribute
-// surface (it's a dev-trial addition to <canvas>). Spread it as an
-// untyped attrs object to keep typing clean without casting globals.
+// `layoutsubtree` isn't in Astro's typed HTML attribute surface.
 const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
 ---
 
 <section class="hero" aria-label="Introduction">
-  <p class="hero-eyebrow">WICG Specification</p>
+  {/* ============ STAGE (flag-on) ============ */}
+  <div class="hero-stage" aria-hidden="true">
+    {/* Source canvas — a 2D render of the headline via drawElementImage.
+        The layoutsubtree child is a duplicate of the real <h1> styled
+        identically. WebGL samples this canvas as a texture. */}
+    <canvas class="hero-source-canvas" {...canvasAttrs}>
+      <div class="hero-source-inner" aria-hidden="true" tabindex="-1">
+        <h1 class="hero-source-h1">
+          Render HTML into Canvas<span class="hero-source-accent"> — natively</span>
+        </h1>
+      </div>
+    </canvas>
 
-  {/* The static headline is the canonical a11y anchor — always in the
-      DOM, always in the a11y tree. On flag-on browsers it becomes
-      visually invisible (visibility:hidden) so the overlay canvas can
-      paint in its place without double-rendering. */}
-  <div class="hero-title-wrap">
+    {/* WebGL output canvas — the shader pipeline's final pixels. */}
+    <canvas class="hero-gl-canvas"></canvas>
+
+    <span class="hero-live-badge">
+      <span class="hero-live-dot"></span>
+      Live via <code>drawElementImage</code> + <code>texImage2D</code>
+    </span>
+
+    <span class="hero-drag-hint" data-hero-hint>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9 11V5a1.5 1.5 0 0 1 3 0v6" />
+        <path d="M12 11V3.5a1.5 1.5 0 0 1 3 0V11" />
+        <path d="M15 11V5.5a1.5 1.5 0 0 1 3 0V16" />
+        <path d="M6 11.5V10a1.5 1.5 0 0 1 3 0V11" />
+        <path d="M18 16l-1 2a6 6 0 0 1-10 0l-3-5a1.5 1.5 0 0 1 2.6-1.5l1.4 2" />
+      </svg>
+      Grab the lens
+    </span>
+  </div>
+
+  {/* ============ CANONICAL SEMANTIC LAYER ============
+       Always in the a11y tree. On flag-on, its headline is colored
+       transparent so the stage can paint its visible form without
+       double-rendering. On flag-off, it's the only render path. */}
+  <div class="hero-content">
+    <p class="hero-eyebrow">WICG Specification</p>
+
     <h1 class="hero-heading hero-heading--static">
       Render HTML into Canvas<span class="hero-accent"> — natively</span>
     </h1>
 
-    <canvas class="hero-heading-canvas" aria-hidden="true" {...canvasAttrs}>
-      <div class="hero-heading-canvas-content" aria-hidden="true" tabindex="-1">
-        Render HTML into Canvas<span class="hero-heading-canvas-accent"> — natively</span>
-      </div>
-    </canvas>
+    <p class="hero-sub">
+      The spec adds three primitives that draw fully-styled, accessible
+      HTML straight into <code>&lt;canvas&gt;</code> — no
+      <code>html2canvas</code>, no screenshots, no libraries.
+    </p>
 
-    <span class="hero-live-badge" aria-hidden="true">
-      <span class="hero-live-dot"></span>
-      Live via <code>drawElementImage</code>
-    </span>
+    <ul class="hero-chips" aria-label="Requirements">
+      <li>Chrome Canary or Brave Stable</li>
+      <li>Flag is dev-only</li>
+      <li>No install</li>
+    </ul>
+
+    <div class="hero-actions">
+      <a href="/demos/" class="btn btn-primary">Explore Demos</a>
+      <a
+        href={WICG_REPO}
+        class="btn btn-secondary"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Read the Spec
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7" /><path d="M7 7h10v10" /></svg>
+      </a>
+    </div>
   </div>
 
-  <p class="hero-sub">
-    The HTML-in-Canvas spec adds three primitives that let you draw
-    fully-styled, accessible HTML content straight into
-    <code>&lt;canvas&gt;</code> — no hacks, no libraries, no screenshots.
-  </p>
-
-  {/* Flag-off only: pithy context chips so visitors know the flag is
-      fast, safe, and dev-focused before they commit to the steps. */}
-  <ul class="hero-chips" aria-label="Requirements">
-    <li>Chrome Canary or Brave Stable</li>
-    <li>Flag is dev-only</li>
-    <li>No install</li>
-  </ul>
-
-  <div class="hero-actions">
-    <a href="/demos/" class="btn btn-primary">Explore Demos</a>
-    <a
-      href={WICG_REPO}
-      class="btn btn-secondary"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      Read the Spec
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7" /><path d="M7 7h10v10" /></svg>
-    </a>
-  </div>
-
-  {/* Flag-off only: the shared 3-step quick-start. The steps + copy
-      button ARE the primary enablement CTA — stacked below the
-      secondary CTAs so visitors aren't forced into a "just look
-      around" dead-end. */}
+  {/* Flag-off only: the enablement pitch directly inside the hero. */}
   <div class="hero-setup">
     <FlagSetupSteps headingLevel="h2" compact />
   </div>
 </section>
 
 <script>
-  // drawElementImage / drawElement / requestPaint / onpaint aren't in
-  // TypeScript's DOM lib — the spec is still in the dev-trial phase.
-  // Declare the extensions inline rather than leaning on TS
-  // suppression comments.
+  /**
+   * WebGL pipeline:
+   *   1. Source canvas: layoutsubtree child is the headline duplicate.
+   *      Its 2D context receives `drawElementImage(h1, 0, 0)` once per
+   *      resize (the headline is static; no need to re-upload each
+   *      frame).
+   *   2. Texture upload: source canvas → GL texture via `texImage2D`.
+   *   3. Fragment shader: composes an animated gradient/noise back
+   *      plate, samples the headline texture onto a tilted plane, and
+   *      applies a draggable liquid-glass lens with chromatic
+   *      aberration + caustics. A second auto-drifting lens operates
+   *      until the user interacts for the first time.
+   */
+
+  type TexElementFn = (
+    target: number,
+    level: number,
+    internalformat: number,
+    format: number,
+    type: number,
+    element: Element,
+  ) => void;
+
   type DrawElementFn = (el: Element, x: number, y: number) => void;
-  interface LayoutsubtreeCanvas extends HTMLCanvasElement {
-    requestPaint?: () => void;
-    onpaint: ((this: LayoutsubtreeCanvas, ev: Event) => void) | null;
-  }
+
   interface DrawElementContext extends CanvasRenderingContext2D {
     drawElementImage?: DrawElementFn;
     drawElement?: DrawElementFn;
   }
 
+  interface LayoutsubtreeCanvas extends HTMLCanvasElement {
+    requestPaint?: () => void;
+    onpaint: ((this: LayoutsubtreeCanvas, ev: Event) => void) | null;
+  }
+
+  interface TexElementGL extends WebGLRenderingContext {
+    texElementImage2D?: TexElementFn;
+  }
+
+  const VERT_SRC = /* glsl */ `
+    attribute vec2 a_position;
+    varying vec2 v_uv;
+    void main() {
+      v_uv = a_position * 0.5 + 0.5;
+      v_uv.y = 1.0 - v_uv.y;
+      gl_Position = vec4(a_position, 0.0, 1.0);
+    }
+  `;
+
+  const FRAG_SRC = /* glsl */ `
+    precision highp float;
+
+    uniform sampler2D u_texture;
+    uniform vec2  u_resolution;
+    uniform vec2  u_mouse;       // primary lens (0-1, y-flipped)
+    uniform vec2  u_mouse2;      // secondary auto-drifting lens
+    uniform float u_hover;       // 0..1 strength of primary lens
+    uniform float u_hover2;      // 0..1 strength of secondary lens
+    uniform vec2  u_tilt;        // parallax tilt, roughly -1..1
+    uniform float u_time;
+    uniform float u_theme;       // 1.0 = dark, 0.0 = light
+
+    varying vec2 v_uv;
+
+    /* ---- Noise ---- */
+    vec2 hash2(vec2 p) {
+      p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
+      return fract(sin(p) * 43758.5453) * 2.0 - 1.0;
+    }
+
+    float simplex(vec2 p) {
+      const float K1 = 0.366025404;
+      const float K2 = 0.211324865;
+      vec2 i  = floor(p + (p.x + p.y) * K1);
+      vec2 a  = p - i + (i.x + i.y) * K2;
+      float m = step(a.y, a.x);
+      vec2 o  = vec2(m, 1.0 - m);
+      vec2 b  = a - o + K2;
+      vec2 c  = a - 1.0 + 2.0 * K2;
+      vec3 h = max(0.5 - vec3(dot(a, a), dot(b, b), dot(c, c)), 0.0);
+      vec3 n = h * h * h * h *
+               vec3(dot(a, hash2(i)), dot(b, hash2(i + o)), dot(c, hash2(i + 1.0)));
+      return dot(n, vec3(70.0));
+    }
+
+    /* ---- Back plate: slow animated gradient + noise ---- */
+    vec3 backPlate(vec2 uv) {
+      float aspect = u_resolution.x / u_resolution.y;
+      vec2 p = uv * vec2(aspect, 1.0);
+      float t = u_time * 0.07;
+
+      /* Two slow-moving noise fields combined */
+      float n1 = simplex(p * 1.4 + vec2(t, -t * 0.7));
+      float n2 = simplex(p * 2.3 + vec2(-t * 0.6, t * 0.9));
+      float n = (n1 * 0.6 + n2 * 0.4);
+
+      /* Dark-mode base palette: deep blue → purple → teal */
+      vec3 dDeep   = vec3(0.004, 0.008, 0.036);
+      vec3 dBlue   = vec3(0.000, 0.090, 0.412);
+      vec3 dPurple = vec3(0.424, 0.255, 0.941);
+      vec3 dTeal   = vec3(0.000, 0.898, 0.725);
+
+      /* Light-mode palette: airy cream → lilac → mint */
+      vec3 lBase   = vec3(0.98, 0.97, 0.99);
+      vec3 lBlue   = vec3(0.80, 0.84, 0.99);
+      vec3 lPurple = vec3(0.88, 0.82, 1.00);
+      vec3 lTeal   = vec3(0.84, 0.97, 0.94);
+
+      /* Spatial blobs placed at asymmetric anchors so the eye
+         always has something to move toward. */
+      float blobP = smoothstep(0.8, 0.0, length(p - vec2(aspect * 0.22, 0.28)));
+      float blobT = smoothstep(0.9, 0.0, length(p - vec2(aspect * 0.85, 0.42)));
+      float blobB = smoothstep(1.0, 0.0, length(p - vec2(aspect * 0.5, 0.95)));
+
+      /* Noise warps the blob weights so the whole plate feels alive. */
+      float warp = 0.25 * n;
+      blobP = clamp(blobP + warp, 0.0, 1.0);
+      blobT = clamp(blobT + warp, 0.0, 1.0);
+
+      vec3 dark  = dDeep;
+      dark = mix(dark, dBlue,   0.55);
+      dark = mix(dark, dPurple, blobP * 0.60);
+      dark = mix(dark, dTeal,   blobT * 0.38);
+      dark = mix(dark, dBlue,   blobB * 0.35);
+
+      vec3 light = lBase;
+      light = mix(light, lBlue,   blobB * 0.55);
+      light = mix(light, lPurple, blobP * 0.50);
+      light = mix(light, lTeal,   blobT * 0.45);
+
+      vec3 base = mix(light, dark, u_theme);
+
+      /* Film-grain tint tied to the noise so the gradient isn't flat. */
+      base += (n * 0.06) * (0.6 + 0.4 * u_theme);
+      return base;
+    }
+
+    /* ---- Headline layer: sample the drawElementImage texture with
+       a subtle 3D-tilt warp. The tilt UV shift is driven by u_tilt. ---- */
+    vec4 headlineLayer(vec2 uv) {
+      /* Map the source canvas (upper portion of the stage) into the
+         viewport's top band. The texture is sized to stage width. */
+      vec2 tUv = uv;
+      /* Subtle perspective: scale Y around centre by a factor that
+         changes with the horizontal coordinate — cheap but convincing
+         "plane tilt." */
+      float tx = u_tilt.x;
+      float ty = u_tilt.y;
+      tUv.x += (uv.y - 0.5) * -tx * 0.06;
+      tUv.y += (uv.x - 0.5) * -ty * 0.04;
+
+      /* Cheap drop-shadow: sample the alpha channel offset down-right
+         and composite underneath the main sample. */
+      float shadowA = texture2D(u_texture, tUv + vec2(0.003, 0.006)).a;
+      vec4 shadow = vec4(0.0, 0.0, 0.0, shadowA * 0.35);
+
+      vec4 main_ = texture2D(u_texture, tUv);
+      return vec4(
+        mix(shadow.rgb, main_.rgb, main_.a),
+        max(shadow.a * (1.0 - main_.a), main_.a)
+      );
+    }
+
+    /* ---- Liquid-glass lens at center, parameterized by strength.
+       Returns the fully-composited color at this pixel as lensed. ---- */
+    vec3 lensAt(vec2 uv, vec3 base, vec2 center, float hover) {
+      if (hover <= 0.001) return base;
+
+      float aspect = u_resolution.x / u_resolution.y;
+      vec2 diff = uv - center;
+      diff.x *= aspect;
+      float dist = length(diff);
+      vec2 dir = normalize(diff + 1e-6);
+
+      float radius = 0.20 * hover;
+      float dome   = smoothstep(radius, radius * 0.08, dist);
+      if (dome <= 0.0) return base;
+
+      /* Organic in-lens noise */
+      float t = u_time * 0.6;
+      float n1 = simplex(uv * 10.0 + vec2(t, -t * 0.7));
+      float n2 = simplex(uv * 13.0 + vec2(-t * 0.5, t));
+      vec2 organic = vec2(n1, n2) * 0.010 * dome;
+
+      /* Convex refraction */
+      vec2 refract_ = -dir * 0.055 * dome;
+
+      /* Ripple */
+      float ripple = sin(dist * 38.0 - u_time * 2.2) * 0.0035 * dome;
+      vec2 rippleOff = dir * ripple;
+
+      vec2 offset = refract_ + organic + rippleOff;
+
+      /* Chromatic aberration */
+      float edge = smoothstep(radius * 0.2, radius, dist) * dome;
+      float aberr = 0.003 * dome + 0.009 * edge;
+
+      /* Compose the under-lens image by re-sampling back plate +
+         headline at the distorted UVs per channel. We approximate
+         by warping both and compositing. */
+      vec2 uvR = uv + offset * 1.10 + dir * aberr;
+      vec2 uvG = uv + offset;
+      vec2 uvB = uv + offset * 0.90 - dir * aberr;
+
+      vec3 bR = backPlate(uvR);
+      vec3 bG = backPlate(uvG);
+      vec3 bB = backPlate(uvB);
+      vec3 bk = vec3(bR.r, bG.g, bB.b);
+
+      vec4 hR = headlineLayer(uvR);
+      vec4 hG = headlineLayer(uvG);
+      vec4 hB = headlineLayer(uvB);
+      vec3 h = vec3(hR.r * hR.a + bk.r * (1.0 - hR.a),
+                    hG.g * hG.a + bk.g * (1.0 - hG.a),
+                    hB.b * hB.a + bk.b * (1.0 - hB.a));
+
+      /* Specular highlight (light from upper-right) */
+      vec2 lightDir = normalize(vec2(0.55, -0.5));
+      float specAngle = dot(dir, lightDir);
+      float spec1 = pow(max(specAngle, 0.0), 28.0) * dome * 0.40;
+      float spec2 = pow(max(specAngle, 0.0), 6.0)  * dome * 0.08;
+
+      /* Fresnel */
+      float fresnel = pow(smoothstep(radius * 0.25, radius, dist), 0.55)
+                    * dome * 0.10;
+
+      /* Bright rim */
+      float ring = smoothstep(radius, radius * 0.91, dist)
+                 * smoothstep(radius * 0.82, radius * 0.91, dist)
+                 * 0.25;
+
+      /* Caustic shimmer inside the lens */
+      float caustic = simplex(uv * 28.0 + u_time * 0.4);
+      caustic = pow(max(caustic, 0.0), 3.5) * dome * 0.06;
+
+      vec3 tint = vec3(0.94, 0.97, 1.06);
+      h = mix(h, h * tint, dome * 0.18);
+      h += spec1 + spec2 + fresnel + ring + caustic;
+      h *= 1.0 + dome * 0.04;
+
+      return mix(base, h, dome);
+    }
+
+    void main() {
+      vec2 uv = v_uv;
+
+      /* Start with back plate + headline composite */
+      vec3 bk = backPlate(uv);
+      vec4 hl = headlineLayer(uv);
+      vec3 base = mix(bk, hl.rgb, hl.a);
+
+      /* Apply both lenses */
+      base = lensAt(uv, base, u_mouse,  u_hover);
+      base = lensAt(uv, base, u_mouse2, u_hover2);
+
+      gl_FragColor = vec4(base, 1.0);
+    }
+  `;
+
   function initLandingHero() {
     if (document.documentElement.dataset.flagSupported !== 'true') return;
 
-    const canvas = document.querySelector<LayoutsubtreeCanvas>(
-      '.hero-heading-canvas',
+    const stage = document.querySelector<HTMLElement>('.hero-stage');
+    const sourceCanvas = document.querySelector<LayoutsubtreeCanvas>(
+      '.hero-source-canvas',
     );
-    const staticHeading = document.querySelector<HTMLElement>(
-      '.hero-heading--static',
+    const sourceInner = document.querySelector<HTMLElement>(
+      '.hero-source-inner',
     );
-    const content = canvas?.querySelector<HTMLElement>(
-      '.hero-heading-canvas-content',
+    const glCanvas = document.querySelector<HTMLCanvasElement>(
+      '.hero-gl-canvas',
     );
-    if (!canvas || !staticHeading || !content) return;
+    if (!stage || !sourceCanvas || !sourceInner || !glCanvas) return;
 
-    const ctx = canvas.getContext('2d') as DrawElementContext | null;
-    if (!ctx) return;
+    const sourceCtx = sourceCanvas.getContext('2d') as DrawElementContext | null;
+    const gl = glCanvas.getContext('webgl', {
+      premultipliedAlpha: false,
+      alpha: true,
+      // The test harness (and any tooling that reads the canvas via
+      // `readPixels` or `toDataURL`) needs the drawing buffer to
+      // persist between the frame draw and the read. With the
+      // default `false`, Chrome clears the back buffer after
+      // compositing each frame and any subsequent read returns zero.
+      preserveDrawingBuffer: true,
+    }) as TexElementGL | null;
+    if (!sourceCtx || !gl) return;
 
-    // Chrome exposes both the old `drawElement` and the spec-current
-    // `drawElementImage` during the dev trial. Prefer the spec name;
-    // fall back so the hero keeps working on older builds.
     const draw: DrawElementFn | undefined =
-      ctx.drawElementImage?.bind(ctx) ?? ctx.drawElement?.bind(ctx);
+      sourceCtx.drawElementImage?.bind(sourceCtx) ??
+      sourceCtx.drawElement?.bind(sourceCtx);
     if (!draw) return;
 
+    /* ----- Shader setup ----- */
+    const compile = (type: number, src: string): WebGLShader | null => {
+      const s = gl.createShader(type);
+      if (!s) return null;
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+        gl.deleteShader(s);
+        return null;
+      }
+      return s;
+    };
+
+    const vert = compile(gl.VERTEX_SHADER, VERT_SRC);
+    const frag = compile(gl.FRAGMENT_SHADER, FRAG_SRC);
+    if (!vert || !frag) return;
+
+    const program = gl.createProgram();
+    if (!program) return;
+    gl.attachShader(program, vert);
+    gl.attachShader(program, frag);
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return;
+
+    const aPosition = gl.getAttribLocation(program, 'a_position');
+    const uTexture = gl.getUniformLocation(program, 'u_texture');
+    const uRes = gl.getUniformLocation(program, 'u_resolution');
+    const uMouse = gl.getUniformLocation(program, 'u_mouse');
+    const uMouse2 = gl.getUniformLocation(program, 'u_mouse2');
+    const uHover = gl.getUniformLocation(program, 'u_hover');
+    const uHover2 = gl.getUniformLocation(program, 'u_hover2');
+    const uTilt = gl.getUniformLocation(program, 'u_tilt');
+    const uTime = gl.getUniformLocation(program, 'u_time');
+    const uTheme = gl.getUniformLocation(program, 'u_theme');
+
+    const quad = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
+      gl.STATIC_DRAW,
+    );
+
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+    /* ----- State ----- */
     const reduceMotion = matchMedia(
       '(prefers-reduced-motion: reduce)',
     ).matches;
 
+    // Lens 1 = user-controlled. Starts centre; takes over on any input.
     let targetX = 0.5;
     let targetY = 0.5;
-    let currentX = 0.5;
-    let currentY = 0.5;
-    let rafId = 0;
+    let smoothX = 0.5;
+    let smoothY = 0.5;
+    let hoverTarget = 0; // 0..1
+    let hover = 0;
 
-    function sizeCanvas() {
-      // Chrome's layoutsubtree uses canvas.width/height as the layout
-      // viewport for children, so the bitmap is sized 1:1 with the
-      // CSS box. (See project_layoutsubtree_bitmap_layout — scaling
-      // by devicePixelRatio would break child layout.)
-      const rect = staticHeading!.getBoundingClientRect();
-      canvas!.width = Math.max(1, Math.round(rect.width));
-      canvas!.height = Math.max(1, Math.round(rect.height));
-      canvas!.requestPaint?.();
+    // Lens 2 = autonomous drifter. Active until first user input.
+    let auto2 = true;
+    let auto2Hover = 1;
+
+    // Plane tilt (parallax for the headline).
+    let tiltTargetX = 0;
+    let tiltTargetY = 0;
+    let tiltX = 0;
+    let tiltY = 0;
+
+    const isDragging = { value: false };
+
+    function readTheme(): number {
+      return document.documentElement.getAttribute('data-theme') === 'light'
+        ? 0
+        : 1;
     }
 
-    canvas.onpaint = () => {
-      const w = canvas.width;
-      const h = canvas.height;
+    /* ----- Resize & source paint -----
+       drawElementImage can only be called when the browser has a
+       cached paint record for the target element, which is why the
+       actual draw + texture upload has to live inside `onpaint`.
+       requestPaint() schedules the callback; attempting to draw
+       eagerly throws "No cached paint record for element." */
 
-      // Smoothly chase the target so motion feels damped rather than
-      // jittery. On reduced-motion, target == current so there's no
-      // perceived animation.
-      currentX += (targetX - currentX) * 0.1;
-      currentY += (targetY - currentY) * 0.1;
+    let textureDirty = true;
 
-      ctx.reset();
-      ctx.clearRect(0, 0, w, h);
-
-      // Subtle cursor-driven offset — a few pixels either direction,
-      // not enough to feel unstable, enough to be visibly alive.
-      const dx = (currentX - 0.5) * 12;
-      const dy = (currentY - 0.5) * 6;
-
-      draw!(content!, dx, dy);
+    sourceCanvas.onpaint = () => {
+      sourceCtx!.clearRect(0, 0, sourceCanvas!.width, sourceCanvas!.height);
+      try {
+        draw!(sourceInner!, 0, 0);
+        textureDirty = true;
+      } catch {
+        // Paint record still unavailable on very first tick in some
+        // tabs; next rAF will request paint again.
+      }
     };
 
-    sizeCanvas();
-
-    const ro = new ResizeObserver(sizeCanvas);
-    ro.observe(staticHeading);
-
-    if (!reduceMotion) {
-      window.addEventListener('pointermove', (e) => {
-        const rect = staticHeading!.getBoundingClientRect();
-        targetX = Math.max(
-          0,
-          Math.min(1, (e.clientX - rect.left) / rect.width),
-        );
-        targetY = Math.max(
-          0,
-          Math.min(1, (e.clientY - rect.top) / rect.height),
-        );
-      });
-
-      const loop = () => {
-        canvas.requestPaint?.();
-        rafId = requestAnimationFrame(loop);
-      };
-      rafId = requestAnimationFrame(loop);
+    function sizeSource() {
+      const rect = stage!.getBoundingClientRect();
+      const w = Math.max(1, Math.round(rect.width));
+      const h = Math.max(1, Math.round(rect.height));
+      sourceCanvas!.width = w;
+      sourceCanvas!.height = h;
+      glCanvas!.width = w;
+      glCanvas!.height = h;
+      sourceCanvas!.requestPaint?.();
     }
 
-    // Clean up when Astro swaps pages so we don't leak RAF loops or
-    // observers between routes.
+    sizeSource();
+    const ro = new ResizeObserver(() => sizeSource());
+    ro.observe(stage);
+
+    /* ----- Input: pointer drives lens 1 and plane tilt ----- */
+    function onPointerMove(e: PointerEvent) {
+      const rect = glCanvas!.getBoundingClientRect();
+      // Ignore pointer events when the pointer isn't over the stage.
+      const insideX = e.clientX >= rect.left && e.clientX <= rect.right;
+      const insideY = e.clientY >= rect.top && e.clientY <= rect.bottom;
+
+      // Plane tilt always follows the cursor inside the viewport so it
+      // feels responsive even when the lens is asleep.
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      tiltTargetX = (e.clientX / vw - 0.5) * 2;
+      tiltTargetY = (e.clientY / vh - 0.5) * 2;
+
+      if (!insideX || !insideY) {
+        hoverTarget = 0;
+        return;
+      }
+
+      const nx = (e.clientX - rect.left) / rect.width;
+      const ny = (e.clientY - rect.top) / rect.height;
+      targetX = nx;
+      targetY = ny;
+      hoverTarget = 1;
+
+      // First user input wakes the auto drifter down so lens 1 can own
+      // the interaction.
+      auto2 = false;
+    }
+
+    function onPointerDown() {
+      isDragging.value = true;
+      hoverTarget = 1;
+      glCanvas!.setPointerCapture?.(0);
+    }
+
+    function onPointerUp() {
+      isDragging.value = false;
+    }
+
+    function onPointerLeave() {
+      if (!isDragging.value) hoverTarget = 0;
+    }
+
+    function onTouchMove(e: TouchEvent) {
+      const touch = e.touches[0];
+      if (!touch) return;
+      const rect = glCanvas!.getBoundingClientRect();
+      const nx = (touch.clientX - rect.left) / rect.width;
+      const ny = (touch.clientY - rect.top) / rect.height;
+      targetX = nx;
+      targetY = ny;
+      hoverTarget = 1;
+      auto2 = false;
+    }
+
+    if (!reduceMotion) {
+      window.addEventListener('pointermove', onPointerMove);
+      glCanvas.addEventListener('pointerdown', onPointerDown);
+      window.addEventListener('pointerup', onPointerUp);
+      glCanvas.addEventListener('pointerleave', onPointerLeave);
+      glCanvas.addEventListener('touchmove', onTouchMove, { passive: true });
+    }
+
+    /* ----- Render loop ----- */
+    const start = performance.now();
+    let rafId = 0;
+    const hint = document.querySelector<HTMLElement>('[data-hero-hint]');
+
+    function frame(now: number) {
+      // In reduced-motion mode we freeze the shader's time uniform so
+      // noise/ripple/caustic animation stops; the rAF loop itself
+      // keeps going so user-initiated lens drags still render cleanly
+      // (user-initiated motion is permitted under WCAG's reduced-
+      // motion guidance — only non-essential autonomous motion is
+      // suppressed).
+      const elapsed = reduceMotion ? 0 : (now - start) / 1000;
+
+      // Nudge the source canvas to keep its paint record fresh. It's
+      // a no-op if nothing changed; it's essential if the paint record
+      // was evicted (e.g. on tab visibility change).
+      sourceCanvas!.requestPaint?.();
+
+      // Upload the source canvas to the GL texture on dirty cycles.
+      if (textureDirty) {
+        gl!.bindTexture(gl!.TEXTURE_2D, texture);
+        gl!.texImage2D(
+          gl!.TEXTURE_2D,
+          0,
+          gl!.RGBA,
+          gl!.RGBA,
+          gl!.UNSIGNED_BYTE,
+          sourceCanvas!,
+        );
+        textureDirty = false;
+      }
+
+      // Damp everything so the motion feels heavy-ish, never twitchy.
+      smoothX += (targetX - smoothX) * 0.10;
+      smoothY += (targetY - smoothY) * 0.10;
+      hover += (hoverTarget - hover) * 0.08;
+
+      tiltX += (tiltTargetX - tiltX) * 0.08;
+      tiltY += (tiltTargetY - tiltY) * 0.08;
+
+      // Autonomous lens 2: describes a slow Lissajous-like path until
+      // the user engages, then fades out. Suppressed entirely under
+      // prefers-reduced-motion.
+      const auto2TargetHover = auto2 && !reduceMotion ? 0.7 : 0;
+      auto2Hover += (auto2TargetHover - auto2Hover) * 0.04;
+      const ax = 0.5 + Math.sin(elapsed * 0.4) * 0.28;
+      const ay = 0.5 + Math.cos(elapsed * 0.33) * 0.22;
+
+      gl!.viewport(0, 0, glCanvas!.width, glCanvas!.height);
+      gl!.useProgram(program);
+      gl!.bindBuffer(gl!.ARRAY_BUFFER, quad);
+      gl!.enableVertexAttribArray(aPosition);
+      gl!.vertexAttribPointer(aPosition, 2, gl!.FLOAT, false, 0, 0);
+      gl!.activeTexture(gl!.TEXTURE0);
+      gl!.bindTexture(gl!.TEXTURE_2D, texture);
+      gl!.uniform1i(uTexture, 0);
+      gl!.uniform2f(uRes, glCanvas!.width, glCanvas!.height);
+      gl!.uniform2f(uMouse, smoothX, smoothY);
+      gl!.uniform2f(uMouse2, ax, ay);
+      gl!.uniform1f(uHover, hover);
+      gl!.uniform1f(uHover2, auto2Hover);
+      gl!.uniform2f(uTilt, tiltX, tiltY);
+      gl!.uniform1f(uTime, elapsed);
+      gl!.uniform1f(uTheme, readTheme());
+
+      gl!.drawArrays(gl!.TRIANGLE_STRIP, 0, 4);
+
+      // Fade the drag hint once the user interacts.
+      if (hint) {
+        const visible = auto2 ? 1 : 0;
+        hint.style.opacity = String(visible * 0.85);
+      }
+
+      rafId = requestAnimationFrame(frame);
+    }
+
+    rafId = requestAnimationFrame(frame);
+
+    /* ----- Cleanup on Astro view swap ----- */
     document.addEventListener(
       'astro:before-swap',
       () => {
         if (rafId) cancelAnimationFrame(rafId);
         ro.disconnect();
+        window.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('pointerup', onPointerUp);
+        glCanvas!.removeEventListener('pointerdown', onPointerDown);
+        glCanvas!.removeEventListener('pointerleave', onPointerLeave);
+        glCanvas!.removeEventListener('touchmove', onTouchMove);
       },
       { once: true },
     );
+
+    /* Repaint source when the theme changes so the shader's texture
+       picks up the new colour tokens. */
+    const themeObserver = new MutationObserver(() => {
+      sourceCanvas!.requestPaint?.();
+    });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
   }
 
   initLandingHero();
@@ -207,73 +687,23 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
 </script>
 
 <style>
+  /* ===== Hero container ===== */
   .hero {
     position: relative;
-    text-align: center;
-    padding: 4rem 1rem 3.5rem;
+    width: 100%;
+    isolation: isolate;
+    /* No max-width — the stage is full-bleed on flag-on; the content
+       layer re-applies its own max-width. */
+  }
+
+  /* ===== Canonical semantic layer ===== */
+  .hero-content {
+    position: relative;
+    z-index: 2;
     max-width: 48rem;
     margin: 0 auto;
-    /* Isolate the gradient's stacking context so it sits only behind
-       the hero's content and doesn't bleed under the nav or
-       following sections. */
-    isolation: isolate;
-    /* The ::before gradient uses `inset: -10vw` to feel generous;
-       without `overflow-x: clip` here, the pseudo-element pushes
-       body scrollWidth past the viewport and produces a horizontal
-       scrollbar. `clip` clips the painted region without creating a
-       new scroll containing block. */
-    overflow-x: clip;
-  }
-
-  /* Soft brand-palette radial gradient painted behind the hero
-     content. Three radial blobs at low alpha let the heading and
-     subhead sit at full contrast against `--bg-primary` underneath.
-     Contrast stays AA because the gradient never exceeds ~0.12 alpha
-     and the text colour tokens are unchanged. */
-  .hero::before {
-    content: '';
-    position: absolute;
-    inset: -1.5rem -10vw -2rem;
-    z-index: -1;
-    pointer-events: none;
-    background:
-      radial-gradient(
-        ellipse 60% 55% at 18% 25%,
-        rgba(108, 65, 240, 0.22),
-        transparent 70%
-      ),
-      radial-gradient(
-        ellipse 50% 50% at 82% 30%,
-        rgba(0, 229, 185, 0.18),
-        transparent 70%
-      ),
-      radial-gradient(
-        ellipse 70% 45% at 50% 95%,
-        rgba(0, 23, 105, 0.35),
-        transparent 75%
-      );
-    filter: blur(2px);
-  }
-
-  /* Light-mode: lower the alpha floor so the gradient doesn't fight
-     light body text contrast. */
-  :global([data-theme='light']) .hero::before {
-    background:
-      radial-gradient(
-        ellipse 60% 55% at 18% 25%,
-        rgba(108, 65, 240, 0.1),
-        transparent 70%
-      ),
-      radial-gradient(
-        ellipse 50% 50% at 82% 30%,
-        rgba(0, 189, 129, 0.1),
-        transparent 70%
-      ),
-      radial-gradient(
-        ellipse 70% 45% at 50% 95%,
-        rgba(0, 23, 105, 0.06),
-        transparent 75%
-      );
+    padding: 4rem 1rem 3.5rem;
+    text-align: center;
   }
 
   .hero-eyebrow {
@@ -285,119 +715,34 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
     margin: 0 0 1rem;
   }
 
-  /* ===== Headline + canvas overlay ===== */
-  .hero-title-wrap {
-    position: relative;
-    display: inline-block;
-    /* Contain the absolutely-positioned canvas and badge. */
-  }
-
   .hero-heading {
     font-size: clamp(2.5rem, 7vw, 4.5rem);
     font-weight: 800;
     line-height: 1.05;
     letter-spacing: -0.015em;
-    margin: 0 0 1.25rem;
+    margin: 0 0 1.5rem;
   }
 
   .hero-accent {
     color: var(--accent-teal-text);
   }
 
-  .hero-heading-canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: calc(100% - 1.25rem); /* match heading's bottom margin offset */
-    display: none;
-    pointer-events: none;
-  }
-
-  /* Canvas child: styled identically to the heading so drawElementImage
-     produces pixels that line up exactly on top of the hidden static
-     heading. Positioned at the canvas's layoutsubtree origin. */
-  .hero-heading-canvas-content {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    font-family: var(--font-heading);
-    font-size: clamp(2.5rem, 7vw, 4.5rem);
-    font-weight: 800;
-    line-height: 1.05;
-    letter-spacing: -0.015em;
-    margin: 0;
-    color: var(--text-primary);
-    text-align: center;
-  }
-
-  .hero-heading-canvas-accent {
-    color: var(--accent-teal-text);
-  }
-
-  .hero-live-badge {
-    display: none;
-    align-items: center;
-    gap: 0.4rem;
-    position: absolute;
-    top: -0.5rem;
-    right: 0;
-    transform: translate(40%, -100%);
-    padding: 0.2rem 0.55rem;
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: var(--accent-teal-text);
-    background: rgba(0, 229, 185, 0.08);
-    border: 1px solid rgba(0, 229, 185, 0.35);
-    border-radius: 999px;
-    white-space: nowrap;
-  }
-
-  .hero-live-badge code {
-    font-size: 0.85em;
-    padding: 0;
-    background: none;
-    color: inherit;
-  }
-
-  .hero-live-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--accent-teal-text);
-    box-shadow: 0 0 0 0 rgba(0, 229, 185, 0.6);
-    animation: hero-live-pulse 1.8s ease-out infinite;
-  }
-
-  @keyframes hero-live-pulse {
-    0% {
-      box-shadow: 0 0 0 0 rgba(0, 229, 185, 0.55);
-    }
-    70% {
-      box-shadow: 0 0 0 6px rgba(0, 229, 185, 0);
-    }
-    100% {
-      box-shadow: 0 0 0 0 rgba(0, 229, 185, 0);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .hero-live-dot {
-      animation: none;
-    }
-  }
-
-  /* ===== Subhead ===== */
   .hero-sub {
     font-size: 1.125rem;
     line-height: 1.7;
     color: var(--text-secondary);
     max-width: 38rem;
-    margin: 0 auto 2rem;
+    margin: 0 auto 1.5rem;
   }
 
-  /* ===== Chips (flag-off only) ===== */
+  .hero-sub code {
+    font-size: 0.85em;
+    padding: 0.1em 0.3em;
+    background: var(--bg-surface);
+    border-radius: 3px;
+    color: var(--accent-teal-text);
+  }
+
   .hero-chips {
     display: flex;
     flex-wrap: wrap;
@@ -405,7 +750,7 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
     gap: 0.5rem;
     list-style: none;
     padding: 0;
-    margin: 0 0 1.5rem;
+    margin: 0 0 1.75rem;
   }
 
   .hero-chips li {
@@ -418,30 +763,30 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
     border-radius: 999px;
   }
 
-  /* ===== Actions ===== */
   .hero-actions {
     display: flex;
     gap: 0.875rem;
     justify-content: center;
     flex-wrap: wrap;
-    margin-bottom: 1.5rem;
   }
 
+  /* Buttons — shared by hero + getting-started. */
   .btn {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    padding: 0.625rem 1.25rem;
+    padding: 0.7rem 1.4rem;
     font-family: var(--font-body);
-    font-size: 0.9rem;
-    font-weight: 600;
-    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    border-radius: 10px;
     text-decoration: none;
     transition:
       background-color 0.15s ease,
       color 0.15s ease,
       border-color 0.15s ease,
-      transform 0.1s ease;
+      transform 0.1s ease,
+      box-shadow 0.2s ease;
   }
 
   .btn:hover {
@@ -452,17 +797,24 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
   .btn-primary {
     background: var(--accent);
     color: var(--color-white);
+    box-shadow:
+      0 0 0 0 rgba(108, 65, 240, 0.45),
+      0 4px 14px -4px rgba(108, 65, 240, 0.6);
   }
 
   .btn-primary:hover {
     background: var(--accent-hover);
     color: var(--color-white);
+    box-shadow:
+      0 0 0 4px rgba(108, 65, 240, 0.18),
+      0 6px 18px -4px rgba(108, 65, 240, 0.75);
   }
 
   .btn-secondary {
-    background: transparent;
+    background: rgba(255, 255, 255, 0.04);
     color: var(--text-primary);
     border: 1px solid var(--border-color);
+    backdrop-filter: blur(4px);
   }
 
   .btn-secondary:hover {
@@ -470,71 +822,216 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
     color: var(--accent);
   }
 
-  /* ===== Setup steps container (flag-off only) ===== */
+  /* ===== Setup block (flag-off) ===== */
   .hero-setup {
+    position: relative;
+    z-index: 2;
     max-width: 32rem;
-    margin: 1rem auto 0;
-    text-align: left;
+    margin: 0 auto 3rem;
+    padding: 0 1rem;
   }
 
-  /* ===== Flag-state swap =====
-     `data-flag-supported` lives on <html>, which sits outside this
-     component's scope. Astro's default scoping would rewrite
-     `[data-flag-supported='true']` to require the component's cid,
-     making it unmatchable — wrap the ancestor in `:global()` so
-     Astro leaves that compound alone. The descendant (the element
-     inside the component) still gets auto-scoped. */
-
-  /* Default = flag-OFF behaviour. Safe fallback if the inline
-     detector never ran. */
-  .hero-heading-canvas,
-  .hero-live-badge {
+  /* ===== Stage (WebGL) ===== */
+  .hero-stage {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    overflow: hidden;
+    /* default hidden; shown by flag-supported selector below */
     display: none;
+    pointer-events: none;
   }
 
-  /* Keep the static <h1> in the a11y tree (so screen readers and
-     search engines still see a real heading) but paint no visible
-     pixels — the overlay canvas provides the actual visual output.
-     visibility:hidden / display:none would remove it from the a11y
-     tree, and opacity:0 collapses the subtree on Chrome; transparent
-     text keeps every tree intact. */
+  .hero-source-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    visibility: hidden; /* keep in layout flow; WebGL reads it */
+  }
+
+  /* Duplicate headline content inside the source canvas, styled to
+     match the stage's layout box so drawElementImage paints pixels
+     that align with the visible hero. */
+  .hero-source-inner {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 2rem;
+  }
+
+  .hero-source-h1 {
+    font-family: var(--font-heading);
+    font-size: clamp(2.5rem, 7vw, 4.5rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.015em;
+    text-align: center;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .hero-source-accent {
+    color: var(--accent-teal-text);
+  }
+
+  .hero-gl-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: auto; /* receives drag interactions */
+    cursor: grab;
+  }
+
+  .hero-gl-canvas:active {
+    cursor: grabbing;
+  }
+
+  .hero-live-badge {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.65rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--accent-teal-text);
+    background: rgba(0, 229, 185, 0.08);
+    border: 1px solid rgba(0, 229, 185, 0.35);
+    border-radius: 999px;
+    backdrop-filter: blur(6px);
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  .hero-live-badge code {
+    font-size: 0.9em;
+    padding: 0;
+    background: none;
+    color: inherit;
+  }
+
+  .hero-live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-teal-text);
+    animation: hero-live-pulse 1.8s ease-out infinite;
+  }
+
+  @keyframes hero-live-pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(0, 229, 185, 0.55);
+    }
+    70% {
+      box-shadow: 0 0 0 8px rgba(0, 229, 185, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(0, 229, 185, 0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-live-dot {
+      animation: none;
+    }
+  }
+
+  .hero-drag-hint {
+    position: absolute;
+    bottom: 1rem;
+    right: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.65rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    backdrop-filter: blur(6px);
+    pointer-events: none;
+    z-index: 3;
+    transition: opacity 0.5s ease;
+  }
+
+  /* ===== Flag-state swap ===== */
+
+  /* Default (flag-off): stage hidden; static heading visible; setup
+     block visible. */
+
+  :global([data-flag-supported='true']) .hero-stage {
+    display: block;
+  }
+
+  /* On flag-on, the WebGL canvas renders the visible headline; hide
+     the static <h1>'s visible pixels while preserving its a11y
+     presence via `color: transparent`. */
   :global([data-flag-supported='true']) .hero-heading--static,
   :global([data-flag-supported='true']) .hero-heading--static .hero-accent {
     color: transparent;
   }
 
-  :global([data-flag-supported='true']) .hero-heading-canvas {
-    display: block;
+  /* Stage absolutely overlays the hero — anchor its height to the
+     hero-content box so it covers the visible heading area. */
+  :global([data-flag-supported='true']) .hero-content {
+    min-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
 
-  :global([data-flag-supported='true']) .hero-live-badge {
-    display: inline-flex;
-  }
-
-  :global([data-flag-supported='true']) .hero-chips,
-  :global([data-flag-supported='true']) .hero-setup {
+  /* Hide flag-off-only content when the flag is on. */
+  :global([data-flag-supported='true']) .hero-setup,
+  :global([data-flag-supported='true']) .hero-chips {
     display: none;
+  }
+
+  /* On flag-off, a clean, airy layout without the stage. */
+  :global([data-flag-supported='false']) .hero-content {
+    padding-top: 5rem;
+  }
+
+  :global([data-flag-supported='false']) .hero-chips,
+  :global([data-flag-supported='false']) .hero-setup {
+    display: block;
   }
 
   /* ===== Responsive ===== */
   @media (max-width: 768px) {
-    .hero {
-      padding: 2.5rem 0 2rem;
+    :global([data-flag-supported='true']) .hero-content {
+      min-height: 72vh;
+    }
+
+    .hero-live-badge,
+    .hero-drag-hint {
+      font-size: 0.65rem;
+      padding: 0.25rem 0.5rem;
+    }
+
+    .hero-drag-hint {
+      right: 0.75rem;
+      bottom: 0.75rem;
     }
 
     .hero-live-badge {
-      transform: translate(0, -100%);
-      right: auto;
-      left: 50%;
-      margin-left: -3.5rem;
+      top: 0.75rem;
+      left: 0.75rem;
     }
   }
 
   @media (max-width: 640px) {
     .hero-heading,
-    .hero-heading-canvas-content {
+    .hero-source-h1 {
       font-size: clamp(2rem, 9vw, 2.75rem);
-      letter-spacing: -0.01em;
     }
 
     .hero-sub {

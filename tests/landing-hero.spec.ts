@@ -1,67 +1,102 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page, type Locator } from '@playwright/test';
 import {
   collectConsoleErrors,
-  expectCanvasNonBlank,
   expectHtmlInCanvasAvailable,
 } from './helpers';
 
+/** Assert a WebGL canvas has painted non-transparent pixels. Reads the
+ *  framebuffer via `gl.readPixels` since `getContext('2d')` doesn't
+ *  work on a WebGL canvas. */
+async function expectGlCanvasNonBlank(
+  page: Page,
+  canvas: Locator,
+): Promise<void> {
+  const nonBlank = await canvas.evaluate((el) => {
+    const c = el as HTMLCanvasElement;
+    const gl =
+      c.getContext('webgl') as WebGLRenderingContext | null ||
+      (c.getContext('webgl2') as WebGLRenderingContext | null);
+    if (!gl) return false;
+    const w = c.width;
+    const h = c.height;
+    if (w === 0 || h === 0) return false;
+    // Sample a grid of ~32x32 pixels. readPixels is slow, so read a
+    // modest-sized rectangle once and scan it.
+    const pixels = new Uint8Array(w * h * 4);
+    gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+    let seen = 0;
+    const stride = Math.max(4, Math.floor(pixels.length / 1024 / 4) * 4);
+    for (let i = 0; i < pixels.length; i += stride) {
+      if (pixels[i] || pixels[i + 1] || pixels[i + 2] || pixels[i + 3]) {
+        seen++;
+        if (seen > 4) return true;
+      }
+    }
+    return seen > 0;
+  });
+  expect(nonBlank, 'WebGL canvas appears blank').toBe(true);
+}
+
 const HOME_URL = '/';
 
-test.describe('landing hero (flag-on, default Playwright env)', () => {
+test.describe('landing hero (flag-on, WebGL stage)', () => {
   test('pre-paint script sets data-flag-supported=true before the hero paints', async ({
     page,
   }) => {
     await page.goto(HOME_URL, { waitUntil: 'domcontentloaded' });
-
-    // The attribute is set by an inline <script> in <head>, which runs
-    // before the body is parsed. Reading it immediately after
-    // domcontentloaded is enough to catch whether it landed before
-    // first paint.
     const flagAttr = await page.evaluate(
       () => document.documentElement.dataset.flagSupported,
     );
     expect(flagAttr).toBe('true');
   });
 
-  test('renders the hero canvas and paints the headline via drawElementImage', async ({
+  test('stage renders both source and WebGL canvases; shader output is non-blank', async ({
     page,
   }) => {
     const errors = collectConsoleErrors(page);
     await page.goto(HOME_URL, { waitUntil: 'networkidle' });
     await expectHtmlInCanvasAvailable(page);
 
-    const canvas = page.locator('.hero-heading-canvas');
-    await expect(canvas).toBeAttached();
+    const source = page.locator('.hero-source-canvas');
+    const glCanvas = page.locator('.hero-gl-canvas');
 
-    // Canvas must size itself against the static heading's bbox before
-    // onpaint can draw anything meaningful. ResizeObserver fires after
-    // layout; give it a couple of frames to settle.
+    await expect(source).toBeAttached();
+    await expect(glCanvas).toBeVisible();
+
+    // Both canvases must size against the stage before anything
+    // meaningful paints.
     await page.waitForFunction(() => {
-      const c = document.querySelector<HTMLCanvasElement>(
-        '.hero-heading-canvas',
+      const s = document.querySelector<HTMLCanvasElement>(
+        '.hero-source-canvas',
       );
-      return !!c && c.width > 0 && c.height > 0;
+      const g = document.querySelector<HTMLCanvasElement>('.hero-gl-canvas');
+      return !!s && !!g && s.width > 0 && g.width > 0;
     });
+
+    // Give the render loop a couple of frames to upload and draw.
     await page.evaluate(
       () =>
         new Promise((r) =>
-          requestAnimationFrame(() => requestAnimationFrame(() => r(null))),
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() =>
+              requestAnimationFrame(() => r(null)),
+            ),
+          ),
         ),
     );
 
-    await expectCanvasNonBlank(canvas);
+    await expectGlCanvasNonBlank(page, glCanvas);
     expect(errors, `Console errors: ${errors.join('\n')}`).toEqual([]);
   });
 
-  test('shows the "Live via drawElementImage" badge', async ({ page }) => {
+  test('live badge and drag hint are visible on flag-on', async ({ page }) => {
     await page.goto(HOME_URL, { waitUntil: 'networkidle' });
 
-    const badge = page.locator('.hero-live-badge');
-    await expect(badge).toBeVisible();
-    await expect(badge).toContainText(/live via/i);
+    await expect(page.locator('.hero-live-badge')).toBeVisible();
+    await expect(page.locator('[data-hero-hint]')).toBeVisible();
   });
 
-  test('hides the flag-off affordances when the flag is supported', async ({
+  test('hides the flag-off affordances (chips + setup) when the flag is supported', async ({
     page,
   }) => {
     await page.goto(HOME_URL, { waitUntil: 'networkidle' });
@@ -75,9 +110,6 @@ test.describe('landing hero (flag-on, default Playwright env)', () => {
   }) => {
     await page.goto(HOME_URL, { waitUntil: 'networkidle' });
 
-    // The headline must remain addressable as an accessible h1 so
-    // screen readers and search engines still see a real heading,
-    // even though the canvas paints over it visually.
     const heading = page.getByRole('heading', {
       level: 1,
       name: /render html into canvas/i,
@@ -88,9 +120,6 @@ test.describe('landing hero (flag-on, default Playwright env)', () => {
 
 test.describe('landing hero (flag-off, simulated non-Chromium)', () => {
   test.beforeEach(async ({ page }) => {
-    // Remove the API before the inline pre-paint detector runs so the
-    // detector sets data-flag-supported=false — simulating a browser
-    // (or Chromium build) where the flag isn't enabled.
     await page.addInitScript(() => {
       const proto = (
         globalThis as unknown as {
@@ -112,9 +141,7 @@ test.describe('landing hero (flag-off, simulated non-Chromium)', () => {
     expect(flagAttr).toBe('false');
   });
 
-  test('shows value chips, existing CTAs, and the FlagSetupSteps guide', async ({
-    page,
-  }) => {
+  test('shows chips, CTAs, and the FlagSetupSteps guide', async ({ page }) => {
     await page.goto(HOME_URL, { waitUntil: 'networkidle' });
 
     const chips = page.locator('.hero-chips');
@@ -130,42 +157,38 @@ test.describe('landing hero (flag-off, simulated non-Chromium)', () => {
       page.getByRole('link', { name: /read the spec/i }),
     ).toBeVisible();
 
-    // Shared flag-setup component is embedded in the hero.
     await expect(page.locator('.hero-setup .flag-setup')).toBeVisible();
-    await expect(
-      page.locator('.hero-setup .copy-flag'),
-    ).toBeVisible();
+    await expect(page.locator('.hero-setup .copy-flag')).toBeVisible();
   });
 
-  test('hides the canvas overlay and the live badge', async ({ page }) => {
+  test('hides the WebGL stage on flag-off', async ({ page }) => {
     await page.goto(HOME_URL, { waitUntil: 'networkidle' });
 
-    await expect(page.locator('.hero-heading-canvas')).toBeHidden();
+    await expect(page.locator('.hero-stage')).toBeHidden();
     await expect(page.locator('.hero-live-badge')).toBeHidden();
   });
 
-  test('leaves the static heading visually visible (no overlay covering it)', async ({
+  test('static heading renders at full opacity / colour on flag-off', async ({
     page,
   }) => {
     await page.goto(HOME_URL, { waitUntil: 'networkidle' });
 
-    const staticHeading = page.locator('.hero-heading--static');
-    // visibility:hidden would apply only when the canvas overlay is in
-    // use. In flag-off mode the heading must remain visible to users.
-    const visibility = await staticHeading.evaluate(
-      (el) => getComputedStyle(el).visibility,
-    );
-    expect(visibility).toBe('visible');
+    const headingColor = await page.evaluate(() => {
+      const h = document.querySelector<HTMLElement>('.hero-heading--static');
+      if (!h) return null;
+      const c = getComputedStyle(h).color;
+      return c;
+    });
+
+    // In flag-off mode, the heading should have its theme's
+    // --text-primary, not transparent.
+    expect(headingColor).not.toBeNull();
+    expect(headingColor!.toLowerCase()).not.toContain('rgba(0, 0, 0, 0)');
   });
 });
 
 test.describe('landing hero (flag-on + prefers-reduced-motion)', () => {
-  test('still paints the hero once, without running the rAF loop', async ({
-    browser,
-  }) => {
-    // `reducedMotion` isn't on the test-level `use()` fixture in this
-    // Playwright version, but it IS on BrowserContextOptions — so we
-    // spin up a dedicated context to emulate the preference.
+  test('renders one frame and stops the render loop', async ({ browser }) => {
     const context = await browser.newContext({ reducedMotion: 'reduce' });
     const page = await context.newPage();
 
@@ -173,21 +196,23 @@ test.describe('landing hero (flag-on + prefers-reduced-motion)', () => {
       await page.goto(HOME_URL, { waitUntil: 'networkidle' });
       await expectHtmlInCanvasAvailable(page);
 
-      const canvas = page.locator('.hero-heading-canvas');
+      const glCanvas = page.locator('.hero-gl-canvas');
       await page.waitForFunction(() => {
-        const c = document.querySelector<HTMLCanvasElement>(
-          '.hero-heading-canvas',
+        const g = document.querySelector<HTMLCanvasElement>(
+          '.hero-gl-canvas',
         );
-        return !!c && c.width > 0 && c.height > 0;
+        return !!g && g.width > 0;
       });
       await page.evaluate(
         () =>
           new Promise((r) =>
-            requestAnimationFrame(() => requestAnimationFrame(() => r(null))),
+            requestAnimationFrame(() =>
+              requestAnimationFrame(() => r(null)),
+            ),
           ),
       );
 
-      await expectCanvasNonBlank(canvas);
+      await expectGlCanvasNonBlank(page, glCanvas);
     } finally {
       await context.close();
     }

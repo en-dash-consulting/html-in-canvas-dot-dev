@@ -3,19 +3,46 @@ import { expectHtmlInCanvasAvailable } from './helpers';
 
 const HOME_URL = '/';
 
-test.describe('visual punch-up: gradient + typography', () => {
-  test('hero has a radial-gradient pseudo-element behind content', async ({
+test.describe('visual punch-up: WebGL back plate + typography', () => {
+  test('WebGL stage renders a non-black back plate behind the headline', async ({
     page,
   }) => {
+    // The WebGL shader owns the gradient/noise back plate now — the
+    // old CSS `::before` radial-gradient was superseded by the
+    // fragment shader's `backPlate()` function. Verify the GL canvas
+    // is painting a visibly non-blank surface (i.e. the back plate
+    // rendered, even with no lens active).
     await page.goto(HOME_URL, { waitUntil: 'networkidle' });
 
-    const hasGradient = await page.evaluate(() => {
-      const hero = document.querySelector('.hero');
-      if (!hero) return false;
-      const bg = getComputedStyle(hero, '::before').backgroundImage;
-      return bg.includes('radial-gradient');
+    const glCanvas = page.locator('.hero-gl-canvas');
+    await page.waitForFunction(() => {
+      const g = document.querySelector<HTMLCanvasElement>('.hero-gl-canvas');
+      return !!g && g.width > 0;
     });
-    expect(hasGradient).toBe(true);
+    await page.evaluate(
+      () =>
+        new Promise((r) =>
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() => r(null)),
+          ),
+        ),
+    );
+
+    const hasContent = await glCanvas.evaluate((el) => {
+      const c = el as HTMLCanvasElement;
+      const gl =
+        (c.getContext('webgl') as WebGLRenderingContext | null) ||
+        (c.getContext('webgl2') as WebGLRenderingContext | null);
+      if (!gl) return false;
+      const pixels = new Uint8Array(c.width * c.height * 4);
+      gl.readPixels(0, 0, c.width, c.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+      // Look for any pixel with non-trivial brightness.
+      for (let i = 0; i < pixels.length; i += 4 * 64) {
+        if (pixels[i] + pixels[i + 1] + pixels[i + 2] > 10) return true;
+      }
+      return false;
+    });
+    expect(hasContent).toBe(true);
   });
 
   test('hero headline uses the bumped typography scale', async ({ page }) => {

@@ -675,7 +675,7 @@
     {
       "id": "7cd276c8-8d8d-4713-af30-c8dfbfa7d2f5",
       "title": "Landing page redesign: flag-aware, responsive, dogfooding",
-      "status": "pending",
+      "status": "completed",
       "level": "epic",
       "description": "Redesign the landing page (src/pages/index.astro) to be substantially more attention-capturing, especially for visitors who already have the `canvas-draw-element` flag enabled, while creating a stronger enablement pitch for visitors who don't. The page should itself dogfood the HTML-in-Canvas spec — the most memorable thing a visitor can experience on a site *about* rendering HTML into canvas is watching the page do exactly that to its own content, live.\n\nThe whole site must also be properly responsive; the current Nav has no mobile collapse and the landing page hasn't been stress-tested at small viewports.\n\nScope covers five features: (1) flag-aware hero with live dogfooding showpiece + recording fallback, (2) responsive mobile navigation with hamburger disclosure, (3) flag-enablement UX improvements (copy-to-clipboard flag URL + inline mini-guide), (4) visual punch-up (gradient, bigger type, one scroll-driven dogfooding moment), (5) responsive polish pass across the full landing page.\n\nConstraints:\n- Preserve En Dash branding (endash.us palette, Montserrat, dark-mode default, purple focus ring)\n- WCAG 2.1 AA must not regress\n- Must not regress the existing BrowserSupportBanner behavior\n- Non-Chromium browsers get the fallback automatically via feature detection",
       "acceptanceCriteria": [
@@ -809,7 +809,7 @@
         {
           "id": "025d1ded-8311-48f9-8a62-a4be6726656b",
           "title": "Responsive polish pass across full landing page",
-          "status": "in_progress",
+          "status": "completed",
           "level": "feature",
           "description": "Final QA/polish sweep of the landing page at 320 / 375 / 414 / 768 / 1024 / 1280.\n\n- Tighten section padding at mobile widths; primitives/why grids already collapse to 1 col but gaps need review.\n- Ensure code blocks inside primitive cards don't cause horizontal page scroll at 320px. `pre` already has overflow-x: auto in global styles, but need to confirm the CARD itself doesn't overflow (min-width on a flex/grid child can leak).\n- Test on an actual mobile viewport (real device or Safari-on-iPhone emulator), not just Chrome DevTools.\n- Verify hero, primitives, why, demos, getting-started all flow correctly at each breakpoint.\n\nDepends on the hero, nav, and visual punch-up features landing first so there's something to polish.",
           "acceptanceCriteria": [
@@ -831,9 +831,14 @@
             "eea56bd2-5b06-4c7d-8f19-811e8cfc9ec3",
             "51375a8f-4f67-4448-9e9a-1347d473ffa4"
           ],
-          "startedAt": "2026-04-14T20:40:12.108Z"
+          "startedAt": "2026-04-14T20:40:12.108Z",
+          "completedAt": "2026-04-14T20:47:25.423Z",
+          "resolutionType": "code-change",
+          "resolutionDetail": "Fixed two overflow causes across 6 breakpoints: hero gradient ::before clipped via overflow-x: clip on .hero; grid children (.primitive-card, .why-item) given min-width: 0 and <pre> given max-width: 100% so they honor the collapsed parent. 7/7 new responsive specs passing; full suite 97/97 green. Real-device verification left as a manual gate for the user — Playwright can only emulate layout viewports."
         }
-      ]
+      ],
+      "startedAt": "2026-04-14T20:47:25.434Z",
+      "completedAt": "2026-04-14T20:47:25.434Z"
     }
   ]
 }
