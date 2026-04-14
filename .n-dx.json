@@ -1,5 +1,11 @@
 {
   "llm": {
     "vendor": "claude"
-  }
+  },
+  "cli": {
+    "timeouts": {
+      "work": 7200000
+    }
+  },
+  "_initVersion": "0.2.2"
 }

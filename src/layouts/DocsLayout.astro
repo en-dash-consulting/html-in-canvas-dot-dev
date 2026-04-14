@@ -16,9 +16,40 @@ const { title, currentSlug } = Astro.props;
 
 const allDocs = await getCollection('docs');
 const sortedDocs = allDocs.sort((a, b) => a.data.order - b.data.order);
+
+// Breadcrumb JSON-LD for every docs page — Home › Docs › {Doc Title}.
+const SITE_URL = 'https://html-in-canvas.dev';
+const breadcrumbJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE_URL}/` },
+    { '@type': 'ListItem', position: 2, name: 'Documentation', item: `${SITE_URL}/docs/` },
+    {
+      '@type': 'ListItem',
+      position: 3,
+      name: title,
+      item: `${SITE_URL}/docs/${currentSlug}/`,
+    },
+  ],
+};
 ---
 
-<BaseLayout title={title} description={`${title} — HTML-in-Canvas specification documentation.`}>
+<BaseLayout
+  title={title}
+  description={`${title} — HTML-in-Canvas specification documentation.`}
+  ogImage="/og-docs.png"
+>
+  <Fragment slot="head">
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify(breadcrumbJsonLd)}
+    />
+    {/* Forwarded from individual doc pages (e.g. HowTo JSON-LD for
+        browser-support). */}
+    <slot name="head" />
+  </Fragment>
   <div class="docs-layout">
     <aside class="docs-sidebar" aria-label="Documentation navigation">
       <nav>

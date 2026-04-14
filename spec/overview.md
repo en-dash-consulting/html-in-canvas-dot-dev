@@ -6,7 +6,7 @@ order: 1
 # HTML-in-Canvas Spec Overview
 
 **Source:** https://github.com/WICG/html-in-canvas  
-**Status:** Living explainer, continuously updated. Dev trial behind `chrome://flags/#canvas-draw-element` in Chrome Canary.  
+**Status:** Living explainer, continuously updated. Dev trial behind `chrome://flags/#canvas-draw-element` in Chrome Canary, and also available in recent Brave Stable builds (≥ 1.89.132 / Chromium 147) at `brave://flags/#canvas-draw-element`.  
 **Authors:** Philip Rogers (pdr@chromium.org), Stephen Chenney (Igalia), Chris Harrelson, Philip Jagenstedt, Khushal Sagar, Vladimir Levin, Fernando Serboncini (all Chromium)
 
 ## Problem

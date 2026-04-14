@@ -9,7 +9,9 @@ shows what becomes possible when the browser can paint live HTML into a
 canvas: real text editing, native i18n, accessible chart labels, video
 recording from HTML scenes, GPU shader effects on DOM content, and 3D
 scenes that use HTML elements as textures. The relevant Chromium feature
-ships behind `chrome://flags/#canvas-draw-element` in Chrome Canary.
+ships behind `chrome://flags/#canvas-draw-element` in Chrome Canary, and
+is also available in recent Brave Stable builds (Chromium 147+) at
+`brave://flags/#canvas-draw-element`.
 
 ## Spec primitives
 
@@ -34,6 +36,7 @@ This is a dev-trial Chromium feature. Other browsers have not announced
 implementations yet.
 
 - Chrome Canary, behind `chrome://flags/#canvas-draw-element`
+- Brave Stable ≥ 1.89.132 (Chromium 147+), behind `brave://flags/#canvas-draw-element`
 - Firefox: not implemented
 - Safari/WebKit: not implemented
 

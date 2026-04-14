@@ -16,8 +16,64 @@ export async function getStaticPaths() {
 
 const { doc } = Astro.props;
 const { Content } = await render(doc);
+
+// HowTo JSON-LD for the browser-support doc — its "How to try it"
+// section is a canonical four-step setup guide that maps cleanly onto
+// schema.org/HowTo and can surface as step-by-step rich results. Kept
+// in sync manually with the markdown (sync-spec-docs.mjs rewrites the
+// steps from the upstream README, so revisit here if they change).
+const SITE_URL = 'https://html-in-canvas.dev';
+const howToJsonLd =
+  doc.id === 'browser-support'
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'HowTo',
+        name: 'Enable HTML-in-Canvas in Chrome',
+        description:
+          'Turn on the Chromium canvas-draw-element flag so HTML-in-Canvas demos run locally.',
+        totalTime: 'PT2M',
+        tool: [{ '@type': 'HowToTool', name: 'Chrome Canary' }],
+        step: [
+          {
+            '@type': 'HowToStep',
+            position: 1,
+            name: 'Install Chrome Canary',
+            text: "Install Chrome Canary — HTML-in-Canvas ships in Chromium's unstable channel.",
+            url: 'https://www.google.com/chrome/canary/',
+          },
+          {
+            '@type': 'HowToStep',
+            position: 2,
+            name: 'Enable the flag',
+            text: 'Visit chrome://flags/#canvas-draw-element and enable the flag.',
+          },
+          {
+            '@type': 'HowToStep',
+            position: 3,
+            name: 'Restart the browser',
+            text: 'Restart Chrome Canary so the flag takes effect.',
+          },
+          {
+            '@type': 'HowToStep',
+            position: 4,
+            name: 'Load a demo',
+            text: 'Load any demo from the demo gallery to confirm the API is available.',
+            url: `${SITE_URL}/demos/`,
+          },
+        ],
+      }
+    : null;
 ---
 
 <DocsLayout title={doc.data.title} currentSlug={doc.id}>
+  {howToJsonLd && (
+    <Fragment slot="head">
+      <script
+        is:inline
+        type="application/ld+json"
+        set:html={JSON.stringify(howToJsonLd)}
+      />
+    </Fragment>
+  )}
   <Content />
 </DocsLayout>

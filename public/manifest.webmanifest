@@ -1,0 +1,22 @@
+{
+  "name": "HTML-in-Canvas",
+  "short_name": "HTML-in-Canvas",
+  "description": "Interactive demos and documentation for the WICG HTML-in-Canvas specification.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "minimal-ui",
+  "background_color": "#0a0a0f",
+  "theme_color": "#0a0a0f",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/pwa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

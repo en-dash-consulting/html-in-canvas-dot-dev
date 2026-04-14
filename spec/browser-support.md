@@ -5,7 +5,7 @@ order: 6
 
 # Browser Support
 
-_Auto-synced from [`WICG/html-in-canvas` README](https://github.com/WICG/html-in-canvas/blob/main/README.md) on 2026-04-11 via `scripts/sync-spec-docs.mjs`._
+_Auto-synced from [`WICG/html-in-canvas` README](https://github.com/WICG/html-in-canvas/blob/main/README.md) on 2026-04-14 via `scripts/sync-spec-docs.mjs`._
 
 ## Status
 
@@ -24,16 +24,30 @@ Please file bugs or design issues [here](https://github.com/WICG/html-in-canvas/
 
 ## How to try it
 
-1. Install [Chrome Canary](https://www.google.com/chrome/canary/) — the feature ships in Chromium's unstable channel.
+You can run the demos on either Chrome Canary or a current Brave Stable — the flag lives in Chromium and rides along with any fork whose base milestone includes it.
+
+### Option A — Chrome Canary
+
+1. Install [Chrome Canary](https://www.google.com/chrome/canary/).
 2. Visit `chrome://flags/#canvas-draw-element` and enable the flag.
+3. Restart the browser.
+4. Load any demo from the [demo gallery](/demos/).
+
+### Option B — Brave Stable (Chromium 147+)
+
+Confirmed working on [Brave](https://brave.com/) Stable 1.89.132 / Chromium 147.0.7727.56. Older builds may not expose the flag.
+
+1. Update Brave to a current Stable build (Menu → Brave → About Brave triggers an update).
+2. Visit `brave://flags/#canvas-draw-element` and enable the flag.
 3. Restart the browser.
 4. Load any demo from the [demo gallery](/demos/).
 
 ## Other browsers
 
+- **Brave:** supported on recent Stable builds (≥ 1.89.132 / Chromium 147) behind `brave://flags/#canvas-draw-element`.
 - **Firefox:** no implementation announced.
 - **Safari / WebKit:** no implementation announced.
-- **Other Chromium forks:** the feature rides along wherever the Chromium unstable channel is shipped (Edge Canary, etc.).
+- **Edge / other Chromium forks:** the flag rides along wherever the underlying Chromium milestone has shipped the canvas-draw-element code. Try `chrome://flags/#canvas-draw-element` (or the fork's equivalent) on a recent build.
 
 ## Feedback
 

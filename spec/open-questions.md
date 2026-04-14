@@ -5,15 +5,9 @@ order: 5
 
 # Open Questions & Issues
 
-_Auto-synced from [`WICG/html-in-canvas` issues](https://github.com/WICG/html-in-canvas/issues) on 2026-04-11 via `scripts/sync-spec-docs.mjs`._
+_Auto-synced from [`WICG/html-in-canvas` issues](https://github.com/WICG/html-in-canvas/issues) on 2026-04-14 via `scripts/sync-spec-docs.mjs`._
 
-There are currently **16** open issues on the spec repository. Each heading below links to the upstream discussion — follow the link to read the full thread and leave a comment.
-
-## [#108: Demos are broken](https://github.com/WICG/html-in-canvas/issues/108)
-
-**Author:** [@joshpoll](https://github.com/joshpoll)
-
-Hey! This seems like a really cool project. I'm excited to try it out. However, all the demos linked in the readme are broken with some variation of this error: `Uncaught TypeError: canvas.requestPaint is not a function`
+There are currently **15** open issues on the spec repository. Each heading below links to the upstream discussion — follow the link to read the full thread and leave a comment.
 
 ## [#107: CSS-in-Canvas: Flexbox layout of canvas renderables](https://github.com/WICG/html-in-canvas/issues/107)
 

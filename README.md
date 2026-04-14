@@ -16,8 +16,10 @@ video recording from HTML scenes, GPU shader effects on DOM content, and
 3D scenes that use HTML elements as textures.
 
 The relevant Chromium feature ships behind
-`chrome://flags/#canvas-draw-element` in **Chrome Canary**. Other
-browsers have not announced implementations yet.
+`chrome://flags/#canvas-draw-element` in **Chrome Canary**, and is also
+available in recent **Brave Stable** builds (≥ 1.89.132 / Chromium 147)
+at `brave://flags/#canvas-draw-element`. Firefox and Safari have not
+announced implementations yet.
 
 ---
 
@@ -65,8 +67,9 @@ npm install
 npm run dev
 ```
 
-Visit `http://localhost:4321` in **Chrome Canary** with the
-`canvas-draw-element` flag enabled. Setup instructions:
+Visit `http://localhost:4321` in **Chrome Canary** or **Brave Stable**
+(Chromium 147+) with the `canvas-draw-element` flag enabled. Setup
+instructions:
 [/docs/browser-support/](https://html-in-canvas.dev/docs/browser-support/).
 
 ### Available scripts

@@ -15,7 +15,12 @@ const GITHUB_REPO =
     <p class="footer-eyebrow">This HTML-in-Canvas demo showcase was</p>
     <h2 class="footer-headline">
       Built for people everywhere, by people at
-      <span class="endash-mark">En Dash</span>
+      <a
+        class="endash-mark"
+        href="https://endash.us"
+        target="_blank"
+        rel="noopener noreferrer"
+      >En Dash</a>
     </h2>
     <p class="footer-contribute">
       And&hellip; Your Name Here!
@@ -101,6 +106,22 @@ const GITHUB_REPO =
     -webkit-text-fill-color: transparent;
     background-clip: text;
     white-space: nowrap;
+    text-decoration: none;
+  }
+
+  .endash-mark:hover,
+  .endash-mark:focus-visible {
+    /* Underline appears via text-decoration on the gradient run; the
+       teal stop is the more brand-consistent of the two for the line
+       color. */
+    text-decoration: underline 2px solid var(--color-teal);
+    text-underline-offset: 4px;
+  }
+
+  .endash-mark:focus-visible {
+    outline: 2px solid var(--color-purple);
+    outline-offset: var(--focus-offset);
+    border-radius: 2px;
   }
 
   .footer-contribute {

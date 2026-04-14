@@ -13,9 +13,59 @@ const demos = await getCollection('demos');
 const allContexts = [...new Set(demos.map((d) => d.data.context))].sort();
 const allDifficulties = ['beginner', 'intermediate', 'advanced'] as const;
 const allTags = [...new Set(demos.flatMap((d) => d.data.tags))].sort();
+
+// JSON-LD: describe the gallery as a CollectionPage containing an
+// ItemList of TechArticle entries. Lets Google render the page as a
+// "list of" result and gives LLMs a structured index of every demo.
+const SITE_URL = 'https://html-in-canvas.dev';
+const galleryJsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'CollectionPage',
+      '@id': `${SITE_URL}/demos/#page`,
+      url: `${SITE_URL}/demos/`,
+      name: 'HTML-in-Canvas Demos',
+      description:
+        'A growing collection of interactive demos exploring the WICG HTML-in-Canvas specification.',
+      isPartOf: { '@id': `${SITE_URL}/#website` },
+      mainEntity: { '@id': `${SITE_URL}/demos/#list` },
+    },
+    {
+      '@type': 'ItemList',
+      '@id': `${SITE_URL}/demos/#list`,
+      numberOfItems: demos.length,
+      itemListElement: demos.map((d, idx) => ({
+        '@type': 'ListItem',
+        position: idx + 1,
+        url: `${SITE_URL}/demos/${d.id}/`,
+        name: d.data.title,
+        description: d.data.description,
+      })),
+    },
+    {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE_URL}/` },
+        { '@type': 'ListItem', position: 2, name: 'Demos', item: `${SITE_URL}/demos/` },
+      ],
+    },
+  ],
+};
 ---
 
-<BaseLayout title="Demos" description="Interactive HTML-in-Canvas demos showcasing the spec in action.">
+<BaseLayout
+  title="Demos"
+  description="Interactive HTML-in-Canvas demos showcasing the spec in action."
+  ogImage="/og-demos.png"
+>
+  <Fragment slot="head">
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify(galleryJsonLd)}
+    />
+  </Fragment>
   <div class="gallery-header">
     <h1>Demos</h1>
     <p>Interactive examples showcasing the HTML-in-Canvas specification.</p>
