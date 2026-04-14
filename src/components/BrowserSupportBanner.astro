@@ -7,8 +7,10 @@
  *  - Hidden when the API is detected (feature detection).
  *  - On demo pages (`/demos/{slug}/`): always visible, dismiss button hidden.
  *  - On other pages: dismissible — state persisted to localStorage.
- *  - Links to /docs/browser-support/ for setup instructions.
+ *  - Inlines a copy-flag-URL button so visitors can act without clicking
+ *    through; also links to /docs/browser-support/ for full setup notes.
  */
+import CopyFlagButton from './CopyFlagButton.astro';
 ---
 
 <div
@@ -38,15 +40,14 @@
     </svg>
 
     <p class="banner-message">
-      This site needs the
-      <code>canvas-draw-element</code>
-      flag — enabled in
-      <strong>Chrome Canary</strong>
-      or
-      <strong>Brave Stable</strong>
-      (Chromium 147+).
-      <a href="/docs/browser-support/">Setup instructions&nbsp;&rarr;</a>
+      This site needs the HTML-in-Canvas flag —
+      <strong>Chrome Canary</strong> or
+      <strong>Brave Stable</strong> (Chromium&nbsp;147+).
     </p>
+
+    <CopyFlagButton size="sm" />
+
+    <a class="banner-link" href="/docs/browser-support/">Full&nbsp;guide&nbsp;&rarr;</a>
 
     <button
       class="banner-dismiss"
@@ -154,9 +155,26 @@
     font-weight: 600;
   }
 
-  .banner-message a {
+  .banner-link {
+    flex-shrink: 0;
+    font-size: 0.85rem;
     font-weight: 600;
     white-space: nowrap;
+  }
+
+  /* The banner is wrapped in <p>-free DOM — stack content vertically on
+     narrow viewports so the message, copy button, and guide link don't
+     squeeze each other out. */
+  @media (max-width: 720px) {
+    .banner-inner {
+      flex-wrap: wrap;
+      gap: 0.5rem 0.75rem;
+    }
+
+    .banner-message {
+      flex-basis: 100%;
+      min-width: 0;
+    }
   }
 
   .banner-dismiss {

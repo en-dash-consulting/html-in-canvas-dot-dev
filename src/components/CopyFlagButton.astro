@@ -1,0 +1,188 @@
+---
+/**
+ * Copy-to-clipboard button for the HTML-in-Canvas flag URL.
+ *
+ * Chrome blocks direct navigation to `chrome://` URLs from web pages for
+ * security reasons, so linking isn't possible — copy-paste is the best
+ * we can do to get a visitor from "I see the prompt" to "flag is enabled".
+ *
+ * The button shows the URL as its visible label and swaps to a "Copied!"
+ * confirmation on success. Screen readers hear the confirmation via an
+ * `aria-live="polite"` status element.
+ */
+
+interface Props {
+  /** Flag URL to copy. Defaults to the HTML-in-Canvas flag. */
+  flag?: string;
+  /** Visual size. `sm` is for inline uses (e.g. inside the support banner). */
+  size?: 'sm' | 'md';
+}
+
+const {
+  flag = 'chrome://flags/#canvas-draw-element',
+  size = 'md',
+} = Astro.props;
+---
+
+<button
+  type="button"
+  class:list={['copy-flag', `copy-flag--${size}`]}
+  data-copy-flag={flag}
+  aria-label={`Copy ${flag} to clipboard`}
+>
+  <span class="copy-flag-icon copy-flag-icon--idle" aria-hidden="true">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </svg>
+  </span>
+  <span class="copy-flag-icon copy-flag-icon--done" aria-hidden="true">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  </span>
+  <code class="copy-flag-code">{flag}</code>
+  <span class="copy-flag-status" data-copy-flag-status aria-live="polite"></span>
+</button>
+
+<script>
+  function initCopyFlagButtons() {
+    const buttons = document.querySelectorAll<HTMLButtonElement>(
+      '.copy-flag:not([data-copy-bound])',
+    );
+    for (const btn of buttons) {
+      btn.dataset.copyBound = 'true';
+      btn.addEventListener('click', () => handleCopy(btn));
+    }
+  }
+
+  async function handleCopy(btn: HTMLButtonElement) {
+    const flag = btn.dataset.copyFlag;
+    const status = btn.querySelector<HTMLElement>('[data-copy-flag-status]');
+    if (!flag || !status) return;
+
+    try {
+      await navigator.clipboard.writeText(flag);
+      btn.dataset.copyState = 'done';
+      status.textContent = 'Copied!';
+    } catch {
+      // Clipboard API can fail in non-secure contexts or when the user
+      // denies permission. Surface the failure so the visitor can fall
+      // back to selecting the URL manually.
+      btn.dataset.copyState = 'error';
+      status.textContent = 'Copy failed — select and copy manually';
+      return;
+    }
+
+    // Revert after a moment so the button returns to an idle state and
+    // can be re-used. 2s is long enough to read the confirmation.
+    window.setTimeout(() => {
+      if (btn.dataset.copyState === 'done') {
+        delete btn.dataset.copyState;
+        status.textContent = '';
+      }
+    }, 2000);
+  }
+
+  initCopyFlagButtons();
+  document.addEventListener('astro:after-swap', initCopyFlagButtons);
+</script>
+
+<style>
+  .copy-flag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--text-primary);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition:
+      border-color 0.15s ease,
+      background-color 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .copy-flag:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .copy-flag:focus-visible {
+    outline: 2px solid var(--color-purple);
+    outline-offset: var(--focus-offset);
+  }
+
+  .copy-flag--sm {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.8rem;
+    gap: 0.375rem;
+  }
+
+  .copy-flag-code {
+    font-family: var(--font-mono, ui-monospace, SFMono-Regular, monospace);
+    font-size: 0.85em;
+    color: var(--accent-teal-text);
+    background: transparent;
+    padding: 0;
+  }
+
+  .copy-flag:hover .copy-flag-code {
+    color: inherit;
+  }
+
+  .copy-flag-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* Swap idle / done icons based on the button's copy state. */
+  .copy-flag-icon--done {
+    display: none;
+    color: var(--accent-teal-text);
+  }
+
+  .copy-flag[data-copy-state='done'] .copy-flag-icon--idle {
+    display: none;
+  }
+
+  .copy-flag[data-copy-state='done'] .copy-flag-icon--done {
+    display: inline-flex;
+  }
+
+  .copy-flag[data-copy-state='done'] {
+    border-color: var(--accent-teal-text);
+    color: var(--accent-teal-text);
+  }
+
+  .copy-flag[data-copy-state='done'] .copy-flag-code {
+    color: var(--accent-teal-text);
+  }
+
+  .copy-flag[data-copy-state='error'] {
+    border-color: var(--accent-orange-text);
+    color: var(--accent-orange-text);
+  }
+
+  /* Confirmation text rendered via aria-live; hidden visually for sighted
+     users (the icon swap already confirms the action). */
+  .copy-flag-status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+</style>
