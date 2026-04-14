@@ -217,6 +217,12 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
        the hero's content and doesn't bleed under the nav or
        following sections. */
     isolation: isolate;
+    /* The ::before gradient uses `inset: -10vw` to feel generous;
+       without `overflow-x: clip` here, the pseudo-element pushes
+       body scrollWidth past the viewport and produces a horizontal
+       scrollbar. `clip` clips the painted region without creating a
+       new scroll containing block. */
+    overflow-x: clip;
   }
 
   /* Soft brand-palette radial gradient painted behind the hero

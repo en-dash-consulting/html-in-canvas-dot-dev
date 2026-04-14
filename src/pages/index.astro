@@ -422,6 +422,13 @@ element.style.transform =
 
   .primitive-card {
     position: relative;
+    /* Grid items default to `min-width: auto`, which means they refuse
+       to shrink below their content's intrinsic min-width. The <pre>
+       code samples below have long lines that push the card past the
+       viewport at narrow breakpoints; overriding min-width to 0 lets
+       the grid collapse the card and lets `pre { overflow-x: auto }`
+       (from global.css) own the horizontal scroll. */
+    min-width: 0;
     padding: 1.5rem;
     background: var(--bg-surface);
     border: 1px solid var(--border-color);
@@ -463,6 +470,10 @@ element.style.transform =
     font-size: 0.78rem;
     line-height: 1.5;
     margin: 0;
+    /* Pair with the card's `min-width: 0` — makes the <pre> obey the
+       card's computed width and scroll horizontally inside itself
+       rather than forcing the card wider. */
+    max-width: 100%;
   }
 
   /* ===== Why ===== */
@@ -484,6 +495,10 @@ element.style.transform =
     background: var(--bg-surface);
     border: 1px solid var(--border-color);
     border-radius: 10px;
+    /* Grid child — let it shrink below its content's intrinsic
+       min-width (important for the <code>html2canvas</code>-ish
+       inline code tokens). */
+    min-width: 0;
   }
 
   .why-icon {

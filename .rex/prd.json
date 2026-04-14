@@ -781,7 +781,7 @@
         {
           "id": "51375a8f-4f67-4448-9e9a-1347d473ffa4",
           "title": "Visual punch-up: gradient, typography, one scroll dogfooding moment",
-          "status": "in_progress",
+          "status": "completed",
           "level": "feature",
           "description": "Bring more visual energy to the landing without abandoning En Dash branding.\n\n- Hero background: soft radial gradient using brand palette (blue #001769 → purple #6C41F0 → teal #00e5b9) at low opacity over `--bg-primary`. Dark-mode-first; lighter variant for light mode.\n- Headline typography: bump to `clamp(2.5rem, 7vw, 4.5rem)`, tighter line-height, stronger optical weight. Accent word uses existing `--accent-teal-text`.\n- Add ONE scroll-driven dogfooding moment further down the page on flag-on browsers — e.g., the three primitive cards subtly extrude with a shader via `drawElementImage`. Exactly one, to keep focus and avoid motion overload.\n\nRespect `prefers-reduced-motion`; preserve contrast ratios for WCAG 2.1 AA.",
           "acceptanceCriteria": [
@@ -801,12 +801,15 @@
           "blockedBy": [
             "f043a0dd-fb86-46ef-9aed-5f46b5086886"
           ],
-          "startedAt": "2026-04-14T20:15:08.072Z"
+          "startedAt": "2026-04-14T20:15:08.072Z",
+          "completedAt": "2026-04-14T20:38:32.004Z",
+          "resolutionType": "code-change",
+          "resolutionDetail": "Hero gradient (::before pseudo-element, low-alpha brand palette, dark/light variants), headline typography bumped to clamp(2.5rem, 7vw, 4.5rem) weight 800, and a single scroll-driven dogfooding moment where primitive cards are re-drawn via drawElementImage from a transient overlay canvas. All additive — no layout shift, no a11y regression (26/26 still passing), gated on flag-on + non-reduced-motion. 5 new specs + 55 total affected passing."
         },
         {
           "id": "025d1ded-8311-48f9-8a62-a4be6726656b",
           "title": "Responsive polish pass across full landing page",
-          "status": "pending",
+          "status": "in_progress",
           "level": "feature",
           "description": "Final QA/polish sweep of the landing page at 320 / 375 / 414 / 768 / 1024 / 1280.\n\n- Tighten section padding at mobile widths; primitives/why grids already collapse to 1 col but gaps need review.\n- Ensure code blocks inside primitive cards don't cause horizontal page scroll at 320px. `pre` already has overflow-x: auto in global styles, but need to confirm the CARD itself doesn't overflow (min-width on a flex/grid child can leak).\n- Test on an actual mobile viewport (real device or Safari-on-iPhone emulator), not just Chrome DevTools.\n- Verify hero, primitives, why, demos, getting-started all flow correctly at each breakpoint.\n\nDepends on the hero, nav, and visual punch-up features landing first so there's something to polish.",
           "acceptanceCriteria": [
@@ -827,7 +830,8 @@
             "f043a0dd-fb86-46ef-9aed-5f46b5086886",
             "eea56bd2-5b06-4c7d-8f19-811e8cfc9ec3",
             "51375a8f-4f67-4448-9e9a-1347d473ffa4"
-          ]
+          ],
+          "startedAt": "2026-04-14T20:40:12.108Z"
         }
       ]
     }
