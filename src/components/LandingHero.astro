@@ -68,9 +68,18 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
   <div class="hero-content">
     <p class="hero-eyebrow">WICG Specification</p>
 
-    <h1 class="hero-heading hero-heading--static">
-      Render HTML into Canvas<span class="hero-accent"> — natively</span>
-    </h1>
+    {/* Flag-off only: honest-preview ribbon telling visitors what
+        they're looking at and what they'd see with the flag on. */}
+    <p class="hero-preview-ribbon" aria-hidden="true">
+      <span class="hero-preview-dot"></span>
+      Preview mode — flip the flag for the live WebGL version
+    </p>
+
+    <div class="hero-heading-wrap">
+      <h1 class="hero-heading hero-heading--static">
+        Render HTML into Canvas<span class="hero-accent"> — natively</span>
+      </h1>
+    </div>
 
     <p class="hero-sub">
       The spec adds three primitives that draw fully-styled, accessible
@@ -715,6 +724,97 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
     margin: 0 0 1rem;
   }
 
+  /* Flag-off "preview mode" ribbon. Shown above the headline only
+     when the flag isn't supported — honest about what the visitor is
+     seeing and why it's a static fallback instead of the WebGL
+     stage. */
+  .hero-preview-ribbon {
+    display: none;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0 auto 1.25rem;
+    padding: 0.3rem 0.8rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--accent-orange-text);
+    background: var(--badge-orange-bg);
+    border: 1px solid var(--accent-orange-text);
+    border-radius: 999px;
+    width: fit-content;
+  }
+
+  .hero-preview-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-orange-text);
+    animation: hero-preview-pulse 1.8s ease-out infinite;
+  }
+
+  @keyframes hero-preview-pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(255, 89, 38, 0.55);
+    }
+    70% {
+      box-shadow: 0 0 0 8px rgba(255, 89, 38, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(255, 89, 38, 0);
+    }
+  }
+
+  /* Gentle pulsing gradient glow behind the flag-off headline — just
+     enough to hint "there's supposed to be something dynamic here"
+     without pretending to be the live shader. */
+  .hero-heading-wrap {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .hero-heading-wrap::before {
+    content: '';
+    position: absolute;
+    inset: -2rem -3rem;
+    z-index: -1;
+    background:
+      radial-gradient(
+        ellipse 60% 80% at 30% 40%,
+        rgba(108, 65, 240, 0.25),
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 50% 70% at 75% 50%,
+        rgba(0, 229, 185, 0.20),
+        transparent 70%
+      );
+    filter: blur(6px);
+    opacity: 0;
+    animation: hero-glow-pulse 5s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes hero-glow-pulse {
+    0%,
+    100% {
+      opacity: 0.45;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.75;
+      transform: scale(1.06);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-preview-dot {
+      animation: none;
+    }
+    .hero-heading-wrap::before {
+      animation: none;
+      opacity: 0.55;
+    }
+  }
+
   .hero-heading {
     font-size: clamp(2.5rem, 7vw, 4.5rem);
     font-weight: 800;
@@ -991,8 +1091,18 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
 
   /* Hide flag-off-only content when the flag is on. */
   :global([data-flag-supported='true']) .hero-setup,
-  :global([data-flag-supported='true']) .hero-chips {
+  :global([data-flag-supported='true']) .hero-chips,
+  :global([data-flag-supported='true']) .hero-preview-ribbon {
     display: none;
+  }
+
+  :global([data-flag-supported='true']) .hero-heading-wrap::before {
+    display: none;
+  }
+
+  /* Show the preview ribbon on flag-off. */
+  :global([data-flag-supported='false']) .hero-preview-ribbon {
+    display: inline-flex;
   }
 
   /* On flag-off, a clean, airy layout without the stage. */

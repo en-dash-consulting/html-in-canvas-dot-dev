@@ -168,6 +168,16 @@ test.describe('landing hero (flag-off, simulated non-Chromium)', () => {
     await expect(page.locator('.hero-live-badge')).toBeHidden();
   });
 
+  test('shows the "preview mode" ribbon to explain the fallback', async ({
+    page,
+  }) => {
+    await page.goto(HOME_URL, { waitUntil: 'networkidle' });
+    const ribbon = page.locator('.hero-preview-ribbon');
+    await expect(ribbon).toBeVisible();
+    await expect(ribbon).toContainText(/preview mode/i);
+    await expect(ribbon).toContainText(/flip the flag/i);
+  });
+
   test('static heading renders at full opacity / colour on flag-off', async ({
     page,
   }) => {
