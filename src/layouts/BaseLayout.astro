@@ -185,6 +185,33 @@ const websiteJsonLd = {
         );
       })();
     </script>
+
+    {/* Flag detection before first paint so CSS can pick the right
+        hero variant without a flash. Runs synchronously in <head>,
+        before body parsing, so the attribute is set when the browser
+        first evaluates CSS selectors for the page. Failure modes
+        (non-Chromium, flag off, older builds) all resolve to "false". */}
+    <script is:inline>
+      (function() {
+        try {
+          var proto = window.CanvasRenderingContext2D &&
+            window.CanvasRenderingContext2D.prototype;
+          var supported = !!proto && (
+            'drawElementImage' in proto ||
+            'drawElement' in proto
+          );
+          document.documentElement.setAttribute(
+            'data-flag-supported',
+            supported ? 'true' : 'false'
+          );
+        } catch (e) {
+          document.documentElement.setAttribute(
+            'data-flag-supported',
+            'false'
+          );
+        }
+      })();
+    </script>
   </head>
   <body>
     <Nav />

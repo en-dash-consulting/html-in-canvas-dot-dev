@@ -5,6 +5,7 @@
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
 import DemoCard from '../components/DemoCard.astro';
+import LandingHero from '../components/LandingHero.astro';
 import { getCollection } from 'astro:content';
 
 const demos = await getCollection('demos');
@@ -12,25 +13,7 @@ const WICG_REPO = 'https://github.com/WICG/html-in-canvas';
 ---
 
 <BaseLayout>
-  {/* ---------- Hero ---------- */}
-  <section class="hero" aria-label="Introduction">
-    <p class="hero-eyebrow">WICG Specification</p>
-    <h1 class="hero-heading">
-      Render HTML into Canvas<span class="hero-accent"> — natively</span>
-    </h1>
-    <p class="hero-sub">
-      The HTML-in-Canvas spec adds three primitives that let you draw
-      fully-styled, accessible HTML content straight into
-      <code>&lt;canvas&gt;</code> — no hacks, no libraries, no screenshots.
-    </p>
-    <div class="hero-actions">
-      <a href="/demos/" class="btn btn-primary">Explore Demos</a>
-      <a href={WICG_REPO} class="btn btn-secondary" target="_blank" rel="noopener noreferrer">
-        Read the Spec
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7" /><path d="M7 7h10v10" /></svg>
-      </a>
-    </div>
-  </section>
+  <LandingHero />
 
   {/* ---------- API Primitives ---------- */}
   <section class="primitives" aria-labelledby="primitives-heading">
@@ -195,47 +178,7 @@ element.style.transform =
 </BaseLayout>
 
 <style>
-  /* ===== Hero ===== */
-  .hero {
-    text-align: center;
-    padding: 4rem 0 3.5rem;
-    max-width: 48rem;
-    margin: 0 auto;
-  }
-
-  .hero-eyebrow {
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--accent-teal-text);
-    margin: 0 0 1rem;
-  }
-
-  .hero-heading {
-    font-size: clamp(2rem, 5vw, 3.25rem);
-    line-height: 1.15;
-    margin-bottom: 1.25rem;
-  }
-
-  .hero-accent {
-    color: var(--accent-teal-text);
-  }
-
-  .hero-sub {
-    font-size: 1.125rem;
-    line-height: 1.7;
-    color: var(--text-secondary);
-    max-width: 38rem;
-    margin: 0 auto 2rem;
-  }
-
-  .hero-actions {
-    display: flex;
-    gap: 0.875rem;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
+  /* Hero styles live in src/components/LandingHero.astro. */
 
   /* ===== Buttons ===== */
   .btn {
@@ -481,10 +424,6 @@ element.style.transform =
 
   /* ===== Responsive ===== */
   @media (max-width: 768px) {
-    .hero {
-      padding: 2.5rem 0 2rem;
-    }
-
     .primitives-grid {
       grid-template-columns: 1fr;
     }
@@ -495,19 +434,6 @@ element.style.transform =
   }
 
   @media (max-width: 640px) {
-    .hero-heading {
-      font-size: 1.75rem;
-    }
-
-    .hero-sub {
-      font-size: 1rem;
-    }
-
-    .hero-actions {
-      flex-direction: column;
-      align-items: stretch;
-    }
-
     .btn {
       justify-content: center;
     }

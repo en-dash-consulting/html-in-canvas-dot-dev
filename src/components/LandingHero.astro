@@ -1,0 +1,490 @@
+---
+/**
+ * Landing-page hero with two CSS-swapped variants driven by the
+ * `data-flag-supported` attribute that BaseLayout's pre-paint script
+ * sets on <html>.
+ *
+ *  - Flag ON: the headline is re-rendered via `drawElementImage` into
+ *    an overlay `<canvas layoutsubtree>`. Cursor position nudges the
+ *    draw offset so the text subtly tracks the pointer — dogfooding
+ *    the spec against its own headline. The static <h1> stays in the
+ *    DOM (visibility:hidden) so screen readers and search engines still
+ *    see a real heading.
+ *  - Flag OFF (default): no canvas overlay; visitors see a value-chip
+ *    row, the existing CTAs, and the shared FlagSetupSteps component so
+ *    they can enable the flag without leaving the page.
+ */
+import FlagSetupSteps from './FlagSetupSteps.astro';
+
+const WICG_REPO = 'https://github.com/WICG/html-in-canvas';
+
+// The `layoutsubtree` attribute isn't in Astro's typed HTML attribute
+// surface (it's a dev-trial addition to <canvas>). Spread it as an
+// untyped attrs object to keep typing clean without casting globals.
+const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
+---
+
+<section class="hero" aria-label="Introduction">
+  <p class="hero-eyebrow">WICG Specification</p>
+
+  {/* The static headline is the canonical a11y anchor — always in the
+      DOM, always in the a11y tree. On flag-on browsers it becomes
+      visually invisible (visibility:hidden) so the overlay canvas can
+      paint in its place without double-rendering. */}
+  <div class="hero-title-wrap">
+    <h1 class="hero-heading hero-heading--static">
+      Render HTML into Canvas<span class="hero-accent"> — natively</span>
+    </h1>
+
+    <canvas class="hero-heading-canvas" aria-hidden="true" {...canvasAttrs}>
+      <div class="hero-heading-canvas-content" aria-hidden="true" tabindex="-1">
+        Render HTML into Canvas<span class="hero-heading-canvas-accent"> — natively</span>
+      </div>
+    </canvas>
+
+    <span class="hero-live-badge" aria-hidden="true">
+      <span class="hero-live-dot"></span>
+      Live via <code>drawElementImage</code>
+    </span>
+  </div>
+
+  <p class="hero-sub">
+    The HTML-in-Canvas spec adds three primitives that let you draw
+    fully-styled, accessible HTML content straight into
+    <code>&lt;canvas&gt;</code> — no hacks, no libraries, no screenshots.
+  </p>
+
+  {/* Flag-off only: pithy context chips so visitors know the flag is
+      fast, safe, and dev-focused before they commit to the steps. */}
+  <ul class="hero-chips" aria-label="Requirements">
+    <li>Chrome Canary or Brave Stable</li>
+    <li>Flag is dev-only</li>
+    <li>No install</li>
+  </ul>
+
+  <div class="hero-actions">
+    <a href="/demos/" class="btn btn-primary">Explore Demos</a>
+    <a
+      href={WICG_REPO}
+      class="btn btn-secondary"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      Read the Spec
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7" /><path d="M7 7h10v10" /></svg>
+    </a>
+  </div>
+
+  {/* Flag-off only: the shared 3-step quick-start. The steps + copy
+      button ARE the primary enablement CTA — stacked below the
+      secondary CTAs so visitors aren't forced into a "just look
+      around" dead-end. */}
+  <div class="hero-setup">
+    <FlagSetupSteps headingLevel="h2" compact />
+  </div>
+</section>
+
+<script>
+  // drawElementImage / drawElement / requestPaint / onpaint aren't in
+  // TypeScript's DOM lib — the spec is still in the dev-trial phase.
+  // Declare the extensions inline rather than leaning on TS
+  // suppression comments.
+  type DrawElementFn = (el: Element, x: number, y: number) => void;
+  interface LayoutsubtreeCanvas extends HTMLCanvasElement {
+    requestPaint?: () => void;
+    onpaint: ((this: LayoutsubtreeCanvas, ev: Event) => void) | null;
+  }
+  interface DrawElementContext extends CanvasRenderingContext2D {
+    drawElementImage?: DrawElementFn;
+    drawElement?: DrawElementFn;
+  }
+
+  function initLandingHero() {
+    if (document.documentElement.dataset.flagSupported !== 'true') return;
+
+    const canvas = document.querySelector<LayoutsubtreeCanvas>(
+      '.hero-heading-canvas',
+    );
+    const staticHeading = document.querySelector<HTMLElement>(
+      '.hero-heading--static',
+    );
+    const content = canvas?.querySelector<HTMLElement>(
+      '.hero-heading-canvas-content',
+    );
+    if (!canvas || !staticHeading || !content) return;
+
+    const ctx = canvas.getContext('2d') as DrawElementContext | null;
+    if (!ctx) return;
+
+    // Chrome exposes both the old `drawElement` and the spec-current
+    // `drawElementImage` during the dev trial. Prefer the spec name;
+    // fall back so the hero keeps working on older builds.
+    const draw: DrawElementFn | undefined =
+      ctx.drawElementImage?.bind(ctx) ?? ctx.drawElement?.bind(ctx);
+    if (!draw) return;
+
+    const reduceMotion = matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches;
+
+    let targetX = 0.5;
+    let targetY = 0.5;
+    let currentX = 0.5;
+    let currentY = 0.5;
+    let rafId = 0;
+
+    function sizeCanvas() {
+      // Chrome's layoutsubtree uses canvas.width/height as the layout
+      // viewport for children, so the bitmap is sized 1:1 with the
+      // CSS box. (See project_layoutsubtree_bitmap_layout — scaling
+      // by devicePixelRatio would break child layout.)
+      const rect = staticHeading!.getBoundingClientRect();
+      canvas!.width = Math.max(1, Math.round(rect.width));
+      canvas!.height = Math.max(1, Math.round(rect.height));
+      canvas!.requestPaint?.();
+    }
+
+    canvas.onpaint = () => {
+      const w = canvas.width;
+      const h = canvas.height;
+
+      // Smoothly chase the target so motion feels damped rather than
+      // jittery. On reduced-motion, target == current so there's no
+      // perceived animation.
+      currentX += (targetX - currentX) * 0.1;
+      currentY += (targetY - currentY) * 0.1;
+
+      ctx.reset();
+      ctx.clearRect(0, 0, w, h);
+
+      // Subtle cursor-driven offset — a few pixels either direction,
+      // not enough to feel unstable, enough to be visibly alive.
+      const dx = (currentX - 0.5) * 12;
+      const dy = (currentY - 0.5) * 6;
+
+      draw!(content!, dx, dy);
+    };
+
+    sizeCanvas();
+
+    const ro = new ResizeObserver(sizeCanvas);
+    ro.observe(staticHeading);
+
+    if (!reduceMotion) {
+      window.addEventListener('pointermove', (e) => {
+        const rect = staticHeading!.getBoundingClientRect();
+        targetX = Math.max(
+          0,
+          Math.min(1, (e.clientX - rect.left) / rect.width),
+        );
+        targetY = Math.max(
+          0,
+          Math.min(1, (e.clientY - rect.top) / rect.height),
+        );
+      });
+
+      const loop = () => {
+        canvas.requestPaint?.();
+        rafId = requestAnimationFrame(loop);
+      };
+      rafId = requestAnimationFrame(loop);
+    }
+
+    // Clean up when Astro swaps pages so we don't leak RAF loops or
+    // observers between routes.
+    document.addEventListener(
+      'astro:before-swap',
+      () => {
+        if (rafId) cancelAnimationFrame(rafId);
+        ro.disconnect();
+      },
+      { once: true },
+    );
+  }
+
+  initLandingHero();
+  document.addEventListener('astro:after-swap', initLandingHero);
+</script>
+
+<style>
+  .hero {
+    text-align: center;
+    padding: 4rem 0 3.5rem;
+    max-width: 48rem;
+    margin: 0 auto;
+  }
+
+  .hero-eyebrow {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent-teal-text);
+    margin: 0 0 1rem;
+  }
+
+  /* ===== Headline + canvas overlay ===== */
+  .hero-title-wrap {
+    position: relative;
+    display: inline-block;
+    /* Contain the absolutely-positioned canvas and badge. */
+  }
+
+  .hero-heading {
+    font-size: clamp(2rem, 5vw, 3.25rem);
+    line-height: 1.15;
+    margin: 0 0 1.25rem;
+  }
+
+  .hero-accent {
+    color: var(--accent-teal-text);
+  }
+
+  .hero-heading-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: calc(100% - 1.25rem); /* match heading's bottom margin offset */
+    display: none;
+    pointer-events: none;
+  }
+
+  /* Canvas child: styled identically to the heading so drawElementImage
+     produces pixels that line up exactly on top of the hidden static
+     heading. Positioned at the canvas's layoutsubtree origin. */
+  .hero-heading-canvas-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    font-family: var(--font-heading);
+    font-size: clamp(2rem, 5vw, 3.25rem);
+    font-weight: 700;
+    line-height: 1.15;
+    margin: 0;
+    color: var(--text-primary);
+    text-align: center;
+  }
+
+  .hero-heading-canvas-accent {
+    color: var(--accent-teal-text);
+  }
+
+  .hero-live-badge {
+    display: none;
+    align-items: center;
+    gap: 0.4rem;
+    position: absolute;
+    top: -0.5rem;
+    right: 0;
+    transform: translate(40%, -100%);
+    padding: 0.2rem 0.55rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--accent-teal-text);
+    background: rgba(0, 229, 185, 0.08);
+    border: 1px solid rgba(0, 229, 185, 0.35);
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .hero-live-badge code {
+    font-size: 0.85em;
+    padding: 0;
+    background: none;
+    color: inherit;
+  }
+
+  .hero-live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-teal-text);
+    box-shadow: 0 0 0 0 rgba(0, 229, 185, 0.6);
+    animation: hero-live-pulse 1.8s ease-out infinite;
+  }
+
+  @keyframes hero-live-pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(0, 229, 185, 0.55);
+    }
+    70% {
+      box-shadow: 0 0 0 6px rgba(0, 229, 185, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(0, 229, 185, 0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-live-dot {
+      animation: none;
+    }
+  }
+
+  /* ===== Subhead ===== */
+  .hero-sub {
+    font-size: 1.125rem;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    max-width: 38rem;
+    margin: 0 auto 2rem;
+  }
+
+  /* ===== Chips (flag-off only) ===== */
+  .hero-chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.5rem;
+  }
+
+  .hero-chips li {
+    padding: 0.3rem 0.7rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+  }
+
+  /* ===== Actions ===== */
+  .hero-actions {
+    display: flex;
+    gap: 0.875rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.625rem 1.25rem;
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 8px;
+    text-decoration: none;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease,
+      border-color 0.15s ease,
+      transform 0.1s ease;
+  }
+
+  .btn:hover {
+    text-decoration: none;
+    transform: translateY(-1px);
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--color-white);
+  }
+
+  .btn-primary:hover {
+    background: var(--accent-hover);
+    color: var(--color-white);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* ===== Setup steps container (flag-off only) ===== */
+  .hero-setup {
+    max-width: 32rem;
+    margin: 1rem auto 0;
+    text-align: left;
+  }
+
+  /* ===== Flag-state swap =====
+     `data-flag-supported` lives on <html>, which sits outside this
+     component's scope. Astro's default scoping would rewrite
+     `[data-flag-supported='true']` to require the component's cid,
+     making it unmatchable — wrap the ancestor in `:global()` so
+     Astro leaves that compound alone. The descendant (the element
+     inside the component) still gets auto-scoped. */
+
+  /* Default = flag-OFF behaviour. Safe fallback if the inline
+     detector never ran. */
+  .hero-heading-canvas,
+  .hero-live-badge {
+    display: none;
+  }
+
+  /* Keep the static <h1> in the a11y tree (so screen readers and
+     search engines still see a real heading) but paint no visible
+     pixels — the overlay canvas provides the actual visual output.
+     visibility:hidden / display:none would remove it from the a11y
+     tree, and opacity:0 collapses the subtree on Chrome; transparent
+     text keeps every tree intact. */
+  :global([data-flag-supported='true']) .hero-heading--static,
+  :global([data-flag-supported='true']) .hero-heading--static .hero-accent {
+    color: transparent;
+  }
+
+  :global([data-flag-supported='true']) .hero-heading-canvas {
+    display: block;
+  }
+
+  :global([data-flag-supported='true']) .hero-live-badge {
+    display: inline-flex;
+  }
+
+  :global([data-flag-supported='true']) .hero-chips,
+  :global([data-flag-supported='true']) .hero-setup {
+    display: none;
+  }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 768px) {
+    .hero {
+      padding: 2.5rem 0 2rem;
+    }
+
+    .hero-live-badge {
+      transform: translate(0, -100%);
+      right: auto;
+      left: 50%;
+      margin-left: -3.5rem;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .hero-heading {
+      font-size: 1.75rem;
+    }
+
+    .hero-heading-canvas-content {
+      font-size: 1.75rem;
+    }
+
+    .hero-sub {
+      font-size: 1rem;
+    }
+
+    .hero-actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .btn {
+      justify-content: center;
+    }
+  }
+</style>

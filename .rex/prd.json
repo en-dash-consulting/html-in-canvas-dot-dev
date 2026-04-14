@@ -698,7 +698,7 @@
         {
           "id": "df512b69-2162-4f8d-b9c3-e9be14bbc85d",
           "title": "Flag-enablement UX: copy-flag-URL + inline mini-guide",
-          "status": "in_progress",
+          "status": "completed",
           "level": "feature",
           "description": "Improve the path from \"I see the prompt\" to \"flag is enabled.\" Chrome blocks direct navigation to `chrome://` URLs, so the best we can do is a one-click \"Copy `chrome://flags/#canvas-draw-element`\" button. Also surface a 3-step inline mini-guide on the landing-page flag-off fallback, not just buried in /docs/browser-support/.\n\nApply the copy-button enhancement to the existing BrowserSupportBanner too so the fix lands everywhere the user encounters the flag prompt. These are the reusable primitives that the flag-off hero (separate feature) depends on.",
           "acceptanceCriteria": [
@@ -715,12 +715,15 @@
             "banner"
           ],
           "source": "User request, 2026-04-14",
-          "startedAt": "2026-04-14T17:24:52.063Z"
+          "startedAt": "2026-04-14T17:24:52.063Z",
+          "completedAt": "2026-04-14T18:24:46.963Z",
+          "resolutionType": "code-change",
+          "resolutionDetail": "New CopyFlagButton + FlagSetupSteps components; integrated into BrowserSupportBanner and /docs/browser-support/. Astro check clean, new Playwright spec 4/4 green, a11y audit still 26/26."
         },
         {
           "id": "f043a0dd-fb86-46ef-9aed-5f46b5086886",
           "title": "Flag-aware hero with live dogfooding showpiece",
-          "status": "pending",
+          "status": "in_progress",
           "level": "feature",
           "description": "Replace the current centered text hero with a two-variant hero driven by a pre-paint feature-detect. Inline script sets `document.documentElement.dataset.flagSupported = 'true' | 'false'` (same no-flash pattern as `data-theme`). CSS swaps between `.hero-live` and `.hero-fallback` with no layout shift or JS-visible transition.\n\nFlag ON variant: Large typographic headline rendered via `<canvas layoutsubtree>` + `drawElementImage` with a WebGL effect — cursor-following liquid-glass distortion or subtle shader shimmer on the accent word. Can reuse techniques from the existing `liquid-glass` / `css-to-shader` demos. Small teal micro-badge: \"You're seeing this render live.\" Keep existing CTAs (Explore Demos / Read the Spec).\n\nFlag OFF variant: Same static headline, plus an autoplaying muted video loop (or APNG) of what the live version looks like, overlaid with a ribbon: \"This is a recording. Enable one flag to make it live in your browser.\" Prominent primary CTA \"Enable the flag (30 seconds)\" using the copy-flag-URL + mini-guide primitives from the Flag-enablement UX feature. Value chip row below CTAs: \"Chrome Canary or Brave Stable · Flag is dev-only · No install\".",
           "acceptanceCriteria": [
@@ -741,7 +744,8 @@
           "source": "User request, 2026-04-14",
           "blockedBy": [
             "df512b69-2162-4f8d-b9c3-e9be14bbc85d"
-          ]
+          ],
+          "startedAt": "2026-04-14T18:27:12.406Z"
         },
         {
           "id": "eea56bd2-5b06-4c7d-8f19-811e8cfc9ec3",
