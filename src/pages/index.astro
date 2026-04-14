@@ -10,6 +10,9 @@ import { getCollection } from 'astro:content';
 
 const demos = await getCollection('demos');
 const WICG_REPO = 'https://github.com/WICG/html-in-canvas';
+
+// `layoutsubtree` isn't in Astro's typed HTML attribute surface.
+const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
 ---
 
 <BaseLayout>
@@ -24,7 +27,7 @@ const WICG_REPO = 'https://github.com/WICG/html-in-canvas';
     </p>
 
     <div class="primitives-grid">
-      <div class="primitive-card">
+      <div class="primitive-card" data-primitive="layoutsubtree">
         <span class="primitive-number">1</span>
         <h3><code>layoutsubtree</code></h3>
         <p>
@@ -38,9 +41,17 @@ const WICG_REPO = 'https://github.com/WICG/html-in-canvas';
     ready to draw.
   &lt;/div&gt;
 &lt;/canvas&gt;</code></pre>
+        <div class="primitive-demo" aria-hidden="true">
+          <canvas
+            class="primitive-demo-canvas"
+            data-primitive-canvas="layoutsubtree"
+            {...canvasAttrs}
+          ><span class="primitive-demo-content" data-demo-target>Laid out. Drawn.</span></canvas>
+          <span class="primitive-demo-caption">Live <code>layoutsubtree</code> — the span is laid out inside the canvas and painted via <code>drawElementImage</code></span>
+        </div>
       </div>
 
-      <div class="primitive-card">
+      <div class="primitive-card" data-primitive="drawElementImage">
         <span class="primitive-number">2</span>
         <h3><code>drawElementImage()</code></h3>
         <p>
@@ -53,9 +64,17 @@ const WICG_REPO = 'https://github.com/WICG/html-in-canvas';
 // Sync DOM position
 element.style.transform =
   t.toString();`} /></pre>
+        <div class="primitive-demo" aria-hidden="true">
+          <canvas
+            class="primitive-demo-canvas"
+            data-primitive-canvas="drawElementImage"
+            {...canvasAttrs}
+          ><span class="primitive-demo-content primitive-demo-content--gradient" data-demo-target>drawElement</span></canvas>
+          <span class="primitive-demo-caption">One DOM element, drawn in a slow-rotating ring</span>
+        </div>
       </div>
 
-      <div class="primitive-card">
+      <div class="primitive-card" data-primitive="paint">
         <span class="primitive-number">3</span>
         <h3><code>paint</code> event</h3>
         <p>
@@ -68,6 +87,18 @@ element.style.transform =
     ctx.drawElementImage(el, 0, 0);
   }
 };`} /></pre>
+        <div class="primitive-demo" aria-hidden="true">
+          <canvas
+            class="primitive-demo-canvas"
+            data-primitive-canvas="paint"
+            {...canvasAttrs}
+          ><span
+              class="primitive-demo-content primitive-demo-content--pulse"
+              data-demo-target
+              data-demo-counter
+            >Painted 0 times</span></canvas>
+          <span class="primitive-demo-caption">The span's text is updated every paint event → triggers the next paint → counter climbs</span>
+        </div>
       </div>
     </div>
   </section>
@@ -179,12 +210,19 @@ element.style.transform =
 
 <script>
   /**
-   * One scroll-driven dogfooding moment: when the primitives grid
-   * enters the viewport on a flag-on, non-reduced-motion browser,
-   * each card's content is re-drawn via `drawElementImage` from a
-   * transient overlay canvas, animating a small vertical "settle"
-   * plus alpha fade. Runs exactly once per page load — observer is
-   * disconnected after the first intersection.
+   * Primitive-card live mini-demos: each card's embedded canvas runs
+   * a small continuous demonstration of the primitive that card
+   * describes. Canvases pause when scrolled out of viewport to stay
+   * gentle on CPU.
+   *
+   * - `layoutsubtree`: the child span is laid out inside the canvas
+   *   and drawn once per paint — the simplest honest demo of what
+   *   the attribute does.
+   * - `drawElementImage`: the same child is drawn in a ring that
+   *   rotates slowly over time.
+   * - `paint`: the child's text is updated inside onpaint itself,
+   *   which invalidates the paint record and self-triggers the
+   *   next paint. The counter climbs at monitor refresh rate.
    */
   type DrawElementFn = (el: Element, x: number, y: number) => void;
   interface DrawElementContext extends CanvasRenderingContext2D {
@@ -329,6 +367,159 @@ element.style.transform =
 
   initPrimitivesDogfooding();
   document.addEventListener('astro:after-swap', initPrimitivesDogfooding);
+
+  /**
+   * Live mini-demos inside each primitive card. See top of this
+   * <script> block for a description of each demo.
+   */
+  function initPrimitiveMiniDemos() {
+    if (document.documentElement.dataset.flagSupported !== 'true') return;
+
+    const reduceMotion = matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches;
+
+    const canvases = document.querySelectorAll<LayoutsubtreeCanvas>(
+      '[data-primitive-canvas]',
+    );
+    canvases.forEach((canvas) => wireDemo(canvas, reduceMotion));
+  }
+
+  function wireDemo(
+    canvas: LayoutsubtreeCanvas,
+    reduceMotion: boolean,
+  ): void {
+    const kind = canvas.dataset.primitiveCanvas;
+    const target = canvas.querySelector<HTMLElement>('[data-demo-target]');
+    if (!target) return;
+
+    const ctx = canvas.getContext('2d') as DrawElementContext | null;
+    if (!ctx) return;
+    const draw: DrawElementFn | undefined =
+      ctx.drawElementImage?.bind(ctx) ?? ctx.drawElement?.bind(ctx);
+    if (!draw) return;
+
+    let active = false;
+    let paintCount = 0;
+    let startTime = performance.now();
+
+    function syncSize() {
+      const rect = canvas.getBoundingClientRect();
+      const w = Math.max(1, Math.round(rect.width));
+      const h = Math.max(1, Math.round(rect.height));
+      if (canvas.width !== w) canvas.width = w;
+      if (canvas.height !== h) canvas.height = h;
+    }
+
+    canvas.onpaint = () => {
+      syncSize();
+      const w = canvas.width;
+      const h = canvas.height;
+
+      try {
+        if (kind === 'layoutsubtree') {
+          // Static draw — one call, centered. The point is just "it
+          // renders, as HTML, in a canvas."
+          ctx!.clearRect(0, 0, w, h);
+          const tRect = target!.getBoundingClientRect();
+          draw!(target!, (w - tRect.width) / 2, (h - tRect.height) / 2);
+        } else if (kind === 'drawElementImage') {
+          // Ring of copies at varied transforms. The entire effect
+          // uses exactly one drawElementImage call per copy.
+          const time = reduceMotion
+            ? 0
+            : (performance.now() - startTime) / 1000;
+          const copies = 8;
+          const radius = Math.min(w, h) * 0.3;
+          const cx = w / 2;
+          const cy = h / 2;
+          const tRect = target!.getBoundingClientRect();
+          const halfW = tRect.width / 2;
+          const halfH = tRect.height / 2;
+          ctx!.reset();
+          ctx!.clearRect(0, 0, w, h);
+          for (let i = 0; i < copies; i++) {
+            const t = i / copies;
+            const angle = time * 0.5 + t * Math.PI * 2;
+            const depth = (Math.sin(angle) + 1) / 2;
+            const scale = 0.45 + depth * 0.55;
+            const px = cx + Math.cos(angle) * radius;
+            const py = cy + Math.sin(angle) * radius * 0.45;
+            ctx!.save();
+            ctx!.translate(px, py);
+            ctx!.scale(scale, scale);
+            ctx!.globalAlpha = 0.35 + depth * 0.65;
+            draw!(target!, -halfW, -halfH);
+            ctx!.restore();
+          }
+        } else if (kind === 'paint') {
+          // Mutating the target's text inside onpaint self-triggers
+          // the next paint. Counter climbs at display refresh.
+          paintCount++;
+          target!.textContent = `Painted ${paintCount.toLocaleString()} times`;
+          ctx!.clearRect(0, 0, w, h);
+          const tRect = target!.getBoundingClientRect();
+          draw!(target!, (w - tRect.width) / 2, (h - tRect.height) / 2);
+        }
+      } catch {
+        // Paint records aren't ready yet on first tick in some
+        // cases. Next requestPaint will succeed.
+      }
+    };
+
+    /* Pause + resume via IntersectionObserver — continuous repaint
+       when the card is offscreen is wasted CPU. */
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            if (active) continue;
+            active = true;
+            startTime = performance.now();
+            tick();
+          } else {
+            active = false;
+          }
+        }
+      },
+      { threshold: 0.05 },
+    );
+    io.observe(canvas);
+
+    function tick() {
+      if (!active) return;
+      canvas.requestPaint?.();
+      if (kind === 'drawElementImage' && !reduceMotion) {
+        requestAnimationFrame(tick);
+      }
+      // `paint` is self-triggering via the text mutation inside
+      // onpaint, so we don't need to rAF it here.
+      // `layoutsubtree` is a static draw, so a single paint per
+      // intersect is enough until the viewport resizes.
+    }
+
+    /* One initial paint for the static (layoutsubtree) and
+       self-looping (paint) demos. */
+    canvas.requestPaint?.();
+
+    const ro = new ResizeObserver(() => {
+      canvas.requestPaint?.();
+    });
+    ro.observe(canvas);
+
+    document.addEventListener(
+      'astro:before-swap',
+      () => {
+        io.disconnect();
+        ro.disconnect();
+        active = false;
+      },
+      { once: true },
+    );
+  }
+
+  initPrimitiveMiniDemos();
+  document.addEventListener('astro:after-swap', initPrimitiveMiniDemos);
 </script>
 
 <style>
@@ -469,11 +660,90 @@ element.style.transform =
   .primitive-card pre {
     font-size: 0.78rem;
     line-height: 1.5;
-    margin: 0;
+    margin: 0 0 1rem;
     /* Pair with the card's `min-width: 0` — makes the <pre> obey the
        card's computed width and scroll horizontally inside itself
        rather than forcing the card wider. */
     max-width: 100%;
+  }
+
+  /* ===== Primitive live mini-demos ===== */
+  .primitive-demo {
+    display: none; /* shown only when flag is supported */
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background:
+      radial-gradient(
+        ellipse 60% 80% at 30% 30%,
+        rgba(108, 65, 240, 0.18),
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 60% 80% at 80% 70%,
+        rgba(0, 229, 185, 0.12),
+        transparent 70%
+      ),
+      var(--bg-primary);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+  }
+
+  :global([data-flag-supported='true']) .primitive-demo {
+    display: block;
+  }
+
+  .primitive-demo-canvas {
+    display: block;
+    width: 100%;
+    height: 110px;
+    max-width: 100%;
+  }
+
+  /* Canvas child — the "source" element that gets drawn. It's laid
+     out but kept out of the visible page flow (layoutsubtree hides
+     it visually; in flag-off browsers the .primitive-demo wrapper
+     is hidden entirely anyway). */
+  .primitive-demo-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    padding: 0.35rem 0.7rem;
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--color-white);
+    background: var(--accent);
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+
+  .primitive-demo-content--gradient {
+    background: linear-gradient(
+      135deg,
+      var(--color-purple) 0%,
+      var(--color-pink) 60%,
+      var(--color-teal) 100%
+    );
+  }
+
+  .primitive-demo-content--pulse {
+    background: var(--accent-teal-text);
+    color: var(--color-black);
+  }
+
+  .primitive-demo-caption {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  .primitive-demo-caption code {
+    font-size: 0.85em;
+    padding: 0.05em 0.25em;
+    background: var(--bg-elevated);
+    border-radius: 3px;
   }
 
   /* ===== Why ===== */
