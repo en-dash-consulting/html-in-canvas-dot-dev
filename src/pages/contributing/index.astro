@@ -319,6 +319,15 @@ git push origin my-branch
     margin-bottom: 0.5rem;
   }
 
+  /* Links in body copy use underlines so they're distinguishable
+     without relying on color alone. */
+  .contributing p a,
+  .contributing li a {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-thickness: 1px;
+  }
+
   .lead {
     font-size: 1.1rem;
     color: var(--text-secondary);
@@ -403,8 +412,8 @@ git push origin my-branch
 
   .field-table td:nth-child(2) {
     text-align: center;
-    color: var(--color-green);
-    font-weight: 600;
+    color: var(--accent-green-text);
+    font-weight: 700;
     font-size: 0.8rem;
   }
 

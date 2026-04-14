@@ -42,32 +42,55 @@
   --bg-surface: #1e1e2e;
   --bg-elevated: #282840;
   --text-primary: #f0f0f0;
-  --text-secondary: #a0a0b8;
-  --text-muted: #6a6a80;
-  --border-color: #2a2a40;
-  --border-subtle: #1e1e30;
+  --text-secondary: #c8c8dc;
+  --text-muted: #a8a8c0;
+  --border-color: #3a3a56;
+  --border-subtle: #2a2a40;
   --accent: var(--color-purple);
   --accent-hover: #8562ff;
   --link: var(--color-teal);
   --link-hover: #33ffe0;
+  /* Accent hues paired with body-level backgrounds. On dark these
+     match the raw palette; on light they shift darker to meet AA. */
+  --accent-teal-text: var(--color-teal);
+  --accent-purple-text: #9a7cff;
+  --accent-orange-text: var(--color-orange);
+  --accent-green-text: var(--color-green);
+  --accent-pink-text: #f0639a;
+  /* Solid badge backgrounds that contrast with --accent-*-text above. */
+  --badge-teal-bg: #0b3d36;
+  --badge-purple-bg: #2b1a5c;
+  --badge-orange-bg: #4a1e10;
+  --badge-green-bg: #0c3e2c;
+  --badge-pink-bg: #4a1527;
   color-scheme: dark;
 }
 
 /* --- Light mode --- */
 [data-theme='light'] {
   --bg-primary: #ffffff;
-  --bg-secondary: #f8f8fc;
-  --bg-surface: #f0f0f6;
-  --bg-elevated: #e8e8f0;
-  --text-primary: #1a1a2e;
-  --text-secondary: #4a4a60;
-  --text-muted: #8a8aa0;
-  --border-color: #d8d8e8;
-  --border-subtle: #e8e8f0;
+  --bg-secondary: #f4f4fa;
+  --bg-surface: #ebebf2;
+  --bg-elevated: #dcdce6;
+  --text-primary: #14142a;
+  --text-secondary: #3a3a52;
+  --text-muted: #5a5a70;
+  --border-color: #b8b8cc;
+  --border-subtle: #d8d8e4;
   --accent: var(--color-purple);
   --accent-hover: #5830d0;
   --link: var(--color-blue);
   --link-hover: var(--color-purple);
+  --accent-teal-text: #006a58;
+  --accent-purple-text: #4f28c0;
+  --accent-orange-text: #b43e19;
+  --accent-green-text: #007a53;
+  --accent-pink-text: #a01f4c;
+  --badge-teal-bg: #d4f5ed;
+  --badge-purple-bg: #e5deff;
+  --badge-orange-bg: #fce2d6;
+  --badge-green-bg: #d4efe1;
+  --badge-pink-bg: #fbdce5;
   color-scheme: light;
 }
 
@@ -163,6 +186,15 @@ pre {
 pre code {
   background: none;
   padding: 0;
+}
+
+/* Shiki's github-dark theme ships #6A737D for comment tokens, which
+   only hits ~3:1 contrast on the theme's #24292e code-block
+   background — below WCAG 2.1 AA. Shiki emits the color as an inline
+   style on each token span, so we override with !important. The
+   replacement color keeps the dimmed/comment feel but meets AA. */
+pre code span[style*="#6A737D" i] {
+  color: #a8b3c0 !important;
 }
 
 /* --- Utility --- */

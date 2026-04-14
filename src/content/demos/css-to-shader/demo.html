@@ -41,7 +41,7 @@
       .page-subtitle {
         text-align: center;
         font-size: 0.8rem;
-        color: #6a6a80;
+        color: #b0b0c8;
         margin-bottom: 1rem;
       }
 
@@ -112,7 +112,7 @@
         font-size: 0.7rem;
         font-family: "JetBrains Mono", monospace;
         font-weight: 600;
-        color: #6a6a80;
+        color: #b0b0c8;
         background: transparent;
         border: none;
         border-bottom: 2px solid transparent;
@@ -211,7 +211,7 @@
       .preset-btn.active {
         background: #6c41f0;
         color: #fff;
-        border-color: #6c41f0;
+        border-color: #9a7cff;
       }
 
       /* ============================================================
@@ -305,13 +305,19 @@
         </div>
         <div class="panel-body">
           <div class="editor-area active" data-editor="css">
-            <textarea id="css-editor" spellcheck="false" autocomplete="off"></textarea>
+            <textarea
+              id="css-editor"
+              spellcheck="false"
+              autocomplete="off"
+              aria-label="CSS source code — edit to see the shader update"
+            ></textarea>
           </div>
           <div class="editor-area" data-editor="glsl">
             <textarea
               id="glsl-editor"
               spellcheck="false"
               autocomplete="off"
+              aria-label="GLSL fragment shader source code — edit to see the shader update"
             ></textarea>
           </div>
         </div>
@@ -326,7 +332,11 @@
           <span id="fps-counter" style="color: #00e5b9">-- fps</span>
         </div>
         <div class="panel-body preview-canvas-wrap">
-          <canvas id="preview-canvas"></canvas>
+          <canvas
+            id="preview-canvas"
+            role="img"
+            aria-label="Live GLSL shader preview — renders the HTML-in-canvas source through the active shader"
+          ></canvas>
         </div>
       </div>
 
@@ -340,7 +350,7 @@
           style="
             padding: 0.6rem 0.75rem;
             font-size: 0.72rem;
-            color: #6a6a80;
+            color: #b0b0c8;
             line-height: 1.5;
             overflow-y: auto;
           "
@@ -349,7 +359,7 @@
             <strong style="color: #8a8aaf">1.</strong>
             <span style="color: #00e5b9">CSS</span> styles an HTML element
             living inside a
-            <code style="color: #6c41f0">&lt;canvas layoutsubtree&gt;</code>
+            <code style="color: #9a7cff">&lt;canvas layoutsubtree&gt;</code>
           </p>
           <p style="margin-bottom: 0.4rem">
             <strong style="color: #8a8aaf">2.</strong>
@@ -365,7 +375,7 @@
             <span style="color: #00e5b9">fragment shader</span> processes every
             pixel in real-time
           </p>
-          <p style="color: #555; font-size: 0.65rem; margin-top: 0.3rem">
+          <p style="color: #b0b0c8; font-size: 0.65rem; margin-top: 0.3rem">
             This pipeline is impossible without HTML-in-Canvas — previously you
             needed html2canvas or dom-to-image, which are slow, lossy, and
             cannot keep up with 60 fps.

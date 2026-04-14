@@ -7,7 +7,13 @@ order: 5
 
 _Auto-synced from [`WICG/html-in-canvas` issues](https://github.com/WICG/html-in-canvas/issues) on 2026-04-14 via `scripts/sync-spec-docs.mjs`._
 
-There are currently **15** open issues on the spec repository. Each heading below links to the upstream discussion — follow the link to read the full thread and leave a comment.
+There are currently **16** open issues on the spec repository. Each heading below links to the upstream discussion — follow the link to read the full thread and leave a comment.
+
+## [#112: 3D Room Live Content have an error](https://github.com/WICG/html-in-canvas/issues/112)
+
+**Author:** [@ramistodev](https://github.com/ramistodev)
+
+Hello, I am interested on this new HTML feature, and I want to try it for my self, but this site have a bug: [https://html-in-canvas.dev/demos/3d-room-live-content/demo.html](https://html-in-canvas.dev/demos/3d-room-live-content/demo.html) I can see the error in the developments tools, in the console appears this:
 
 ## [#107: CSS-in-Canvas: Flexbox layout of canvas renderables](https://github.com/WICG/html-in-canvas/issues/107)
 
@@ -25,7 +31,7 @@ If I call `requestPaint()` on an offscreen canvas, the `changedElements` on the 
 
 **Author:** [@jakearchibald](https://github.com/jakearchibald)
 
-From the demo: ```js onmessage = ({data}) => {
+From the demo: …it looks like `changedElements` should be a map.
 
 ## [#94: Hit testing and layer ordering](https://github.com/WICG/html-in-canvas/issues/94)
 
@@ -49,19 +55,19 @@ When granular invalidation is used to only re-draw the parts of the canvas that 
 
 **Author:** [@Kaiido](https://github.com/Kaiido)
 
-There is already a section about privacy, which focuses on the new read-back capabilities. However, the `onpaint` event also brings new fingerprinting vectors, even without readback, for instance it is now possible to determine the rate of the cursor blinking by appending an `<input>` element, focus it and then measure at what frequency the `onpaint` even…
+There is already a section about privacy, which focuses on the new read-back capabilities. However, the `onpaint` event also brings new fingerprinting vectors, even without readback, for instance it is now possible to determine the rate of the cursor blinking by appending an `&lt;input&gt;` element, focus it and then measure at what frequency the `onpaint…
 
 ## [#81: Use case: DOM capture / screenshot library (snapdom)](https://github.com/WICG/html-in-canvas/issues/81)
 
 **Author:** [@tinchox5](https://github.com/tinchox5)
 
-I’m the author of [snapdom](https://github.com/zumerlab/snapdom) a DOM capture library similar to html2canvas. The library converts DOM elements into images (PNG, JPEG, etc.) for things like screenshots, exports, and thumbnails. Right now snapdom renders through **SVG + `<foreignObject>`**, but we’re experimenting with a different path using **`drawElemen…
+I’m the author of [snapdom](https://github.com/zumerlab/snapdom) a DOM capture library similar to html2canvas. The library converts DOM elements into images (PNG, JPEG, etc.) for things like screenshots, exports, and thumbnails. Right now snapdom renders through **SVG + `&lt;foreignObject&gt;`**, but we’re experimenting with a different path using **`draw…
 
 ## [#79: Feature request: allow effects like backdrop-filter, using the current canvas content as the backdrop root](https://github.com/WICG/html-in-canvas/issues/79)
 
 **Author:** [@progers](https://github.com/progers)
 
-Maybe this should work? ``` <canvas id="canvas" width="200" height="200" layoutsubtree>
+Maybe this should work?
 
 ## [#77: Surface when cross-origin content has been omitted](https://github.com/WICG/html-in-canvas/issues/77)
 
@@ -79,7 +85,7 @@ The current webGL demo draws the html content multiple times (once for each face
 
 **Author:** [@itsdouges](https://github.com/itsdouges)
 
-Take HTML that looks like this: ``` <canvas layoutubtree="true">
+Take HTML that looks like this: Drawing it to the canvas: Results in this error:
 
 ## [#47: Blending effects aren't correctly reflected in the canvas](https://github.com/WICG/html-in-canvas/issues/47)
 

@@ -193,5 +193,19 @@ const websiteJsonLd = {
       <slot />
     </main>
     <Footer />
+    {/* Scrollable <pre> blocks must be keyboard-reachable (WCAG 2.1.1).
+        `pre` has `overflow-x: auto` in the global styles, so any content
+        that exceeds the viewport width becomes a horizontal scroll
+        region with no keyboard access. Adding tabindex=0 makes the
+        block focusable so keyboard users can scroll it with arrow keys. */}
+    <script is:inline>
+      function markScrollablePreFocusable() {
+        document.querySelectorAll('pre:not([tabindex])').forEach((pre) => {
+          pre.tabIndex = 0;
+        });
+      }
+      markScrollablePreFocusable();
+      document.addEventListener('astro:after-swap', markScrollablePreFocusable);
+    </script>
   </body>
 </html>

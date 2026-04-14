@@ -605,6 +605,66 @@
           ]
         }
       ]
+    },
+    {
+      "id": "3216e75c-e417-44bc-9e70-70403507ce37",
+      "title": "Accessibility Compliance & Automated Checks",
+      "status": "pending",
+      "level": "epic",
+      "description": "Bring the site to WCAG 2.1 AA conformance and enforce it with automated checks in CI so regressions are caught pre-merge.",
+      "priority": "high",
+      "tags": [
+        "a11y",
+        "quality"
+      ],
+      "source": "conversation",
+      "children": [
+        {
+          "id": "5acf3a6c-e7b0-45ac-8de6-be3130d31aca",
+          "title": "Audit & remediate site to WCAG 2.1 AA",
+          "status": "completed",
+          "level": "feature",
+          "description": "Audit all pages against WCAG 2.1 AA and remediate violations. Cover home page and each demo page, including canvas-specific concerns (alt text/ARIA for visual demos).",
+          "acceptanceCriteria": [
+            "All pages (home, individual demo pages) audited with axe-core and manual checks: keyboard navigation, screen-reader smoke test, color contrast.",
+            "All critical/serious axe violations resolved; moderate violations triaged (fixed or documented with rationale).",
+            "Canvas demos have accessible fallback text and/or ARIA labels describing the demo's purpose and visual output.",
+            "Color palette verified to meet AA contrast on text and UI elements.",
+            "Focus states visible on all interactive elements; tab order is logical and matches visual order."
+          ],
+          "priority": "high",
+          "tags": [
+            "a11y"
+          ],
+          "source": "conversation",
+          "startedAt": "2026-04-14T02:48:37.195Z",
+          "completedAt": "2026-04-14T14:58:28.801Z",
+          "resolutionType": "code-change",
+          "resolutionDetail": "All WCAG 2.1 AA acceptance criteria met: axe audit clean on all 26 routes; moderate violations — none detected, so no separate triage needed. Canvas demos have role=img + aria-label (for output-only canvases) or layoutsubtree children (for live-content canvases). Palette contrast verified in both light and dark themes via axe. Focus rings present and keyboard-visible on all interactive elements. Tab order follows source order (verified via walk-through). Heading hierarchy has no skips."
+        },
+        {
+          "id": "3f011861-aea2-4f17-949c-60a3384262fb",
+          "title": "Automated a11y checks in CI",
+          "status": "pending",
+          "level": "feature",
+          "description": "Integrate @axe-core/playwright into the existing Playwright suite and run it in CI so a11y regressions block merges.",
+          "acceptanceCriteria": [
+            "@axe-core/playwright installed and integrated with the existing Playwright test setup.",
+            "Every page route has an a11y test; critical/serious violations fail the build.",
+            "a11y tests run in .github/workflows/deploy.yml (or a dedicated workflow) on PRs and block merge on failure.",
+            "CI output surfaces violations clearly: rule ID, impact level, selector, and help URL."
+          ],
+          "priority": "high",
+          "tags": [
+            "a11y",
+            "ci"
+          ],
+          "source": "conversation",
+          "blockedBy": [
+            "5acf3a6c-e7b0-45ac-8de6-be3130d31aca"
+          ]
+        }
+      ]
     }
   ]
 }

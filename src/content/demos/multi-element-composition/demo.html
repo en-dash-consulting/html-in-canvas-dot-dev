@@ -229,7 +229,7 @@
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.06em;
-        color: #6a6a80;
+        color: #b0b0c8;
       }
 
       .info-row .value {
@@ -242,7 +242,7 @@
 
       .info-row .hint {
         font-size: 0.62rem;
-        color: #555570;
+        color: #a0a0b8;
       }
     </style>
   </head>
@@ -250,23 +250,23 @@
     <canvas id="canvas" layoutsubtree>
       <div id="card-a" class="card">
         <h3>✏️ Text input</h3>
-        <input type="text" placeholder="Type something..." value="Real DOM!" />
+        <input type="text" placeholder="Type something..." value="Real DOM!" aria-label="Demo text input" />
       </div>
 
       <div id="card-b" class="card">
         <h3>🎚️ Range</h3>
         <div class="slider-label">
-          <span>Drag the slider</span>
+          <span id="slider-label-text">Drag the slider</span>
           <span id="slider-val">50</span>
         </div>
-        <input id="slider" type="range" min="0" max="100" value="50" />
+        <input id="slider" type="range" min="0" max="100" value="50" aria-labelledby="slider-label-text slider-val" />
       </div>
 
-      <div id="card-c" class="card-image">&#x1F3A8;</div>
+      <div id="card-c" class="card-image" role="img" aria-label="Decorative palette emoji">&#x1F3A8;</div>
 
       <div id="card-d" class="card">
         <h3>📋 Select</h3>
-        <select>
+        <select aria-label="Demo transition type">
           <option>Crossfade</option>
           <option>Dissolve</option>
           <option>Wipe</option>

@@ -575,42 +575,42 @@ const demoJsonLd = {
   .context-badge,
   .difficulty-badge {
     font-size: 0.7rem;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    padding: 0.175rem 0.5rem;
+    padding: 0.2rem 0.55rem;
     border-radius: 4px;
     line-height: 1.4;
   }
 
   .context-2d {
-    background: rgba(0, 229, 185, 0.15);
-    color: var(--color-teal);
+    background: var(--badge-teal-bg);
+    color: var(--accent-teal-text);
   }
 
   .context-webgl {
-    background: rgba(255, 89, 38, 0.15);
-    color: var(--color-orange);
+    background: var(--badge-orange-bg);
+    color: var(--accent-orange-text);
   }
 
   .context-webgpu {
-    background: rgba(108, 65, 240, 0.15);
-    color: var(--color-purple);
+    background: var(--badge-purple-bg);
+    color: var(--accent-purple-text);
   }
 
   .difficulty-beginner {
-    background: rgba(0, 189, 129, 0.12);
-    color: var(--color-green);
+    background: var(--badge-green-bg);
+    color: var(--accent-green-text);
   }
 
   .difficulty-intermediate {
-    background: rgba(255, 89, 38, 0.12);
-    color: var(--color-orange);
+    background: var(--badge-orange-bg);
+    color: var(--accent-orange-text);
   }
 
   .difficulty-advanced {
-    background: rgba(213, 46, 102, 0.12);
-    color: var(--color-pink);
+    background: var(--badge-pink-bg);
+    color: var(--accent-pink-text);
   }
 
   /* ------- Demo stage (full-bleed shadow mount) ------- */
@@ -782,10 +782,11 @@ const demoJsonLd = {
 
   .feature-tag {
     font-size: 0.75rem;
-    padding: 0.125rem 0.4rem;
+    font-weight: 500;
+    padding: 0.15rem 0.45rem;
     background: var(--bg-elevated);
     border-radius: 3px;
-    color: var(--accent);
+    color: var(--accent-purple-text);
   }
 
   .browser-list {
@@ -802,13 +803,16 @@ const demoJsonLd = {
   }
 
   .browser-badge.supported {
-    background: rgba(0, 189, 129, 0.12);
-    color: var(--color-green);
+    background: var(--badge-green-bg);
+    color: var(--accent-green-text);
+    font-weight: 600;
   }
 
   .browser-badge.unsupported {
     background: var(--bg-elevated);
-    color: var(--text-muted);
+    color: var(--text-secondary);
+    font-weight: 500;
+    text-decoration: line-through;
   }
 
   .tag-list {
@@ -819,9 +823,10 @@ const demoJsonLd = {
 
   .demo-tag {
     font-size: 0.7rem;
-    padding: 0.125rem 0.4rem;
+    font-weight: 500;
+    padding: 0.15rem 0.45rem;
     background: var(--bg-elevated);
-    color: var(--text-muted);
+    color: var(--text-secondary);
     border-radius: 3px;
   }
 

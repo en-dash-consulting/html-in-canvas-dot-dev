@@ -223,12 +223,14 @@
         grid-column: 1 / -1;
       }
 
-      .control label {
+      .control label,
+      .control .control-group-label {
+        display: inline-block;
         font-size: 0.65rem;
-        font-weight: 600;
+        font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        color: #6a6a80;
+        color: #b8b8d0;
       }
 
       .control input[type="text"],
@@ -245,7 +247,7 @@
 
       .control input[type="text"]:focus,
       .control select:focus {
-        border-color: #6c41f0;
+        border-color: #9a7cff;
       }
 
       .swatches {
@@ -266,7 +268,7 @@
 
       .swatches input[type="range"] {
         flex: 1;
-        accent-color: #6c41f0;
+        accent-color: #9a7cff;
       }
 
       .actions {
@@ -284,7 +286,7 @@
       .actions input[type="range"] {
         flex: 1;
         min-width: 6rem;
-        accent-color: #6c41f0;
+        accent-color: #9a7cff;
       }
 
       .actions #btn-download {
@@ -367,15 +369,15 @@
           <input type="text" id="input-author" value="Jane Doe" />
         </div>
         <div class="control">
-          <label>Gradient</label>
-          <div class="swatches">
-            <input type="color" id="input-color1" value="#6c41f0" />
-            <input type="color" id="input-color2" value="#00e5b9" />
-            <input type="range" id="input-angle" min="0" max="360" value="135" />
+          <span class="control-group-label" id="gradient-group-label">Gradient</span>
+          <div class="swatches" role="group" aria-labelledby="gradient-group-label">
+            <input type="color" id="input-color1" value="#6c41f0" aria-label="Gradient start color" />
+            <input type="color" id="input-color2" value="#00e5b9" aria-label="Gradient end color" />
+            <input type="range" id="input-angle" min="0" max="360" value="135" aria-label="Gradient angle in degrees" />
           </div>
         </div>
         <div class="actions">
-          <select id="input-format">
+          <select id="input-format" aria-label="Export image format">
             <option value="image/png">PNG</option>
             <option value="image/jpeg">JPEG</option>
           </select>

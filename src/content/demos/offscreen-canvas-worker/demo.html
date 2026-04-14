@@ -46,7 +46,7 @@
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.06em;
-        color: #6a6a80;
+        color: #b0b0c8;
         margin-bottom: 0.5rem;
         display: flex;
         align-items: center;
@@ -57,7 +57,7 @@
         font-weight: 400;
         text-transform: none;
         letter-spacing: 0;
-        color: #4a4a60;
+        color: #9a9ab8;
         font-size: 0.65rem;
       }
 
@@ -67,7 +67,7 @@
         letter-spacing: 0;
         font-size: 0.6rem;
         background: #2a1a4e;
-        color: #9b6dff;
+        color: #b79aff;
         padding: 0.15em 0.5em;
         border-radius: 4px;
       }
@@ -96,7 +96,7 @@
       }
 
       #source:focus {
-        border-color: #6c41f0;
+        border-color: #9a7cff;
       }
 
       .source-card {
@@ -119,7 +119,7 @@
       .source-card p {
         font-size: 0.78rem;
         line-height: 1.5;
-        color: #8080a0;
+        color: #b8b8d0;
       }
 
       .source-card code {
@@ -190,13 +190,13 @@
         align-items: center;
         gap: 0.4rem;
         font-size: 0.75rem;
-        color: #8080a0;
+        color: #b8b8d0;
         cursor: pointer;
         user-select: none;
       }
 
       .toggle input {
-        accent-color: #6c41f0;
+        accent-color: #9a7cff;
       }
 
       /* ── Worker canvas ───────────────────────────────── */
@@ -233,7 +233,7 @@
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.06em;
-        color: #6a6a80;
+        color: #b0b0c8;
         margin-bottom: 0.35rem;
       }
 
@@ -248,7 +248,7 @@
 
       .info-box .hint {
         font-size: 0.65rem;
-        color: #555570;
+        color: #a0a0b8;
         margin-top: 0.25rem;
       }
 
@@ -272,7 +272,7 @@
       .log-entry {
         display: flex;
         gap: 0.5rem;
-        color: #6a6a80;
+        color: #b0b0c8;
       }
 
       .log-entry .log-dir {
@@ -281,7 +281,7 @@
       }
 
       .log-dir.to-worker {
-        color: #6c41f0;
+        color: #9a7cff;
       }
 
       .log-dir.from-worker {
@@ -289,7 +289,7 @@
       }
 
       .log-entry .log-text {
-        color: #8080a0;
+        color: #b8b8d0;
       }
 
     </style>
@@ -342,7 +342,11 @@
             Worker Output
             <span class="worker-badge">OffscreenCanvas</span>
           </div>
-          <canvas id="output"></canvas>
+          <canvas
+            id="output"
+            role="img"
+            aria-label="OffscreenCanvas worker output — the tweet card rendered by a separate worker thread"
+          ></canvas>
         </div>
 
         <div class="info-row">

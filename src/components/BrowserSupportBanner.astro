@@ -118,8 +118,8 @@
 
 <style>
   .browser-banner {
-    background: rgba(255, 89, 38, 0.08);
-    border-bottom: 1px solid rgba(255, 89, 38, 0.2);
+    background: var(--badge-orange-bg);
+    border-bottom: 1px solid var(--accent-orange-text);
   }
 
   .banner-inner {
@@ -133,23 +133,25 @@
 
   .banner-icon {
     flex-shrink: 0;
-    color: var(--color-orange);
+    color: var(--accent-orange-text);
   }
 
   .banner-message {
     flex: 1;
     margin: 0;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
+    font-weight: 500;
     line-height: 1.4;
     color: var(--text-primary);
   }
 
   .banner-message code {
     font-size: 0.8rem;
-    padding: 0.1em 0.3em;
-    background: rgba(255, 89, 38, 0.1);
+    padding: 0.1em 0.35em;
+    background: var(--bg-primary);
     border-radius: 3px;
-    color: var(--color-orange);
+    color: var(--accent-orange-text);
+    font-weight: 600;
   }
 
   .banner-message a {
