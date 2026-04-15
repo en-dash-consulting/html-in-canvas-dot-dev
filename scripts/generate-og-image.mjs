@@ -117,19 +117,19 @@ function buildHtml({ eyebrow, titleLead, titleAccent, tagline }, logoDataUrl) {
     position: relative;
     z-index: 1;
     text-align: center;
-    max-width: 980px;
-    padding: 0 60px;
+    max-width: 1060px;
+    padding: 0 40px;
   }
 
   /* Prominent project wordmark above the eyebrow — establishes the
      html-in-canvas brand on every card without leaning on the small
      bottom-left domain text. */
   .wordmark {
-    font-size: 30px;
+    font-size: 34px;
     font-weight: 700;
     letter-spacing: -0.01em;
     color: #f0f0f0;
-    margin-bottom: 18px;
+    margin-bottom: 22px;
   }
 
   .wordmark .accent {
@@ -141,22 +141,22 @@ function buildHtml({ eyebrow, titleLead, titleAccent, tagline }, logoDataUrl) {
 
   .eyebrow {
     display: inline-block;
-    font-size: 14px;
+    font-size: 17px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.14em;
     color: #00e5b9;
-    margin-bottom: 20px;
-    padding: 6px 16px;
+    margin-bottom: 24px;
+    padding: 8px 20px;
     border: 1px solid rgba(0, 229, 185, 0.3);
     border-radius: 100px;
   }
 
   .title {
-    font-size: 56px;
+    font-size: 80px;
     font-weight: 800;
-    line-height: 1.1;
-    margin-bottom: 20px;
+    line-height: 1.05;
+    margin-bottom: 28px;
     letter-spacing: -0.02em;
     /* Cap to two lines on busy demo titles. */
     display: -webkit-box;
@@ -173,11 +173,11 @@ function buildHtml({ eyebrow, titleLead, titleAccent, tagline }, logoDataUrl) {
   }
 
   .tagline {
-    font-size: 22px;
+    font-size: 26px;
     font-weight: 400;
-    line-height: 1.5;
+    line-height: 1.45;
     color: #a0a0b8;
-    max-width: 760px;
+    max-width: 860px;
     margin: 0 auto;
     /* Cap to three lines so descriptions never collide with the bottom
        brand bar. */
