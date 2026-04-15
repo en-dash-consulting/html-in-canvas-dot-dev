@@ -89,11 +89,9 @@ test.describe('landing hero (flag-on, WebGL stage)', () => {
     expect(errors, `Console errors: ${errors.join('\n')}`).toEqual([]);
   });
 
-  test('live badge and drag hint are visible on flag-on', async ({ page }) => {
+  test('live badge is visible on flag-on', async ({ page }) => {
     await page.goto(HOME_URL, { waitUntil: 'networkidle' });
-
     await expect(page.locator('.hero-live-badge')).toBeVisible();
-    await expect(page.locator('[data-hero-hint]')).toBeVisible();
   });
 
   test('hides the flag-off affordances (chips + setup) when the flag is supported', async ({

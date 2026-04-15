@@ -46,19 +46,9 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
 
     <span class="hero-live-badge">
       <span class="hero-live-dot"></span>
-      Live via <code>drawElementImage</code> + <code>texImage2D</code>
+      Live · <code>drawElementImage</code>
     </span>
 
-    <span class="hero-drag-hint" data-hero-hint>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M9 11V5a1.5 1.5 0 0 1 3 0v6" />
-        <path d="M12 11V3.5a1.5 1.5 0 0 1 3 0V11" />
-        <path d="M15 11V5.5a1.5 1.5 0 0 1 3 0V16" />
-        <path d="M6 11.5V10a1.5 1.5 0 0 1 3 0V11" />
-        <path d="M18 16l-1 2a6 6 0 0 1-10 0l-3-5a1.5 1.5 0 0 1 2.6-1.5l1.4 2" />
-      </svg>
-      Grab the lens
-    </span>
   </div>
 
   {/* ============ CANONICAL SEMANTIC LAYER ============
@@ -252,28 +242,55 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
     }
 
     /* ---- Headline layer: sample the drawElementImage texture with
-       a subtle 3D-tilt warp. The tilt UV shift is driven by u_tilt. ---- */
+       a 3D-tilt UV warp + a continuous ambient ripple so the text
+       has visible life even when no lens is near it. ---- */
     vec4 headlineLayer(vec2 uv) {
-      /* Map the source canvas (upper portion of the stage) into the
-         viewport's top band. The texture is sized to stage width. */
       vec2 tUv = uv;
-      /* Subtle perspective: scale Y around centre by a factor that
-         changes with the horizontal coordinate — cheap but convincing
-         "plane tilt." */
+
+      /* Parallax tilt: shifts samples horizontally / vertically based
+         on where the cursor is in the viewport. */
       float tx = u_tilt.x;
       float ty = u_tilt.y;
-      tUv.x += (uv.y - 0.5) * -tx * 0.06;
-      tUv.y += (uv.x - 0.5) * -ty * 0.04;
+      tUv.x += (uv.y - 0.5) * -tx * 0.08;
+      tUv.y += (uv.x - 0.5) * -ty * 0.05;
 
-      /* Cheap drop-shadow: sample the alpha channel offset down-right
-         and composite underneath the main sample. */
-      float shadowA = texture2D(u_texture, tUv + vec2(0.003, 0.006)).a;
-      vec4 shadow = vec4(0.0, 0.0, 0.0, shadowA * 0.35);
+      /* Ambient breathing: a slow vertical sine ripple that runs
+         constantly so the text feels alive. */
+      float breathe = sin(u_time * 0.9 + uv.x * 6.0) * 0.0030;
+      tUv.y += breathe;
 
-      vec4 main_ = texture2D(u_texture, tUv);
+      /* Chromatic aberration across the whole layer (gentle, not
+         lens-only). Scales with distance from the horizontal centre
+         so edges feel looser and the middle stays readable. */
+      float chromaAmt = 0.0020 + abs(uv.x - 0.5) * 0.0025;
+
+      /* Soft drop-shadow by sampling the alpha at a lower, rightward
+         offset. */
+      float shadowA = texture2D(u_texture, tUv + vec2(0.003, 0.008)).a;
+      vec4 shadow = vec4(0.0, 0.0, 0.0, shadowA * 0.45);
+
+      float r = texture2D(u_texture, tUv + vec2(chromaAmt, 0.0)).r;
+      float g = texture2D(u_texture, tUv).g;
+      float b = texture2D(u_texture, tUv - vec2(chromaAmt, 0.0)).b;
+      float a = texture2D(u_texture, tUv).a;
+      vec4 main_ = vec4(r, g, b, a);
+
+      /* Bloom-ish glow: a large-kernel alpha sum that lifts the
+         surrounding area and spills light around the glyphs. */
+      float glow = 0.0;
+      glow += texture2D(u_texture, tUv + vec2(0.012, 0.0)).a;
+      glow += texture2D(u_texture, tUv - vec2(0.012, 0.0)).a;
+      glow += texture2D(u_texture, tUv + vec2(0.0, 0.012)).a;
+      glow += texture2D(u_texture, tUv - vec2(0.0, 0.012)).a;
+      glow *= 0.25;
+
+      vec3 glowColor = vec3(0.42, 0.25, 0.94); /* brand purple */
+      vec3 composited = mix(shadow.rgb, main_.rgb, main_.a);
+      composited += glowColor * glow * 0.35 * (1.0 - main_.a);
+
       return vec4(
-        mix(shadow.rgb, main_.rgb, main_.a),
-        max(shadow.a * (1.0 - main_.a), main_.a)
+        composited,
+        max(max(shadow.a * (1.0 - main_.a), main_.a), glow * 0.25)
       );
     }
 
@@ -288,7 +305,7 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
       float dist = length(diff);
       vec2 dir = normalize(diff + 1e-6);
 
-      float radius = 0.20 * hover;
+      float radius = 0.28 * hover;
       float dome   = smoothstep(radius, radius * 0.08, dist);
       if (dome <= 0.0) return base;
 
@@ -461,17 +478,20 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
       '(prefers-reduced-motion: reduce)',
     ).matches;
 
-    // Lens 1 = user-controlled. Starts centre; takes over on any input.
-    let targetX = 0.5;
+    // Lens 1 = cursor-tracked. Has baseline presence so there's
+    // always a visible lens somewhere — ramps up when the cursor
+    // enters the stage, eases down (but not to zero) when it leaves.
+    let targetX = 0.35;
     let targetY = 0.5;
-    let smoothX = 0.5;
+    let smoothX = 0.35;
     let smoothY = 0.5;
-    let hoverTarget = 0; // 0..1
-    let hover = 0;
+    let hoverTarget = 0.6;
+    let hover = 0.6;
 
-    // Lens 2 = autonomous drifter. Active until first user input.
+    // Lens 2 = autonomous drifter. Stays active on the opposite side
+    // so there are always two visible points of interest.
     let auto2 = true;
-    let auto2Hover = 1;
+    let auto2Hover = 0.85;
 
     // Plane tilt (parallax for the headline).
     let tiltTargetX = 0;
@@ -525,31 +545,31 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
     /* ----- Input: pointer drives lens 1 and plane tilt ----- */
     function onPointerMove(e: PointerEvent) {
       const rect = glCanvas!.getBoundingClientRect();
-      // Ignore pointer events when the pointer isn't over the stage.
       const insideX = e.clientX >= rect.left && e.clientX <= rect.right;
       const insideY = e.clientY >= rect.top && e.clientY <= rect.bottom;
 
-      // Plane tilt always follows the cursor inside the viewport so it
-      // feels responsive even when the lens is asleep.
+      // Plane tilt always follows the cursor inside the viewport.
       const vw = window.innerWidth;
       const vh = window.innerHeight;
       tiltTargetX = (e.clientX / vw - 0.5) * 2;
       tiltTargetY = (e.clientY / vh - 0.5) * 2;
 
-      if (!insideX || !insideY) {
-        hoverTarget = 0;
-        return;
-      }
-
-      const nx = (e.clientX - rect.left) / rect.width;
-      const ny = (e.clientY - rect.top) / rect.height;
+      // Lens 1 always tracks the pointer (clamped into the stage) so
+      // there's always something visibly following the cursor, even
+      // when the cursor is far away. Just dim it a bit when off-stage.
+      const nx = Math.max(
+        0,
+        Math.min(1, (e.clientX - rect.left) / rect.width),
+      );
+      const ny = Math.max(
+        0,
+        Math.min(1, (e.clientY - rect.top) / rect.height),
+      );
       targetX = nx;
       targetY = ny;
-      hoverTarget = 1;
 
-      // First user input wakes the auto drifter down so lens 1 can own
-      // the interaction.
-      auto2 = false;
+      // Stronger when the pointer is actually over the stage.
+      hoverTarget = insideX && insideY ? 1 : 0.65;
     }
 
     function onPointerDown() {
@@ -589,7 +609,6 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
     /* ----- Render loop ----- */
     const start = performance.now();
     let rafId = 0;
-    const hint = document.querySelector<HTMLElement>('[data-hero-hint]');
 
     function frame(now: number) {
       // In reduced-motion mode we freeze the shader's time uniform so
@@ -627,13 +646,16 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
       tiltX += (tiltTargetX - tiltX) * 0.08;
       tiltY += (tiltTargetY - tiltY) * 0.08;
 
-      // Autonomous lens 2: describes a slow Lissajous-like path until
-      // the user engages, then fades out. Suppressed entirely under
-      // prefers-reduced-motion.
-      const auto2TargetHover = auto2 && !reduceMotion ? 0.7 : 0;
+      // Autonomous lens 2: slow Lissajous drift on the opposite side
+      // of the stage from lens 1. Stays active (with reduced strength
+      // during active dragging) so the visitor always sees two visible
+      // points of interest. Suppressed entirely under reduced motion.
+      const auto2TargetHover = reduceMotion
+        ? 0
+        : (isDragging.value ? 0.5 : 0.85);
       auto2Hover += (auto2TargetHover - auto2Hover) * 0.04;
-      const ax = 0.5 + Math.sin(elapsed * 0.4) * 0.28;
-      const ay = 0.5 + Math.cos(elapsed * 0.33) * 0.22;
+      const ax = 0.75 + Math.sin(elapsed * 0.33) * 0.18;
+      const ay = 0.5 + Math.cos(elapsed * 0.4) * 0.22;
 
       gl!.viewport(0, 0, glCanvas!.width, glCanvas!.height);
       gl!.useProgram(program);
@@ -653,12 +675,6 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
       gl!.uniform1f(uTheme, readTheme());
 
       gl!.drawArrays(gl!.TRIANGLE_STRIP, 0, 4);
-
-      // Fade the drag hint once the user interacts.
-      if (hint) {
-        const visible = auto2 ? 1 : 0;
-        hint.style.opacity = String(visible * 0.85);
-      }
 
       rafId = requestAnimationFrame(frame);
     }
@@ -699,10 +715,17 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
   /* ===== Hero container ===== */
   .hero {
     position: relative;
-    width: 100%;
     isolation: isolate;
-    /* No max-width — the stage is full-bleed on flag-on; the content
-       layer re-applies its own max-width. */
+    /* Full-bleed: break out of <main>'s max-width and padding so the
+       WebGL stage extends edge-to-edge across the viewport. The
+       negative-margin trick works inside any max-width container
+       and doesn't require restructuring BaseLayout. */
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    /* Cancel <main>'s top padding so the hero sits flush under the
+       sticky nav. */
+    margin-top: -2rem;
   }
 
   /* ===== Canonical semantic layer ===== */
@@ -816,10 +839,10 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
   }
 
   .hero-heading {
-    font-size: clamp(2.5rem, 7vw, 4.5rem);
-    font-weight: 800;
-    line-height: 1.05;
-    letter-spacing: -0.015em;
+    font-size: clamp(3rem, 9vw, 6rem);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.03em;
     margin: 0 0 1.5rem;
   }
 
@@ -942,39 +965,75 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
     pointer-events: none;
   }
 
+  /* Source canvas: its 2D bitmap is sampled by WebGL. Chrome skips
+     paint records for elements hidden via `visibility: hidden`,
+     `display: none`, OR `clip-path: inset(100%)` — so hiding it any
+     of those ways makes `drawElementImage` silently paint nothing.
+     Leave it fully visible and stack the WebGL canvas above it via
+     z-index; the WebGL output is opaque (alpha=1) so the source
+     bitmap is covered in the viewport. */
   .hero-source-canvas {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
-    visibility: hidden; /* keep in layout flow; WebGL reads it */
+    z-index: 1;
   }
 
   /* Duplicate headline content inside the source canvas, styled to
      match the stage's layout box so drawElementImage paints pixels
      that align with the visible hero. */
+  /* Push the headline down in the source canvas by a chunk of
+     padding-top so the WebGL-rendered text sits closer to where the
+     static <h1> is in the content flex column. (The two don't have
+     to align pixel-perfectly — the static h1 is transparent — but
+     positioning the WebGL text near the same vertical anchor as the
+     rest of the content avoids the "text jammed under the nav"
+     effect.) */
   .hero-source-inner {
     position: absolute;
     inset: 0;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    padding: 0 2rem;
+    padding: 10rem 2rem 0;
   }
 
   .hero-source-h1 {
     font-family: var(--font-heading);
-    font-size: clamp(2.5rem, 7vw, 4.5rem);
-    font-weight: 800;
-    line-height: 1.05;
-    letter-spacing: -0.015em;
+    font-size: clamp(3rem, 9vw, 6rem);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.03em;
     text-align: center;
-    color: var(--text-primary);
     margin: 0;
+    /* Vibrant chromatic gradient text — this is what the shader
+       will sample + warp. Keep colors dense (no alpha fade) so the
+       fragment shader has high-contrast texels to distort. */
+    background: linear-gradient(
+      125deg,
+      #ffffff 0%,
+      #d4c2ff 25%,
+      #a98cff 42%,
+      #ffc2db 62%,
+      #ffffff 78%,
+      #6dffe3 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    filter: drop-shadow(0 0 20px rgba(108, 65, 240, 0.45))
+      drop-shadow(0 0 40px rgba(0, 229, 185, 0.22));
   }
 
   .hero-source-accent {
-    color: var(--accent-teal-text);
+    /* Accent section uses the same gradient; the span is primarily a
+       semantic hook (its sibling structure mirrors the static h1). */
+    background: inherit;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
   .hero-gl-canvas {
@@ -983,6 +1042,9 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
     width: 100%;
     height: 100%;
     display: block;
+    /* Stack above the source canvas; WebGL output is opaque so the
+       2D source bitmap is covered. */
+    z-index: 2;
     pointer-events: auto; /* receives drag interactions */
     cursor: grab;
   }
@@ -1043,25 +1105,6 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
     }
   }
 
-  .hero-drag-hint {
-    position: absolute;
-    bottom: 1rem;
-    right: 1rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.3rem 0.65rem;
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    background: rgba(0, 0, 0, 0.25);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 999px;
-    backdrop-filter: blur(6px);
-    pointer-events: none;
-    z-index: 3;
-    transition: opacity 0.5s ease;
-  }
 
   /* ===== Flag-state swap ===== */
 
@@ -1080,14 +1123,52 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
     color: transparent;
   }
 
-  /* Stage absolutely overlays the hero — anchor its height to the
-     hero-content box so it covers the visible heading area. */
+  /* Stage fills the hero; hero-content is a flex column that places
+     the eyebrow near the top, the (transparent) headline in the
+     upper-middle (aligning with where the WebGL paints it), and the
+     subtext + CTAs in the lower half. The WebGL canvas renders the
+     massive headline at the same vertical anchor as the static h1
+     so the two line up. */
   :global([data-flag-supported='true']) .hero-content {
-    min-height: 60vh;
+    min-height: 78vh;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
+    padding-top: 10rem;
+    padding-bottom: 3rem;
   }
+
+  :global([data-flag-supported='true']) .hero-eyebrow {
+    /* On flag-on, the live badge ("Live · drawElementImage") inside
+       the stage plays the same role as this eyebrow — keeping both
+       is redundant and the eyebrow competes with the headline
+       layout. Drop the eyebrow when the stage is active. */
+    display: none;
+  }
+
+  :global([data-flag-supported='true']) .hero-heading-wrap {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+  }
+
+  :global([data-flag-supported='true']) .hero-heading {
+    /* The static h1 stays in the DOM for a11y but its visible pixels
+       are gone (color:transparent). Giving it a modest block height
+       here reserves room; the WebGL canvas does the visible
+       rendering. */
+    margin: 0;
+  }
+
+  :global([data-flag-supported='true']) .hero-sub,
+  :global([data-flag-supported='true']) .hero-actions {
+    /* Ensure these sit above the GL canvas (z-index: 2). */
+    position: relative;
+    z-index: 3;
+  }
+
 
   /* Hide flag-off-only content when the flag is on. */
   :global([data-flag-supported='true']) .hero-setup,
@@ -1121,18 +1202,9 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
       min-height: 72vh;
     }
 
-    .hero-live-badge,
-    .hero-drag-hint {
+    .hero-live-badge {
       font-size: 0.65rem;
       padding: 0.25rem 0.5rem;
-    }
-
-    .hero-drag-hint {
-      right: 0.75rem;
-      bottom: 0.75rem;
-    }
-
-    .hero-live-badge {
       top: 0.75rem;
       left: 0.75rem;
     }

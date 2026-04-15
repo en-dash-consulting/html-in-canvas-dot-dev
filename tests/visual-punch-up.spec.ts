@@ -63,12 +63,12 @@ test.describe('visual punch-up: WebGL back plate + typography', () => {
     });
     expect(style).not.toBeNull();
 
-    // At 1280px viewport, 7vw = 89.6px; upper clamp 4.5rem = 72px
-    // (assuming 16px root). Expect the computed size near that upper
-    // bound.
-    expect(style!.fontSizePx).toBeGreaterThanOrEqual(56);
-    expect(style!.fontSizePx).toBeLessThanOrEqual(80);
-    expect(style!.fontWeight).toBe('800');
+    // At 1280px viewport with clamp(3rem, 9vw, 6rem): 9vw = 115.2px,
+    // upper clamp 6rem = 96px. Expect the computed size near the
+    // upper bound.
+    expect(style!.fontSizePx).toBeGreaterThanOrEqual(72);
+    expect(style!.fontSizePx).toBeLessThanOrEqual(110);
+    expect(style!.fontWeight).toBe('900');
   });
 });
 
