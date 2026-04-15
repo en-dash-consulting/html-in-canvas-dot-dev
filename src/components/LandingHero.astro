@@ -489,8 +489,9 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
     let hover = 0.6;
 
     // Lens 2 = autonomous drifter. Stays active on the opposite side
-    // so there are always two visible points of interest.
-    let auto2 = true;
+    // so there are always two visible points of interest. Strength
+    // dips while the user is actively dragging lens 1 so the two
+    // don't visually compete.
     let auto2Hover = 0.85;
 
     // Plane tilt (parallax for the headline).
@@ -595,7 +596,6 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
       targetX = nx;
       targetY = ny;
       hoverTarget = 1;
-      auto2 = false;
     }
 
     if (!reduceMotion) {

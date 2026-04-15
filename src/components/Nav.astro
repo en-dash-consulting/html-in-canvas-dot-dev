@@ -223,8 +223,7 @@ const LINKS: ReadonlyArray<{ href: string; label: string }> = [
     position: relative; /* anchor for the absolute-positioned panel */
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
+    gap: 1.5rem;
     max-width: var(--max-width);
     margin: 0 auto;
     padding: 0 1.5rem;
@@ -256,11 +255,15 @@ const LINKS: ReadonlyArray<{ href: string; label: string }> = [
     color: var(--accent-teal-text);
   }
 
-  /* ===== Desktop inline links ===== */
+  /* ===== Desktop inline links =====
+     `margin-left: auto` pushes the nav links and everything after
+     them (including the theme toggle in `.nav-end`) to the right
+     edge of the container, leaving the logo alone on the left. */
   .nav-links--desktop {
     display: flex;
     align-items: center;
     gap: 1.25rem;
+    margin-left: auto;
   }
 
   .nav-links--desktop a {
@@ -367,6 +370,13 @@ const LINKS: ReadonlyArray<{ href: string; label: string }> = [
   @media (max-width: 720px) {
     .nav-links--desktop {
       display: none;
+    }
+
+    /* With nav-links--desktop hidden, nav-end is the only "right side"
+       element — give IT the auto-margin so it still hugs the right
+       edge while the logo stays on the left. */
+    .nav-end {
+      margin-left: auto;
     }
 
     .nav-hamburger {

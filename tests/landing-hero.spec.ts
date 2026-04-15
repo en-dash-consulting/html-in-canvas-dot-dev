@@ -1,4 +1,4 @@
-import { test, expect, type Page, type Locator } from '@playwright/test';
+import { test, expect, type Locator } from '@playwright/test';
 import {
   collectConsoleErrors,
   expectHtmlInCanvasAvailable,
@@ -7,10 +7,7 @@ import {
 /** Assert a WebGL canvas has painted non-transparent pixels. Reads the
  *  framebuffer via `gl.readPixels` since `getContext('2d')` doesn't
  *  work on a WebGL canvas. */
-async function expectGlCanvasNonBlank(
-  page: Page,
-  canvas: Locator,
-): Promise<void> {
+async function expectGlCanvasNonBlank(canvas: Locator): Promise<void> {
   const nonBlank = await canvas.evaluate((el) => {
     const c = el as HTMLCanvasElement;
     const gl =
@@ -85,7 +82,7 @@ test.describe('landing hero (flag-on, WebGL stage)', () => {
         ),
     );
 
-    await expectGlCanvasNonBlank(page, glCanvas);
+    await expectGlCanvasNonBlank(glCanvas);
     expect(errors, `Console errors: ${errors.join('\n')}`).toEqual([]);
   });
 
@@ -220,7 +217,7 @@ test.describe('landing hero (flag-on + prefers-reduced-motion)', () => {
           ),
       );
 
-      await expectGlCanvasNonBlank(page, glCanvas);
+      await expectGlCanvasNonBlank(glCanvas);
     } finally {
       await context.close();
     }
