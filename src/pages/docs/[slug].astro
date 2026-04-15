@@ -5,6 +5,7 @@
  */
 import { getCollection, render } from 'astro:content';
 import DocsLayout from '../../layouts/DocsLayout.astro';
+import FlagSetupSteps from '../../components/FlagSetupSteps.astro';
 
 export async function getStaticPaths() {
   const docs = await getCollection('docs');
@@ -75,5 +76,16 @@ const howToJsonLd =
       />
     </Fragment>
   )}
+  {doc.id === 'browser-support' && (
+    <div class="browser-support-quickstart">
+      <FlagSetupSteps headingLevel="h2" />
+    </div>
+  )}
   <Content />
 </DocsLayout>
+
+<style>
+  .browser-support-quickstart {
+    margin-bottom: 2rem;
+  }
+</style>

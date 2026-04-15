@@ -43,7 +43,7 @@
       .page-subtitle {
         text-align: center;
         font-size: 0.8rem;
-        color: #6a6a80;
+        color: #b0b0c8;
         margin-bottom: 1.5rem;
         max-width: 450px;
         line-height: 1.4;
@@ -178,7 +178,7 @@
 
       .chapter-title em {
         font-style: italic;
-        color: #6c41f0;
+        color: #9a7cff;
       }
 
       .body-text {
@@ -198,7 +198,7 @@
         line-height: 0.8;
         margin-right: 0.5rem;
         margin-top: 0.15rem;
-        color: #6c41f0;
+        color: #9a7cff;
       }
 
       .divider {
@@ -270,7 +270,7 @@
       }
 
       .code-comment {
-        color: #6a737d;
+        color: #a8b3c0;
       }
 
       .code-keyword {
@@ -303,7 +303,7 @@
       .hint {
         margin-top: 1rem;
         font-size: 0.7rem;
-        color: #4a4a60;
+        color: #9a9ab8;
         text-align: center;
       }
 
@@ -315,7 +315,7 @@
         border-radius: 3px;
         font-family: inherit;
         font-size: 0.65rem;
-        color: #6a6a80;
+        color: #b0b0c8;
       }
 
       .pipeline-info {
@@ -327,7 +327,7 @@
         border: 1px solid #282840;
         border-radius: 10px;
         font-size: 0.72rem;
-        color: #6a6a80;
+        color: #b0b0c8;
         line-height: 1.55;
       }
 
@@ -348,13 +348,13 @@
       }
 
       .pipeline-info code {
-        color: #6c41f0;
+        color: #9a7cff;
         font-family: "Courier New", monospace;
         font-size: 0.68rem;
       }
 
       .pipeline-info .note {
-        color: #3a3a50;
+        color: #8a8aa0;
         font-size: 0.65rem;
         margin-top: 0.4rem;
       }
@@ -380,7 +380,11 @@
 
     <div class="scene" id="scene">
       <!-- WebGL display canvas -->
-      <canvas id="gl-canvas"></canvas>
+      <canvas
+        id="gl-canvas"
+        role="img"
+        aria-label="3D book with page-turn animation — HTML pages rendered onto curling paper geometry"
+      ></canvas>
     </div>
 
     <!-- ============================================================

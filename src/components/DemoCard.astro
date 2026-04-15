@@ -11,9 +11,23 @@ interface Props {
   context: '2d' | 'webgl' | 'webgpu';
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   tags: string[];
+  /** Heading level for the card title. Defaults to h3 (cards sit under
+   *  an h2 section heading on the home page). On pages where the cards
+   *  sit directly under the page h1 (e.g. /demos/), pass 2 to avoid a
+   *  heading-level skip. */
+  headingLevel?: 2 | 3;
 }
 
-const { slug, title, description, context, difficulty, tags } = Astro.props;
+const {
+  slug,
+  title,
+  description,
+  context,
+  difficulty,
+  tags,
+  headingLevel = 3,
+} = Astro.props;
+const HeadingTag = `h${headingLevel}` as 'h2' | 'h3';
 
 const contextLabels: Record<string, string> = {
   '2d': '2D',
@@ -33,7 +47,7 @@ const difficultyLabels: Record<string, string> = {
     <span class={`context-badge context-${context}`}>{contextLabels[context]}</span>
     <span class={`difficulty-badge difficulty-${difficulty}`}>{difficultyLabels[difficulty]}</span>
   </div>
-  <h3 class="demo-card-title">{title}</h3>
+  <HeadingTag class="demo-card-title">{title}</HeadingTag>
   <p class="demo-card-desc">{description}</p>
   {tags.length > 0 && (
     <div class="demo-card-tags">
@@ -74,42 +88,42 @@ const difficultyLabels: Record<string, string> = {
   .context-badge,
   .difficulty-badge {
     font-size: 0.7rem;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    padding: 0.175rem 0.5rem;
+    padding: 0.2rem 0.55rem;
     border-radius: 4px;
     line-height: 1.4;
   }
 
   .context-2d {
-    background: rgba(0, 229, 185, 0.15);
-    color: var(--color-teal);
+    background: var(--badge-teal-bg);
+    color: var(--accent-teal-text);
   }
 
   .context-webgl {
-    background: rgba(255, 89, 38, 0.15);
-    color: var(--color-orange);
+    background: var(--badge-orange-bg);
+    color: var(--accent-orange-text);
   }
 
   .context-webgpu {
-    background: rgba(108, 65, 240, 0.15);
-    color: var(--color-purple);
+    background: var(--badge-purple-bg);
+    color: var(--accent-purple-text);
   }
 
   .difficulty-beginner {
-    background: rgba(0, 189, 129, 0.12);
-    color: var(--color-green);
+    background: var(--badge-green-bg);
+    color: var(--accent-green-text);
   }
 
   .difficulty-intermediate {
-    background: rgba(255, 89, 38, 0.12);
-    color: var(--color-orange);
+    background: var(--badge-orange-bg);
+    color: var(--accent-orange-text);
   }
 
   .difficulty-advanced {
-    background: rgba(213, 46, 102, 0.12);
-    color: var(--color-pink);
+    background: var(--badge-pink-bg);
+    color: var(--accent-pink-text);
   }
 
   .demo-card-title {
@@ -135,9 +149,10 @@ const difficultyLabels: Record<string, string> = {
 
   .demo-tag {
     font-size: 0.7rem;
-    padding: 0.125rem 0.4rem;
+    font-weight: 500;
+    padding: 0.15rem 0.45rem;
     background: var(--bg-elevated);
-    color: var(--text-muted);
+    color: var(--text-secondary);
     border-radius: 3px;
   }
 </style>

@@ -98,16 +98,30 @@
         gap: 0.3rem;
       }
 
+      /* fieldset resets — we use <fieldset>/<legend> for group labels
+         (Interests, Preferred API) so screen readers announce the group
+         name with each radio/checkbox. Strip the default border/padding
+         and render <legend> like the sibling .field > label. */
+      fieldset.field {
+        border: 0;
+        padding: 0;
+        margin: 0;
+        min-width: 0;
+      }
+
       .field.full-width {
         grid-column: 1 / -1;
       }
 
-      .field label {
+      .field > label,
+      .field > legend {
         font-size: 0.7rem;
-        font-weight: 600;
-        color: #8080a0;
+        font-weight: 700;
+        color: #b8b8d0;
         text-transform: uppercase;
         letter-spacing: 0.05em;
+        padding: 0;
+        margin-bottom: 0.3rem;
       }
 
       .field input[type="text"],
@@ -129,7 +143,7 @@
       .field input[type="email"]:focus,
       .field textarea:focus,
       .field select:focus {
-        border-color: #6c41f0;
+        border-color: #9a7cff;
         box-shadow: 0 0 0 3px rgba(108, 65, 240, 0.18);
       }
 
@@ -173,7 +187,7 @@
 
       .inline-options input[type="checkbox"],
       .inline-options input[type="radio"] {
-        accent-color: #6c41f0;
+        accent-color: #9a7cff;
         width: 0.95rem;
         height: 0.95rem;
         cursor: pointer;
@@ -187,14 +201,14 @@
 
       .slider-row input[type="range"] {
         flex: 1;
-        accent-color: #6c41f0;
+        accent-color: #9a7cff;
         height: 6px;
         cursor: pointer;
       }
 
       .slider-value {
         font-size: 0.78rem;
-        color: #6c41f0;
+        color: #9a7cff;
         font-weight: 700;
         min-width: 2rem;
         text-align: right;
@@ -233,7 +247,7 @@
       .btn-primary {
         background: #6c41f0;
         color: #fff;
-        border-color: #6c41f0;
+        border-color: #9a7cff;
       }
 
       .btn-primary:hover {
@@ -269,7 +283,7 @@
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.06em;
-        color: #6a6a80;
+        color: #b0b0c8;
       }
 
       .paint-badge .count {
@@ -282,7 +296,7 @@
 
       .paint-badge .hint {
         font-size: 0.62rem;
-        color: #555570;
+        color: #a0a0b8;
         margin-top: 0.1rem;
       }
     </style>
@@ -319,30 +333,30 @@
           </div>
 
           <div class="field">
-            <label>Experience</label>
+            <label for="experience">Experience</label>
             <div class="slider-row">
               <input type="range" id="experience" min="0" max="10" value="5" />
-              <span class="slider-value" id="exp-value">5</span>
+              <span class="slider-value" id="exp-value" aria-hidden="true">5</span>
             </div>
           </div>
 
-          <div class="field full-width">
-            <label>Interests</label>
+          <fieldset class="field full-width">
+            <legend>Interests</legend>
             <div class="inline-options">
               <label><input type="checkbox" name="interest" value="graphics" /> Graphics</label>
               <label><input type="checkbox" name="interest" value="a11y" /> Accessibility</label>
               <label><input type="checkbox" name="interest" value="perf" /> Performance</label>
             </div>
-          </div>
+          </fieldset>
 
-          <div class="field full-width">
-            <label>Preferred API</label>
+          <fieldset class="field full-width">
+            <legend>Preferred API</legend>
             <div class="inline-options">
               <label><input type="radio" name="api" value="2d" checked /> Canvas 2D</label>
               <label><input type="radio" name="api" value="webgl" /> WebGL</label>
               <label><input type="radio" name="api" value="webgpu" /> WebGPU</label>
             </div>
-          </div>
+          </fieldset>
 
           <div class="form-actions">
             <button type="button" class="btn btn-secondary" id="btn-reset">Reset</button>

@@ -156,7 +156,13 @@ async function syncBrowserSupport() {
 function issuePreview(body) {
   if (!body) return "";
   const cleaned = body
+    // Drop HTML comments
     .replace(/<!--[\s\S]*?-->/g, "")
+    // Drop entire fenced code blocks — their truncated middles used to
+    // leak raw tags like <canvas> into the rendered docs page, where
+    // the markdown renderer interprets them as real HTML instead of
+    // code samples.
+    .replace(/```[\s\S]*?```/g, "")
     .replace(/!\[[^\]]*\]\([^)]+\)/g, "")
     .replace(/<img[^>]*>/g, "")
     .split("\n")
@@ -171,7 +177,10 @@ function issuePreview(body) {
     total += line.length + 1;
   }
   const joined = chunks.join(" ").replace(/\s+/g, " ").trim();
-  return joined.length > 360 ? joined.slice(0, 357) + "…" : joined;
+  // Escape any remaining angle brackets so HTML tags in the preview
+  // render as text instead of being parsed by markdown's raw-HTML mode.
+  const escaped = joined.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return escaped.length > 360 ? escaped.slice(0, 357) + "…" : escaped;
 }
 
 async function syncOpenQuestions() {

@@ -1,9 +1,23 @@
 ---
 /**
  * Site navigation bar.
- * Includes logo/site title, nav links, and theme toggle.
+ *
+ * Above 720px: horizontal nav with inline links, ThemeToggle at the
+ * end. Unchanged behaviour from the original bar.
+ *
+ * At or below 720px: the links collapse into a disclosure panel behind
+ * a hamburger button. The ThemeToggle stays outside the panel so it
+ * keeps working without first opening the menu. The panel absolute-
+ * positions below the sticky header, traps focus while open, and
+ * closes on Escape / outside-click / route change.
  */
 import ThemeToggle from './ThemeToggle.astro';
+
+const LINKS: ReadonlyArray<{ href: string; label: string }> = [
+  { href: '/demos/', label: 'Demos' },
+  { href: '/docs/', label: 'Docs' },
+  { href: '/contributing/', label: 'Contributing' },
+];
 ---
 
 <header class="site-header">
@@ -13,14 +27,184 @@ import ThemeToggle from './ThemeToggle.astro';
       <span class="nav-logo-suffix">.dev</span>
     </a>
 
-    <div class="nav-links">
-      <a href="/demos/">Demos</a>
-      <a href="/docs/">Docs</a>
-      <a href="/contributing/">Contributing</a>
+    {/* Desktop-only inline links (hidden below 720px). */}
+    <div class="nav-links nav-links--desktop">
+      {LINKS.map((l) => <a href={l.href}>{l.label}</a>)}
+    </div>
+
+    {/* Always-visible end controls: theme toggle (all widths) and
+        hamburger (mobile only). */}
+    <div class="nav-end">
       <ThemeToggle />
+      <button
+        class="nav-hamburger"
+        id="nav-hamburger"
+        type="button"
+        aria-expanded="false"
+        aria-controls="nav-panel"
+        aria-label="Open menu"
+      >
+        <svg
+          class="nav-hamburger-icon nav-hamburger-icon--open"
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <line x1="4" y1="7" x2="20" y2="7" />
+          <line x1="4" y1="12" x2="20" y2="12" />
+          <line x1="4" y1="17" x2="20" y2="17" />
+        </svg>
+        <svg
+          class="nav-hamburger-icon nav-hamburger-icon--close"
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </div>
+
+    {/* Disclosure panel — stacked links, shown only when the hamburger
+        is expanded. Lives inside <nav> so screen readers keep it in
+        the navigation landmark. */}
+    <div class="nav-panel" id="nav-panel">
+      {LINKS.map((l) => <a href={l.href}>{l.label}</a>)}
     </div>
   </nav>
 </header>
+
+<script>
+  function initNav() {
+    const hamburger = document.getElementById(
+      'nav-hamburger',
+    ) as HTMLButtonElement | null;
+    const panel = document.getElementById(
+      'nav-panel',
+    ) as HTMLDivElement | null;
+    if (!hamburger || !panel) return;
+
+    // Remove any stale open state left over from a prior page (Astro
+    // swaps the DOM in place; client scripts re-run with fresh state
+    // but class toggles and event listeners need rebinding).
+    panel.classList.remove('nav-panel--open');
+    hamburger.setAttribute('aria-expanded', 'false');
+    hamburger.setAttribute('aria-label', 'Open menu');
+
+    function getFocusables(): HTMLElement[] {
+      if (!panel) return [];
+      return Array.from(
+        panel.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled])',
+        ),
+      ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+    }
+
+    function isOpen(): boolean {
+      return hamburger!.getAttribute('aria-expanded') === 'true';
+    }
+
+    function open() {
+      if (!panel || !hamburger) return;
+      hamburger.setAttribute('aria-expanded', 'true');
+      hamburger.setAttribute('aria-label', 'Close menu');
+      panel.classList.add('nav-panel--open');
+
+      // Move focus into the panel so keyboard users land on the first
+      // link, matching WAI-ARIA disclosure best practice.
+      const focusables = getFocusables();
+      if (focusables.length > 0) focusables[0].focus();
+
+      document.addEventListener('keydown', onKeydown);
+      // Defer the outside-click handler by a tick so the opening click
+      // itself (which bubbled up to document) doesn't immediately
+      // close the menu it just opened.
+      setTimeout(() => {
+        document.addEventListener('click', onOutsideClick);
+      }, 0);
+    }
+
+    function close(opts: { restoreFocus?: boolean } = {}) {
+      if (!panel || !hamburger) return;
+      hamburger.setAttribute('aria-expanded', 'false');
+      hamburger.setAttribute('aria-label', 'Open menu');
+      panel.classList.remove('nav-panel--open');
+
+      if (opts.restoreFocus !== false) hamburger.focus();
+
+      document.removeEventListener('keydown', onKeydown);
+      document.removeEventListener('click', onOutsideClick);
+    }
+
+    function onKeydown(e: KeyboardEvent) {
+      if (!isOpen()) return;
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        close();
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        const focusables = getFocusables();
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        const active = document.activeElement as HTMLElement | null;
+
+        if (e.shiftKey && active === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && active === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+
+    function onOutsideClick(e: MouseEvent) {
+      if (!panel || !hamburger) return;
+      const target = e.target as Node;
+      if (panel.contains(target) || hamburger.contains(target)) return;
+      // Outside click: close but don't steal focus away from whatever
+      // the user is interacting with elsewhere on the page.
+      close({ restoreFocus: false });
+    }
+
+    hamburger.addEventListener('click', () => {
+      if (isOpen()) close();
+      else open();
+    });
+
+    // Closing on resize above the mobile breakpoint keeps the menu
+    // from lingering in an invalid state if the user rotates a tablet
+    // or resizes a window.
+    const mql = window.matchMedia('(max-width: 720px)');
+    const handleBreakpoint = () => {
+      if (!mql.matches && isOpen()) close({ restoreFocus: false });
+    };
+    mql.addEventListener('change', handleBreakpoint);
+  }
+
+  // Close any open menu and rebind handlers after route transitions.
+  // Astro swaps the DOM, so we need fresh bindings but should also
+  // ensure the next page doesn't inherit an "open" class on its panel.
+  initNav();
+  document.addEventListener('astro:after-swap', initNav);
+</script>
 
 <style>
   .site-header {
@@ -30,13 +214,16 @@ import ThemeToggle from './ThemeToggle.astro';
     background-color: var(--bg-primary);
     border-bottom: 1px solid var(--border-color);
     backdrop-filter: blur(12px);
-    transition: background-color 0.2s ease, border-color 0.2s ease;
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease;
   }
 
   .nav-container {
+    position: relative; /* anchor for the absolute-positioned panel */
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 1.5rem;
     max-width: var(--max-width);
     margin: 0 auto;
     padding: 0 1.5rem;
@@ -52,6 +239,8 @@ import ThemeToggle from './ThemeToggle.astro';
     font-size: 1.15rem;
     color: var(--text-primary);
     text-decoration: none;
+    flex-shrink: 0;
+    min-width: 0;
   }
 
   .nav-logo:hover {
@@ -63,16 +252,21 @@ import ThemeToggle from './ThemeToggle.astro';
   }
 
   .nav-logo-suffix {
-    color: var(--color-teal);
+    color: var(--accent-teal-text);
   }
 
-  .nav-links {
+  /* ===== Desktop inline links =====
+     `margin-left: auto` pushes the nav links and everything after
+     them (including the theme toggle in `.nav-end`) to the right
+     edge of the container, leaving the logo alone on the left. */
+  .nav-links--desktop {
     display: flex;
     align-items: center;
     gap: 1.25rem;
+    margin-left: auto;
   }
 
-  .nav-links a {
+  .nav-links--desktop a {
     font-size: 0.9rem;
     font-weight: 500;
     color: var(--text-secondary);
@@ -80,8 +274,147 @@ import ThemeToggle from './ThemeToggle.astro';
     transition: color 0.15s ease;
   }
 
-  .nav-links a:hover {
+  .nav-links--desktop a:hover {
     color: var(--text-primary);
     text-decoration: none;
+  }
+
+  /* ===== End controls (theme toggle + hamburger) ===== */
+  .nav-end {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  /* ===== Hamburger button ===== */
+  .nav-hamburger {
+    display: none; /* shown only at mobile breakpoint */
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition:
+      color 0.15s ease,
+      border-color 0.15s ease,
+      background-color 0.15s ease;
+  }
+
+  .nav-hamburger:hover {
+    color: var(--text-primary);
+    border-color: var(--text-muted);
+    background-color: var(--bg-surface);
+  }
+
+  .nav-hamburger:focus-visible {
+    outline: 2px solid var(--color-purple);
+    outline-offset: var(--focus-offset);
+  }
+
+  .nav-hamburger-icon {
+    display: none;
+  }
+
+  /* Default state (closed): show the menu icon. */
+  .nav-hamburger[aria-expanded='false'] .nav-hamburger-icon--open {
+    display: block;
+  }
+
+  .nav-hamburger[aria-expanded='true'] .nav-hamburger-icon--close {
+    display: block;
+  }
+
+  /* ===== Disclosure panel ===== */
+  .nav-panel {
+    display: none; /* non-mobile: panel never renders */
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    padding: 0.5rem 1.5rem 1rem;
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .nav-panel a {
+    display: block;
+    padding: 0.75rem 0;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    text-decoration: none;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .nav-panel a:last-child {
+    border-bottom: none;
+  }
+
+  .nav-panel a:hover {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .nav-panel a:focus-visible {
+    outline: 2px solid var(--color-purple);
+    outline-offset: var(--focus-offset);
+  }
+
+  /* ===== Mobile breakpoint ===== */
+  @media (max-width: 720px) {
+    .nav-links--desktop {
+      display: none;
+    }
+
+    /* With nav-links--desktop hidden, nav-end is the only "right side"
+       element — give IT the auto-margin so it still hugs the right
+       edge while the logo stays on the left. */
+    .nav-end {
+      margin-left: auto;
+    }
+
+    .nav-hamburger {
+      display: inline-flex;
+    }
+
+    .nav-panel.nav-panel--open {
+      display: block;
+      animation: nav-panel-in 0.18s ease-out;
+    }
+  }
+
+  @keyframes nav-panel-in {
+    from {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nav-panel.nav-panel--open {
+      animation: none;
+    }
+  }
+
+  /* Ensure the nav bar itself doesn't overflow at very narrow widths. */
+  @media (max-width: 360px) {
+    .nav-container {
+      padding: 0 1rem;
+      gap: 0.5rem;
+    }
+
+    .nav-logo {
+      font-size: 1rem;
+    }
   }
 </style>

@@ -12,9 +12,12 @@ import { join } from 'node:path';
 // and runs once per URL.
 // ---------------------------------------------------------------------
 
-/** @type {Map<string, { lastmod?: string; priority: number; changefreq: string }>} */
+/** @typedef {import('@astrojs/sitemap').ChangeFreq} ChangeFreq */
+/** @typedef {{ lastmod?: string; priority: number; changefreq: ChangeFreq }} SitemapHint */
+/** @type {Map<string, SitemapHint>} */
 const sitemapHints = new Map();
 
+/** @type {ReadonlyArray<SitemapHint & { path: string }>} */
 const SITE_ROUTE_DEFAULTS = [
   { path: '/', priority: 1.0, changefreq: 'monthly' },
   { path: '/demos/', priority: 0.9, changefreq: 'weekly' },
@@ -64,11 +67,17 @@ export default defineConfig({
         const pathname = new URL(item.url).pathname;
         const hint = sitemapHints.get(pathname);
         if (!hint) return item;
+        // sitemap's `SitemapItemLoose.changefreq` is typed as the nominal
+        // `EnumChangefreq` (a string-valued enum), so a bare string literal
+        // isn't assignable. The runtime value IS one of the enum's string
+        // members — the cast just tells TypeScript that.
         return {
           ...item,
           ...(hint.lastmod ? { lastmod: hint.lastmod } : {}),
           priority: hint.priority,
-          changefreq: hint.changefreq,
+          changefreq: /** @type {import('sitemap').EnumChangefreq} */ (
+            hint.changefreq
+          ),
         };
       },
     }),

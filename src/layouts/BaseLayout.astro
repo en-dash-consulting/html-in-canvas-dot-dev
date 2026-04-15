@@ -185,6 +185,33 @@ const websiteJsonLd = {
         );
       })();
     </script>
+
+    {/* Flag detection before first paint so CSS can pick the right
+        hero variant without a flash. Runs synchronously in <head>,
+        before body parsing, so the attribute is set when the browser
+        first evaluates CSS selectors for the page. Failure modes
+        (non-Chromium, flag off, older builds) all resolve to "false". */}
+    <script is:inline>
+      (function() {
+        try {
+          var proto = window.CanvasRenderingContext2D &&
+            window.CanvasRenderingContext2D.prototype;
+          var supported = !!proto && (
+            'drawElementImage' in proto ||
+            'drawElement' in proto
+          );
+          document.documentElement.setAttribute(
+            'data-flag-supported',
+            supported ? 'true' : 'false'
+          );
+        } catch (e) {
+          document.documentElement.setAttribute(
+            'data-flag-supported',
+            'false'
+          );
+        }
+      })();
+    </script>
   </head>
   <body>
     <Nav />
@@ -193,5 +220,19 @@ const websiteJsonLd = {
       <slot />
     </main>
     <Footer />
+    {/* Scrollable <pre> blocks must be keyboard-reachable (WCAG 2.1.1).
+        `pre` has `overflow-x: auto` in the global styles, so any content
+        that exceeds the viewport width becomes a horizontal scroll
+        region with no keyboard access. Adding tabindex=0 makes the
+        block focusable so keyboard users can scroll it with arrow keys. */}
+    <script is:inline>
+      function markScrollablePreFocusable() {
+        document.querySelectorAll('pre:not([tabindex])').forEach((pre) => {
+          pre.tabIndex = 0;
+        });
+      }
+      markScrollablePreFocusable();
+      document.addEventListener('astro:after-swap', markScrollablePreFocusable);
+    </script>
   </body>
 </html>

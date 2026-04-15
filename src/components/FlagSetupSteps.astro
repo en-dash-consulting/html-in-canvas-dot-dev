@@ -1,0 +1,137 @@
+---
+/**
+ * Three-step quick-start guide for enabling the HTML-in-Canvas flag.
+ *
+ * Shared between the landing-page flag-off fallback and the
+ * docs/browser-support page so visitors see the same actionable path
+ * wherever they first hit the flag prompt.
+ */
+import CopyFlagButton from './CopyFlagButton.astro';
+
+interface Props {
+  /** Heading level for the title. Defaults to h2. */
+  headingLevel?: 'h2' | 'h3';
+  /** Compact variant for tight layouts (e.g. landing hero fallback). */
+  compact?: boolean;
+}
+
+const { headingLevel = 'h2', compact = false } = Astro.props;
+const Heading = headingLevel;
+---
+
+<section class:list={['flag-setup', compact && 'flag-setup--compact']}>
+  <Heading class="flag-setup-heading">Enable the flag (30 seconds)</Heading>
+  <p class="flag-setup-sub">
+    Works in <strong>Chrome Canary</strong> and <strong>Brave Stable</strong>
+    (Chromium 147+). No install if you already have one of these.
+  </p>
+
+  <ol class="flag-setup-steps">
+    <li class="flag-setup-step">
+      <span class="flag-setup-step-label">Paste this URL into your address bar</span>
+      <div class="flag-setup-step-action">
+        <CopyFlagButton />
+      </div>
+      <p class="flag-setup-step-hint">
+        Chrome blocks direct links to <code>chrome://</code> pages for security,
+        so copy-paste is required. Brave users: <code>brave://</code> also works.
+      </p>
+    </li>
+
+    <li class="flag-setup-step">
+      <span class="flag-setup-step-label">
+        Set <em>Enable the new drawElement API for Canvas</em> to <strong>Enabled</strong>
+      </span>
+    </li>
+
+    <li class="flag-setup-step">
+      <span class="flag-setup-step-label">Relaunch the browser</span>
+      <p class="flag-setup-step-hint">
+        Hit <strong>Relaunch</strong> at the bottom of the flags page, then
+        reload this site.
+      </p>
+    </li>
+  </ol>
+</section>
+
+<style>
+  .flag-setup {
+    padding: 1.5rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+  }
+
+  .flag-setup--compact {
+    padding: 1rem 1.25rem;
+  }
+
+  .flag-setup-heading {
+    font-size: 1.25rem;
+    margin: 0 0 0.5rem;
+  }
+
+  .flag-setup--compact .flag-setup-heading {
+    font-size: 1.1rem;
+  }
+
+  .flag-setup-sub {
+    margin: 0 0 1.25rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+
+  .flag-setup-steps {
+    margin: 0;
+    padding: 0 0 0 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .flag-setup-step {
+    padding-left: 0.25rem;
+  }
+
+  .flag-setup-step::marker {
+    font-weight: 700;
+    color: var(--accent-teal-text);
+  }
+
+  .flag-setup-step-label {
+    display: block;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    line-height: 1.5;
+  }
+
+  .flag-setup-step-action {
+    margin-top: 0.5rem;
+  }
+
+  .flag-setup-step-hint {
+    margin: 0.35rem 0 0;
+    font-size: 0.825rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  .flag-setup-step-hint code,
+  .flag-setup-step-label code {
+    font-size: 0.85em;
+    padding: 0.1em 0.3em;
+    background: var(--bg-primary);
+    border-radius: 3px;
+  }
+
+  @media (max-width: 520px) {
+    .flag-setup {
+      padding: 1.25rem;
+    }
+
+    .flag-setup-steps {
+      padding-left: 1.1rem;
+    }
+  }
+</style>
