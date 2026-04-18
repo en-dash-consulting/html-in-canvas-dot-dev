@@ -1,6 +1,6 @@
 {
   "title": "CSS-to-Shader Pipeline",
-  "description": "Live GLSL shader editor where any HTML element becomes a WebGL texture — edit CSS on the left, apply fragment shaders like chromatic aberration, CRT scanlines, and halftone in real-time.",
+  "description": "Pick a source (live form, article, or CSS-painted scene) and a fragment shader (CRT, chromatic, halftone, ASCII, and more). The DOM lives under the shader — type, Tab, and hover all still work.",
   "tags": ["webgl", "shader", "editor", "creative-tool", "glsl", "effects"],
   "author": "En Dash Consulting",
   "dateCreated": "2026-04-10",

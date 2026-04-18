@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -24,104 +24,391 @@
         display: block;
         margin: 0;
         min-height: 100%;
-        background: #0a0a0f;
+        background:
+          radial-gradient(
+            ellipse at 85% 10%,
+            rgba(108, 65, 240, 0.18),
+            transparent 50%
+          ),
+          radial-gradient(
+            ellipse at 10% 110%,
+            rgba(0, 229, 185, 0.14),
+            transparent 55%
+          ),
+          #080810;
         color: #f0f0f0;
         font-family: system-ui, -apple-system, sans-serif;
-        padding: 1.5rem;
+        padding: 3rem 1.5rem 2rem;
         overflow-x: hidden;
       }
 
-      h1 {
+      /* =============================================================
+         Page hero copy
+         ============================================================= */
+      .page-hero {
+        max-width: 1200px;
+        margin: 0 auto 1.25rem;
         text-align: center;
-        font-size: 1.15rem;
-        margin-bottom: 0.2rem;
-        font-weight: 600;
       }
 
-      .page-subtitle {
-        text-align: center;
+      .page-hero h1 {
+        font-size: 1.75rem;
+        font-weight: 800;
+        margin: 0 0 0.35rem;
+        letter-spacing: -0.01em;
+        line-height: 1.15;
+      }
+
+      .page-hero h1 .accent {
+        background: linear-gradient(90deg, #9a7cff, #00e5b9);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+
+      .page-hero p {
+        margin: 0;
+        color: #a0a0b8;
+        font-size: 0.92rem;
+        line-height: 1.55;
+        max-width: 42rem;
+        margin-inline: auto;
+      }
+
+      .page-hero code {
+        font-family: "JetBrains Mono", ui-monospace, monospace;
         font-size: 0.8rem;
-        color: #b0b0c8;
-        margin-bottom: 1rem;
+        padding: 0.05rem 0.35rem;
+        border-radius: 4px;
+        background: rgba(108, 65, 240, 0.14);
+        color: #cbbcff;
       }
 
-      /* ============================================================
-         Layout: 3-panel split
-         ============================================================ */
+      /* =============================================================
+         Layout
+         The hero splits source (live HTML) and shader output side by
+         side so the before/after relationship is obvious. Below that
+         sit the preset pills and the CSS/GLSL code editor.
+         ============================================================= */
       .pipeline {
         max-width: 1200px;
         margin: 0 auto;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        grid-template-rows: auto 1fr;
-        gap: 0.75rem;
-        /*
-         * Fixed pixel height instead of `100vh - 5rem` so the layout
-         * survives the shadow-DOM mount inside the demo wrapper, which
-         * sizes the host with min-height instead of viewport units.
-         */
-        height: 620px;
+        display: flex;
+        flex-direction: column;
+        gap: 0.9rem;
+      }
+
+      /* =============================================================
+         Composite stage: one canvas stack.
+           • staging-canvas paints the scene via drawElementImage
+           • preview-canvas renders the shader on top (pointer-events
+             disabled so clicks fall through to the DOM below)
+           • the scene's interactive DOM is layout-positioned exactly
+             underneath the shader output — typing/hovering/clicking
+             hits real DOM while you watch it through the shader
+         ============================================================= */
+      .stage {
+        position: relative;
+        border: 1px solid #282840;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #0a0a14;
+        height: min(52vh, 480px);
+        min-height: 320px;
+      }
+
+      #staging-canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+        background: transparent;
+        z-index: 0;
+      }
+
+      #scene {
+        width: 100%;
+        height: 100%;
+        position: relative;
+      }
+
+      /* Click ripple — lives in the outer style so every scene gets
+         the same interaction even though SCENES.css is replaceable.
+         On click, JS appends one of these to #scene at the click
+         point; the animation scales + fades it, then it removes
+         itself. drawElementImage captures it each frame, so the
+         ripple flows through whatever shader is active. */
+      .scene-ripple {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        margin-left: -6px;
+        margin-top: -6px;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle,
+          rgba(255, 245, 220, 1) 0%,
+          rgba(255, 200, 120, 0.9) 35%,
+          rgba(154, 124, 255, 0.55) 70%,
+          transparent 100%
+        );
+        box-shadow:
+          0 0 30px rgba(255, 200, 150, 0.9),
+          0 0 80px rgba(154, 124, 255, 0.45);
+        pointer-events: none;
+        z-index: 10;
+        mix-blend-mode: screen;
+        animation: scene-ripple-pop 720ms cubic-bezier(0.22, 1, 0.36, 1)
+          forwards;
+      }
+
+      .scene-ripple::after {
+        content: "";
+        position: absolute;
+        inset: -3px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 230, 180, 0.9);
+        animation: scene-ripple-ring 720ms cubic-bezier(0.22, 1, 0.36, 1)
+          forwards;
+      }
+
+      @keyframes scene-ripple-pop {
+        0% {
+          transform: scale(0.4);
+          opacity: 1;
+        }
+        40% {
+          opacity: 0.95;
+        }
+        100% {
+          transform: scale(14);
+          opacity: 0;
+        }
+      }
+
+      @keyframes scene-ripple-ring {
+        0% {
+          transform: scale(0.4);
+          opacity: 1;
+          border-width: 3px;
+        }
+        100% {
+          transform: scale(10);
+          opacity: 0;
+          border-width: 1px;
+        }
+      }
+
+      #preview-canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+        background: transparent;
+        z-index: 1;
+        /* Critical: let the shader dominate visually but forward
+           pointer events to the interactive DOM sitting behind it. */
+        pointer-events: none;
+      }
+
+      /* Floating stage HUD. pointer-events: none on the container
+         so labels don't eat clicks; re-enabled on anything the user
+         should be able to interact with. */
+      .stage-hud {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 3;
+      }
+
+      .stage-hud .live-badge {
+        position: absolute;
+        top: 0.6rem;
+        left: 0.6rem;
+        pointer-events: auto;
+      }
+
+      .stage-hud .fps {
+        position: absolute;
+        top: 0.6rem;
+        right: 0.6rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.25rem 0.55rem;
+        background: rgba(10, 10, 20, 0.75);
+        border: 1px solid rgba(154, 124, 255, 0.3);
+        border-radius: 999px;
+        color: #cbbcff;
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        backdrop-filter: blur(6px);
+      }
+
+      /* The source canvas has a helpful "shader off" state when the
+         user picks the passthrough preset — give it a checker glow
+         so they can tell the DOM is shining through raw. */
+      .stage[data-preset="passthrough"]::before {
+        content: "RAW";
+        position: absolute;
+        bottom: 0.6rem;
+        left: 0.6rem;
+        z-index: 3;
+        padding: 0.25rem 0.55rem;
+        border-radius: 999px;
+        background: rgba(0, 229, 185, 0.12);
+        border: 1px solid rgba(0, 229, 185, 0.35);
+        color: #a8ffe3;
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 0.6rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        pointer-events: none;
       }
 
       .panel {
-        background: #14141f;
+        background: #12121d;
         border: 1px solid #282840;
-        border-radius: 10px;
+        border-radius: 12px;
         display: flex;
         flex-direction: column;
         overflow: hidden;
+        position: relative;
       }
 
       .panel-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 0.5rem 0.75rem;
-        background: #1a1a2e;
+        gap: 0.5rem;
+        padding: 0.55rem 0.85rem;
+        background: rgba(26, 26, 46, 0.8);
         border-bottom: 1px solid #282840;
-        font-size: 0.75rem;
-        font-weight: 600;
+        font-size: 0.68rem;
+        font-weight: 700;
         color: #8a8aaf;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.08em;
         flex-shrink: 0;
       }
 
       .panel-body {
         flex: 1;
-        overflow: hidden;
         position: relative;
+        min-height: 0;
+        overflow: hidden;
       }
 
-      /* Left column spans both rows */
-      .editor-panel {
-        grid-row: 1 / -1;
+      /* =============================================================
+         Controls bar — source + shader pills stacked so the two
+         axes of the demo are obvious at a glance.
+         ============================================================= */
+      .controls-bar {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        padding: 0.25rem 0;
       }
 
-      /* ============================================================
-         Code editors
-         ============================================================ */
+      .control-group {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .control-label {
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #b8b8d0;
+        min-width: 4rem;
+        text-align: right;
+      }
+
+      .pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+      }
+
+      .preset-btn,
+      .source-btn {
+        padding: 0.45rem 0.9rem;
+        font-size: 0.74rem;
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-weight: 600;
+        background: rgba(26, 26, 46, 0.8);
+        color: #b0b0c8;
+        border: 1px solid #333355;
+        border-radius: 999px;
+        cursor: pointer;
+        transition:
+          background 0.15s,
+          color 0.15s,
+          border-color 0.15s,
+          transform 0.15s;
+      }
+
+      .preset-btn:hover,
+      .source-btn:hover {
+        background: #282850;
+        color: #f0f0f0;
+        transform: translateY(-1px);
+      }
+
+      .preset-btn.active {
+        background: linear-gradient(135deg, #6c41f0, #9a7cff);
+        color: #fff;
+        border-color: #9a7cff;
+        box-shadow: 0 6px 18px -6px rgba(108, 65, 240, 0.6);
+      }
+
+      .source-btn.active {
+        background: linear-gradient(135deg, #00b894, #00e5b9);
+        color: #062320;
+        border-color: #00e5b9;
+        box-shadow: 0 6px 18px -6px rgba(0, 229, 185, 0.55);
+      }
+
+      /* =============================================================
+         Code editor panel (full width, tabbed CSS / GLSL)
+         ============================================================= */
+      .code-panel {
+        min-height: 280px;
+      }
+
       .editor-tabs {
         display: flex;
         gap: 0;
-        flex-shrink: 0;
       }
 
       .editor-tab {
-        padding: 0.4rem 0.75rem;
+        padding: 0.45rem 0.9rem;
         font-size: 0.7rem;
-        font-family: "JetBrains Mono", monospace;
-        font-weight: 600;
-        color: #b0b0c8;
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-weight: 700;
+        color: #8a8aaf;
         background: transparent;
         border: none;
         border-bottom: 2px solid transparent;
         cursor: pointer;
-        transition: color 0.15s, border-color 0.15s;
+        letter-spacing: 0.04em;
+        text-transform: none;
+        transition:
+          color 0.15s,
+          border-color 0.15s;
       }
 
       .editor-tab:hover {
-        color: #aaa;
+        color: #cbbcff;
       }
 
       .editor-tab.active {
@@ -142,166 +429,208 @@
       textarea {
         width: 100%;
         height: 100%;
-        background: #0d0d18;
+        background: #0a0a14;
         color: #d4d4e8;
         border: none;
-        padding: 0.75rem;
-        font-family: "JetBrains Mono", monospace;
+        padding: 0.85rem 1rem;
+        font-family: "JetBrains Mono", ui-monospace, monospace;
         font-size: 0.78rem;
         line-height: 1.6;
         resize: none;
         tab-size: 2;
         outline: none;
+        caret-color: #9a7cff;
       }
 
       textarea::selection {
-        background: #6c41f044;
+        background: rgba(108, 65, 240, 0.35);
       }
 
       textarea:focus {
-        box-shadow: inset 0 0 0 1px #6c41f066;
+        box-shadow: inset 0 0 0 1px rgba(108, 65, 240, 0.45);
       }
 
-      /* ============================================================
-         Preview canvas
-         ============================================================ */
-      .preview-canvas-wrap {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0.5rem;
-        height: 100%;
-      }
-
-      #preview-canvas {
-        width: 100%;
-        height: 100%;
-        display: block;
-        border-radius: 6px;
-        background: #000;
-      }
-
-      /* ============================================================
-         Shader controls
-         ============================================================ */
-      .shader-presets {
-        display: flex;
-        gap: 0.35rem;
-        flex-wrap: wrap;
-      }
-
-      .preset-btn {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.65rem;
-        font-family: "JetBrains Mono", monospace;
-        font-weight: 600;
-        background: #1e1e35;
-        color: #8a8aaf;
-        border: 1px solid #333355;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: all 0.15s;
-      }
-
-      .preset-btn:hover {
-        background: #282850;
-        color: #ccc;
-      }
-
-      .preset-btn.active {
-        background: #6c41f0;
-        color: #fff;
-        border-color: #9a7cff;
-      }
-
-      /* ============================================================
-         Off-screen staging canvas for HTML-in-Canvas capture
-         ============================================================ */
-      /*
-       * Wrap the staging canvas in a 1x1 visible container at the
-       * page corner so Chrome actually paints its layoutsubtree
-       * children. Off-screen positioning (left: -9999px) and
-       * opacity: 0 both cause the browser to skip painting, which
-       * leaves the layoutsubtree children with no cached paint
-       * record and drawElementImage produces blank pixels.
-       */
-      .staging-container {
+      /* Compile error badge (absolute over the code panel) */
+      .compile-error {
         position: absolute;
-        right: 0;
-        bottom: 0;
-        width: 1px;
-        height: 1px;
-        overflow: hidden;
+        bottom: 0.6rem;
+        left: 0.6rem;
+        right: 0.6rem;
+        padding: 0.5rem 0.75rem;
+        background: rgba(213, 46, 102, 0.15);
+        border: 1px solid rgba(213, 46, 102, 0.5);
+        border-radius: 8px;
+        color: #ff9dbb;
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 0.7rem;
+        line-height: 1.4;
+        max-height: 6rem;
+        overflow-y: auto;
         pointer-events: none;
+        white-space: pre-wrap;
       }
 
-      #staging-canvas {
-        width: 600px;
-        height: 400px;
+      .compile-error[hidden] {
+        display: none;
       }
 
-      #staging-content {
-        width: 600px;
-        height: 400px;
-        overflow: hidden;
-        font-family: system-ui, sans-serif;
-        background: #1a1a2e;
-        color: #f0f0f0;
-        display: flex;
+      /* =============================================================
+         Live DOM badge (inside the stage HUD).
+         ============================================================= */
+      .live-badge {
+        display: inline-flex;
         align-items: center;
-        justify-content: center;
-        padding: 2rem;
+        gap: 0.35rem;
+        padding: 0.3rem 0.65rem;
+        background: rgba(10, 10, 20, 0.78);
+        border: 1px solid rgba(0, 229, 185, 0.4);
+        border-radius: 999px;
+        color: #a8ffe3;
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        backdrop-filter: blur(6px);
       }
 
-      /* ============================================================
+      .live-badge::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #00e5b9;
+        box-shadow: 0 0 8px #00e5b9;
+        animation: live-pulse 1.4s ease-in-out infinite;
+      }
+
+      @keyframes live-pulse {
+        0%,
+        100% {
+          opacity: 0.4;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
+
+      /* =============================================================
          Responsive
-         ============================================================ */
-      @media (max-width: 700px) {
-        .pipeline {
-          grid-template-columns: 1fr;
-          grid-template-rows: 1fr auto auto;
-          height: auto;
-          min-height: 0;
-        }
-
-        .editor-panel {
-          grid-row: auto;
-          height: 300px;
-        }
-
-        .panel {
-          height: 300px;
+         ============================================================= */
+      @media (max-width: 720px) {
+        .stage {
+          height: 56vh;
         }
       }
     </style>
   </head>
   <body>
-    <h1>CSS-to-Shader Pipeline</h1>
-    <p class="page-subtitle">
-      Style HTML with CSS, capture it into a canvas, then apply real-time GLSL
-      fragment shaders
-    </p>
+    <header class="page-hero">
+      <h1>
+        Real DOM. <span class="accent">Fragment shader on top.</span>
+      </h1>
+      <p>
+        Pick a <strong>Source</strong> (live form, article, or CSS-painted
+        scene) and a <strong>Shader</strong> below.
+        <code>drawElementImage()</code> captures the DOM every frame; a
+        fragment shader renders on top of it. The Controls source is fully
+        interactive — type, Tab, hover — <em>through</em> the shader.
+      </p>
+    </header>
 
     <div class="pipeline">
-      <!-- ============================================================
-           Left: Code editors (CSS + GLSL tabs)
-           ============================================================ -->
-      <div class="panel editor-panel">
+      <!-- =============================================================
+           COMPOSITE STAGE
+           The staging canvas (with the scene as its layoutsubtree
+           child) sits at the back. The WebGL shader canvas sits on
+           top with pointer-events disabled, so clicks / focus / Tab
+           fall through to the real DOM underneath.
+           ============================================================= -->
+      <div class="stage" id="stage" data-preset="crt">
+        <canvas
+          id="staging-canvas"
+          layoutsubtree
+          aria-label="Live interactive HTML scene — contains the form controls below"
+        >
+          <div id="scene">
+            <div class="scene-stack">
+              <div class="scene-eyebrow">Live HTML · shaded in real time</div>
+              <h2 class="scene-title">Hello, Shaders</h2>
+              <div class="scene-clock" id="scene-clock">--:--:--</div>
+              <input
+                type="text"
+                id="scene-input"
+                class="scene-input"
+                value="Type here — the shader follows."
+                aria-label="Interactive input behind the shader — type to see it update"
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <button type="button" class="scene-btn" id="scene-btn">
+                Hover / click me
+              </button>
+              <div class="scene-meter">
+                <div class="scene-meter-fill" id="scene-meter-fill"></div>
+              </div>
+            </div>
+          </div>
+        </canvas>
+        <canvas
+          id="preview-canvas"
+          aria-hidden="true"
+        ></canvas>
+        <div class="stage-hud">
+          <span class="live-badge">Type · Tab · Hover</span>
+          <span class="fps" id="fps-counter">-- fps</span>
+        </div>
+      </div>
+
+      <!-- =============================================================
+           CONTROLS — two independent axes: what you're shading
+           (Source) and how you're shading it (Shader).
+           ============================================================= -->
+      <div class="controls-bar">
+        <div class="control-group" role="toolbar" aria-label="Source scene">
+          <span class="control-label">Source</span>
+          <div class="pill-row">
+            <button class="source-btn active" data-source="controls">
+              Controls
+            </button>
+            <button class="source-btn" data-source="article">Article</button>
+            <button class="source-btn" data-source="visual">Visual</button>
+          </div>
+        </div>
+        <div class="control-group" role="toolbar" aria-label="Shader preset">
+          <span class="control-label">Shader</span>
+          <div class="pill-row">
+            <button class="preset-btn" data-preset="passthrough">None</button>
+            <button class="preset-btn active" data-preset="crt">CRT</button>
+            <button class="preset-btn" data-preset="chromatic">
+              Chromatic
+            </button>
+            <button class="preset-btn" data-preset="glitch">Glitch</button>
+            <button class="preset-btn" data-preset="vhs">VHS</button>
+            <button class="preset-btn" data-preset="halftone">Halftone</button>
+            <button class="preset-btn" data-preset="ascii">ASCII</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- =============================================================
+           CODE EDITOR
+           ============================================================= -->
+      <div class="panel code-panel">
         <div class="panel-header">
           <div class="editor-tabs">
             <button class="editor-tab active" data-tab="css">style.css</button>
             <button class="editor-tab" data-tab="glsl">shader.frag</button>
           </div>
-          <div class="shader-presets">
-            <button class="preset-btn active" data-preset="passthrough">
-              None
-            </button>
-            <button class="preset-btn" data-preset="chromatic">Chromatic</button>
-            <button class="preset-btn" data-preset="crt">CRT</button>
-            <button class="preset-btn" data-preset="glitch">Glitch</button>
-            <button class="preset-btn" data-preset="vhs">VHS</button>
-            <button class="preset-btn" data-preset="halftone">Halftone</button>
-          </div>
+          <span
+            class="title"
+            style="text-transform: none; letter-spacing: 0; color: #b8b8d0"
+          >
+            edits apply instantly
+          </span>
         </div>
         <div class="panel-body">
           <div class="editor-area active" data-editor="css">
@@ -309,7 +638,7 @@
               id="css-editor"
               spellcheck="false"
               autocomplete="off"
-              aria-label="CSS source code — edit to see the shader update"
+              aria-label="CSS source — style the scene on the left"
             ></textarea>
           </div>
           <div class="editor-area" data-editor="glsl">
@@ -317,93 +646,18 @@
               id="glsl-editor"
               spellcheck="false"
               autocomplete="off"
-              aria-label="GLSL fragment shader source code — edit to see the shader update"
+              aria-label="GLSL fragment shader source — applied to the scene in real time"
             ></textarea>
           </div>
+          <pre class="compile-error" id="compile-error" hidden></pre>
         </div>
       </div>
-
-      <!-- ============================================================
-           Right top: Live preview (WebGL output)
-           ============================================================ -->
-      <div class="panel">
-        <div class="panel-header">
-          <span>Preview</span>
-          <span id="fps-counter" style="color: #00e5b9">-- fps</span>
-        </div>
-        <div class="panel-body preview-canvas-wrap">
-          <canvas
-            id="preview-canvas"
-            role="img"
-            aria-label="Live GLSL shader preview — renders the HTML-in-canvas source through the active shader"
-          ></canvas>
-        </div>
-      </div>
-
-      <!-- ============================================================
-           Right bottom: Pipeline info
-           ============================================================ -->
-      <div class="panel">
-        <div class="panel-header"><span>Pipeline</span></div>
-        <div
-          class="panel-body"
-          style="
-            padding: 0.6rem 0.75rem;
-            font-size: 0.72rem;
-            color: #b0b0c8;
-            line-height: 1.5;
-            overflow-y: auto;
-          "
-        >
-          <p style="margin-bottom: 0.4rem">
-            <strong style="color: #8a8aaf">1.</strong>
-            <span style="color: #00e5b9">CSS</span> styles an HTML element
-            living inside a
-            <code style="color: #9a7cff">&lt;canvas layoutsubtree&gt;</code>
-          </p>
-          <p style="margin-bottom: 0.4rem">
-            <strong style="color: #8a8aaf">2.</strong>
-            <span style="color: #00e5b9">drawElementImage()</span> renders the
-            styled DOM into the 2D canvas
-          </p>
-          <p style="margin-bottom: 0.4rem">
-            <strong style="color: #8a8aaf">3.</strong> The 2D canvas becomes a
-            <span style="color: #00e5b9">WebGL texture</span>
-          </p>
-          <p style="margin-bottom: 0.4rem">
-            <strong style="color: #8a8aaf">4.</strong> A
-            <span style="color: #00e5b9">fragment shader</span> processes every
-            pixel in real-time
-          </p>
-          <p style="color: #b0b0c8; font-size: 0.65rem; margin-top: 0.3rem">
-            This pipeline is impossible without HTML-in-Canvas — previously you
-            needed html2canvas or dom-to-image, which are slow, lossy, and
-            cannot keep up with 60 fps.
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- ============================================================
-         Staging canvas + HTML content. The HTML element inside is
-         styled by the CSS editor. drawElementImage() captures it;
-         the result feeds WebGL. Wrapped in a 1×1 visible container
-         so Chrome paints it (see CSS).
-         ============================================================ -->
-    <div class="staging-container">
-      <canvas id="staging-canvas" width="600" height="400" layoutsubtree>
-        <div id="staging-content">
-          <div id="user-content">
-            <h2 style="margin-bottom: 0.5rem">Hello, Shaders</h2>
-            <p>Edit the CSS on the left to style this element.</p>
-          </div>
-        </div>
-      </canvas>
     </div>
 
     <script>
       /* ==============================================================
-         Shader presets — each is a complete fragment shader
+         Fragment shader presets. Each is a complete shader — edit in
+         the GLSL tab and it'll recompile on every keystroke.
          ============================================================== */
       const SHADERS = {
         passthrough: `precision mediump float;
@@ -419,12 +673,14 @@ void main() {
 uniform sampler2D u_texture;
 uniform vec2 u_resolution;
 uniform float u_time;
+uniform vec2 u_mouse;
 varying vec2 v_texCoord;
 
 void main() {
-  float amount = 0.006 + 0.002 * sin(u_time * 1.5);
-  vec2 dir = v_texCoord - 0.5;
-  float d = length(dir);
+  // Aberration radiates from the mouse (falls back to center).
+  vec2 origin = u_mouse.x < 0.0 ? vec2(0.5) : u_mouse;
+  float amount = 0.008 + 0.004 * sin(u_time * 1.5);
+  vec2 dir = v_texCoord - origin;
 
   float r = texture2D(u_texture, v_texCoord + dir * amount).r;
   float g = texture2D(u_texture, v_texCoord).g;
@@ -446,26 +702,26 @@ void main() {
   // Barrel distortion
   vec2 dc = uv - 0.5;
   float d2 = dot(dc, dc);
-  uv = uv + dc * d2 * 0.15;
+  uv = uv + dc * d2 * 0.18;
 
   vec4 col = texture2D(u_texture, uv);
 
-  // Scanlines
-  float scan = sin(uv.y * u_resolution.y * 1.5) * 0.06;
+  // Scanlines (subpixel-aware)
+  float scan = sin(uv.y * u_resolution.y * 1.4) * 0.08;
   col.rgb -= scan;
 
-  // Flicker
-  col.rgb *= 0.97 + 0.03 * sin(u_time * 8.0);
+  // Phosphor flicker
+  col.rgb *= 0.97 + 0.03 * sin(u_time * 9.0);
 
   // Vignette
-  float vig = 1.0 - d2 * 1.5;
+  float vig = 1.0 - d2 * 1.6;
   col.rgb *= vig;
 
   // Phosphor tint
-  col.r *= 1.05;
+  col.r *= 1.06;
   col.g *= 1.02;
 
-  // Clamp if outside barrel
+  // Curved screen mask
   if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0)
     col = vec4(0.0);
 
@@ -484,24 +740,24 @@ float rand(float s) {
 
 void main() {
   vec2 uv = v_texCoord;
-  float t = floor(u_time * 6.0);
+  float t = floor(u_time * 8.0);
 
   // Horizontal block displacement
-  float block = floor(uv.y * 12.0);
-  float shift = (rand(block + t) - 0.5) * 0.06;
-  shift *= step(0.92, rand(t + 0.1));
+  float block = floor(uv.y * 14.0);
+  float shift = (rand(block + t) - 0.5) * 0.08;
+  shift *= step(0.9, rand(t + 0.1));
 
   uv.x += shift;
 
   // RGB split on glitch
-  float r = texture2D(u_texture, uv + vec2(shift * 0.5, 0.0)).r;
+  float r = texture2D(u_texture, uv + vec2(shift * 0.6, 0.0)).r;
   float g = texture2D(u_texture, uv).g;
-  float b = texture2D(u_texture, uv - vec2(shift * 0.5, 0.0)).b;
+  float b = texture2D(u_texture, uv - vec2(shift * 0.6, 0.0)).b;
 
   vec4 col = vec4(r, g, b, 1.0);
 
   // Scanline noise
-  col.rgb += (rand(uv.y * 100.0 + t) - 0.5) * 0.04;
+  col.rgb += (rand(uv.y * 140.0 + t) - 0.5) * 0.06;
 
   gl_FragColor = col;
 }`,
@@ -520,32 +776,32 @@ void main() {
   vec2 uv = v_texCoord;
 
   // Tracking wobble
-  float wobble = sin(uv.y * 40.0 + u_time * 3.0) * 0.002;
-  wobble += sin(uv.y * 120.0 - u_time * 1.7) * 0.001;
+  float wobble = sin(uv.y * 40.0 + u_time * 3.0) * 0.003;
+  wobble += sin(uv.y * 120.0 - u_time * 1.7) * 0.0015;
   uv.x += wobble;
 
   // Vertical jitter (occasional)
   float jitter = step(0.97, rand(vec2(floor(u_time * 4.0), 0.0)));
-  uv.y += jitter * 0.01 * sin(u_time * 50.0);
+  uv.y += jitter * 0.012 * sin(u_time * 50.0);
 
   // Color bleed
-  float r = texture2D(u_texture, uv + vec2(0.002, 0.0)).r;
+  float r = texture2D(u_texture, uv + vec2(0.003, 0.0)).r;
   float g = texture2D(u_texture, uv).g;
-  float b = texture2D(u_texture, uv - vec2(0.002, 0.0)).b;
+  float b = texture2D(u_texture, uv - vec2(0.003, 0.0)).b;
 
   vec3 col = vec3(r, g, b);
 
   // Tape noise band
   float bandY = fract(u_time * 0.1);
-  float band = smoothstep(0.0, 0.02, abs(uv.y - bandY));
+  float band = smoothstep(0.0, 0.025, abs(uv.y - bandY));
   col = mix(vec3(rand(uv + u_time)), col, band);
 
-  // Reduce saturation slightly
+  // Slight desaturation
   float luma = dot(col, vec3(0.299, 0.587, 0.114));
   col = mix(vec3(luma), col, 0.85);
 
   // Noise grain
-  col += (rand(uv * u_resolution + u_time) - 0.5) * 0.06;
+  col += (rand(uv * u_resolution + u_time) - 0.5) * 0.07;
 
   gl_FragColor = vec4(col, 1.0);
 }`,
@@ -557,67 +813,869 @@ uniform float u_time;
 varying vec2 v_texCoord;
 
 void main() {
-  float dotSize = 5.0 + sin(u_time * 0.5) * 1.0;
+  float dotSize = 6.0 + sin(u_time * 0.5) * 1.5;
   vec2 pixel = v_texCoord * u_resolution;
 
-  // Grid cell
   vec2 cell = floor(pixel / dotSize) * dotSize + dotSize * 0.5;
   vec2 cellUV = cell / u_resolution;
 
   vec4 col = texture2D(u_texture, cellUV);
   float luma = dot(col.rgb, vec3(0.299, 0.587, 0.114));
 
-  // Distance from cell center
   float dist = length(pixel - cell) / (dotSize * 0.5);
-
-  // Dot radius proportional to darkness
-  float radius = (1.0 - luma) * 1.1;
+  float radius = (1.0 - luma) * 1.15;
   float dot = 1.0 - smoothstep(radius - 0.1, radius + 0.1, dist);
 
-  // Tint with original hue
   vec3 tinted = col.rgb * dot;
-
-  // Dark background where no dot
-  vec3 bg = vec3(0.06);
+  vec3 bg = vec3(0.04, 0.04, 0.08);
   vec3 result = mix(bg, tinted, dot);
 
   gl_FragColor = vec4(result, 1.0);
-}`
+}`,
+
+        ascii: `precision mediump float;
+uniform sampler2D u_texture;
+uniform vec2 u_resolution;
+uniform float u_time;
+varying vec2 v_texCoord;
+
+// Tiny ASCII-ish renderer: each cell picks a glyph pattern from a
+// 5-step luma ramp, drawn procedurally.
+float glyph(vec2 p, int n) {
+  // " . : * # " progressively denser dot patterns.
+  if (n == 0) return 0.0;
+  if (n == 1) {
+    vec2 q = abs(p - 0.5);
+    return step(max(q.x, q.y), 0.08);
+  }
+  if (n == 2) {
+    float d = length(p - 0.5);
+    return step(d, 0.18);
+  }
+  if (n == 3) {
+    float cross = min(
+      step(abs(p.x - 0.5), 0.12),
+      1.0 - step(abs(p.y - 0.5), 0.12)
+    );
+    float diag = step(0.12, abs((p.x - p.y) * 0.5));
+    return clamp(1.0 - cross - diag * 0.5, 0.0, 1.0);
+  }
+  // Filled block
+  return step(max(abs(p.x - 0.5), abs(p.y - 0.5)), 0.46);
+}
+
+void main() {
+  float cellSize = 9.0;
+  vec2 pixel = v_texCoord * u_resolution;
+  vec2 cell = floor(pixel / cellSize);
+  vec2 cellCoord = (fract(pixel / cellSize));
+
+  vec4 col = texture2D(u_texture, (cell + 0.5) * cellSize / u_resolution);
+  float luma = dot(col.rgb, vec3(0.299, 0.587, 0.114));
+
+  int idx = int(floor(luma * 4.999));
+  float g = glyph(cellCoord, idx);
+
+  vec3 tint = mix(vec3(0.6, 0.95, 0.75), col.rgb, 0.35);
+  gl_FragColor = vec4(tint * g, 1.0);
+}`,
       };
 
       /* ==============================================================
-         Default CSS for the element
+         Source scenes. Each scene is a self-contained {html, css}
+         pair. Switching Source swaps the DOM and the CSS editor's
+         contents. The same drawElementImage → WebGL pipeline runs
+         regardless of what's in the scene — that's the whole point.
          ============================================================== */
-      const DEFAULT_CSS = `/* Style the HTML element that becomes the shader texture */
 
-#user-content {
+      const CONTROLS_HTML = `<div class="scene-stack">
+  <div class="scene-eyebrow">Live HTML · shaded in real time</div>
+  <h2 class="scene-title">Hello, Shaders</h2>
+  <div class="scene-clock" id="scene-clock">--:--:--</div>
+  <input
+    type="text"
+    id="scene-input"
+    class="scene-input"
+    value="Type here — the shader follows."
+    aria-label="Interactive input behind the shader"
+    autocomplete="off"
+    spellcheck="false"
+  />
+  <button type="button" class="scene-btn" id="scene-btn">
+    Hover / click me
+  </button>
+  <div class="scene-meter">
+    <div class="scene-meter-fill" id="scene-meter-fill"></div>
+  </div>
+</div>`;
+
+      const CONTROLS_CSS = `/*
+ * Source: Controls — live, interactive form. Best with mild
+ * shaders (None, CRT, Chromatic, VHS). Halftone/ASCII will
+ * destroy legibility — pick a different Source for those.
+ */
+
+#scene {
+  background:
+    radial-gradient(ellipse at 20% 0%, #2a1670, transparent 55%),
+    radial-gradient(ellipse at 110% 110%, #003d45, transparent 55%),
+    #0a0a1a;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #f0f0f0;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+}
+
+.scene-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  text-align: center;
+  max-width: 90%;
+}
+
+.scene-eyebrow {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #a8ffe3;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.scene-title {
+  font-size: clamp(1.75rem, 5.5vw, 3.25rem);
+  font-weight: 900;
+  background: linear-gradient(90deg, #9a7cff, #00e5b9);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.scene-clock {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #00e5b9;
+  letter-spacing: 0.18em;
+  text-shadow: 0 0 18px rgba(0, 229, 185, 0.45);
+}
+
+.scene-input {
+  width: min(22rem, 90%);
+  background: rgba(108, 65, 240, 0.18);
+  border: 1px solid rgba(154, 124, 255, 0.45);
+  border-radius: 10px;
+  padding: 0.55rem 0.9rem;
+  color: #f0f0f0;
+  font-family: inherit;
+  font-size: 0.95rem;
+  outline: none;
   text-align: center;
 }
 
-#user-content h2 {
-  font-size: 2.5rem;
-  font-weight: 800;
-  background: linear-gradient(135deg, #6c41f0, #00e5b9);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 0.75rem;
+.scene-input:focus {
+  border-color: #9a7cff;
+  box-shadow: 0 0 0 3px rgba(108, 65, 240, 0.3);
 }
 
-#user-content p {
-  font-size: 1.1rem;
-  color: #8a8aaf;
-  max-width: 28ch;
-  margin: 0 auto;
-  line-height: 1.5;
+.scene-btn {
+  padding: 0.55rem 1.2rem;
+  background: linear-gradient(135deg, #6c41f0, #9a7cff);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-#staging-content {
-  background: radial-gradient(ellipse at 30% 20%, #1e1e3a, #0a0a1a);
+.scene-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 26px -10px rgba(154, 124, 255, 0.7);
+}
+
+.scene-btn:active {
+  transform: translateY(0);
+}
+
+.scene-meter {
+  width: min(18rem, 80%);
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.scene-meter-fill {
+  height: 100%;
+  width: 50%;
+  background: linear-gradient(90deg, #9a7cff, #00e5b9);
+  border-radius: 999px;
+  transition: width 0.08s linear;
 }`;
 
-      // Resolve the script's root: a ShadowRoot when mounted via shadow
-      // DOM, or `document` when this file is served standalone.
+      const ARTICLE_HTML = `<article class="article">
+  <div class="article-tag">Essay · April 2026</div>
+  <h2 class="article-headline">
+    The DOM is the<br />new canvas texture.
+  </h2>
+  <p class="article-lede">
+    Every HTML element now renders as a WebGL texture.
+    <code>drawElementImage()</code> opens a universe of composition
+    tricks that used to require html2canvas, dom-to-image, or lossy
+    screenshot hacks. Apply a halftone shader and your blog post
+    looks like newsprint.
+  </p>
+  <div class="article-byline">
+    <div class="article-avatar" aria-hidden="true">J</div>
+    <div class="article-meta">
+      <div class="article-author">Jeremy Bailey</div>
+      <div class="article-date">8 min read · En Dash Consulting</div>
+    </div>
+  </div>
+</article>`;
+
+      const ARTICLE_CSS = `/*
+ * Source: Article — editorial layout. Try Halftone for a
+ * newsprint vibe, or CRT for a BBS/terminal aesthetic.
+ */
+
+#scene {
+  background:
+    radial-gradient(ellipse at 15% 10%, #2c1a4a, transparent 60%),
+    radial-gradient(ellipse at 105% 105%, #072a2a, transparent 55%),
+    #0d0a1a;
+  display: grid;
+  place-items: center;
+  padding: 1.75rem 1.5rem;
+  font-family: Georgia, "Times New Roman", serif;
+  color: #f0f0f0;
+}
+
+.article {
+  max-width: 34rem;
+  text-align: left;
+}
+
+.article-tag {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: #a8ffe3;
+  text-transform: uppercase;
+  margin-bottom: 0.85rem;
+}
+
+.article-headline {
+  font-size: clamp(1.55rem, 4.5vw, 2.5rem);
+  font-weight: 900;
+  line-height: 1.08;
+  margin: 0 0 0.9rem;
+  color: #f4f4ff;
+  letter-spacing: -0.015em;
+}
+
+.article-lede {
+  font-size: 1rem;
+  line-height: 1.55;
+  color: #d4d4e4;
+  margin: 0 0 1.1rem;
+}
+
+.article-lede code {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.88em;
+  padding: 0.05em 0.3em;
+  background: rgba(154, 124, 255, 0.16);
+  border-radius: 4px;
+  color: #cbbcff;
+}
+
+.article-byline {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.article-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6c41f0, #00e5b9);
+  display: grid;
+  place-items: center;
+  font-family: system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: #080810;
+}
+
+.article-meta {
+  font-family: system-ui, sans-serif;
+  font-size: 0.82rem;
+}
+
+.article-author {
+  font-weight: 700;
+  color: #f0f0f0;
+}
+
+.article-date {
+  color: #a8a8c0;
+}`;
+
+      const VISUAL_HTML = `<div class="visual">
+  <!-- Sky layer -->
+  <div class="visual-aurora"></div>
+  <div class="visual-godray visual-godray-1"></div>
+  <div class="visual-godray visual-godray-2"></div>
+  <div class="visual-godray visual-godray-3"></div>
+  <div class="visual-godray visual-godray-4"></div>
+
+  <!-- Star field -->
+  <div class="visual-star visual-star-1"></div>
+  <div class="visual-star visual-star-2"></div>
+  <div class="visual-star visual-star-3"></div>
+  <div class="visual-star visual-star-4"></div>
+  <div class="visual-star visual-star-5"></div>
+  <div class="visual-star visual-star-6"></div>
+  <div class="visual-star visual-star-7"></div>
+  <div class="visual-star visual-star-8"></div>
+
+  <!-- Shooting stars -->
+  <div class="visual-shooter visual-shooter-1"></div>
+  <div class="visual-shooter visual-shooter-2"></div>
+
+  <!-- Pulse rings + sun -->
+  <div class="visual-sun-wrap">
+    <div class="visual-ring visual-ring-1"></div>
+    <div class="visual-ring visual-ring-2"></div>
+    <div class="visual-ring visual-ring-3"></div>
+    <div class="visual-rays"></div>
+    <div class="visual-sun"></div>
+  </div>
+
+  <!-- Orbiting planet -->
+  <div class="visual-orbit">
+    <div class="visual-planet"></div>
+  </div>
+
+  <!-- Foreground landscape -->
+  <div class="visual-mtn visual-mtn-far"></div>
+  <div class="visual-mtn visual-mtn-mid"></div>
+  <div class="visual-mtn visual-mtn-near"></div>
+  <div class="visual-horizon"></div>
+
+  <!-- Rising equalizer bars along the horizon -->
+  <div class="visual-eq">
+    <span style="--i:0"></span><span style="--i:1"></span
+    ><span style="--i:2"></span><span style="--i:3"></span
+    ><span style="--i:4"></span><span style="--i:5"></span
+    ><span style="--i:6"></span><span style="--i:7"></span
+    ><span style="--i:8"></span><span style="--i:9"></span
+    ><span style="--i:10"></span><span style="--i:11"></span
+    ><span style="--i:12"></span><span style="--i:13"></span
+    ><span style="--i:14"></span><span style="--i:15"></span>
+  </div>
+
+  <!-- Label / HUD -->
+  <div class="visual-label">
+    <div class="visual-eyebrow">A render target</div>
+    <div class="visual-title">DUSK<span class="visual-title-cursor">_</span></div>
+    <div class="visual-meta">CSS-painted · animated · no JS</div>
+  </div>
+</div>`;
+
+      const VISUAL_CSS = `/*
+ * Source: Visual — CSS-painted, zero JS driving motion. Every
+ * frame is a fresh render: orbiting planet, spinning sun rays,
+ * pulsing rings, shooting stars, an equalizer dancing along the
+ * horizon. drawElementImage() captures it all; the shader does
+ * the rest. Try ASCII — the moving high-contrast shapes turn
+ * into legitimate ASCII art.
+ */
+
+#scene {
+  background: linear-gradient(
+    180deg,
+    #0b0418 0%,
+    #2a0d4d 22%,
+    #731a54 48%,
+    #d64a55 72%,
+    #f4a261 88%,
+    #fff3d0 100%
+  );
+  position: relative;
+  overflow: hidden;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+.visual {
+  position: absolute;
+  inset: 0;
+}
+
+/* ---------- SUN STACK ---------- */
+.visual-sun-wrap {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: 170px;
+  height: 170px;
+  margin-left: -85px;
+  margin-top: -85px;
+  animation: sun-drift 7s ease-in-out infinite;
+}
+
+@keyframes sun-drift {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-30px) rotate(2deg); }
+}
+
+.visual-sun {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    #fff3d0 0%,
+    #ffd280 40%,
+    #ff8f4a 78%,
+    transparent 100%
+  );
+  box-shadow: 0 0 120px rgba(255, 180, 100, 0.75);
+  animation: sun-pulse 2.8s ease-in-out infinite;
+  z-index: 3;
+}
+
+@keyframes sun-pulse {
+  0%, 100% {
+    transform: scale(0.95);
+    filter: brightness(1);
+    box-shadow: 0 0 80px rgba(255, 180, 100, 0.65);
+  }
+  50% {
+    transform: scale(1.12);
+    filter: brightness(1.3);
+    box-shadow: 0 0 160px rgba(255, 200, 130, 0.95);
+  }
+}
+
+/* Sun rays — 12 radiating spokes, slowly rotating. */
+.visual-rays {
+  position: absolute;
+  inset: -40px;
+  border-radius: 50%;
+  background:
+    conic-gradient(
+      from 0deg,
+      rgba(255, 220, 150, 0.4) 0deg 4deg,
+      transparent 4deg 30deg,
+      rgba(255, 220, 150, 0.4) 30deg 34deg,
+      transparent 34deg 60deg,
+      rgba(255, 220, 150, 0.4) 60deg 64deg,
+      transparent 64deg 90deg,
+      rgba(255, 220, 150, 0.4) 90deg 94deg,
+      transparent 94deg 120deg,
+      rgba(255, 220, 150, 0.4) 120deg 124deg,
+      transparent 124deg 150deg,
+      rgba(255, 220, 150, 0.4) 150deg 154deg,
+      transparent 154deg 180deg,
+      rgba(255, 220, 150, 0.4) 180deg 184deg,
+      transparent 184deg 210deg,
+      rgba(255, 220, 150, 0.4) 210deg 214deg,
+      transparent 214deg 240deg,
+      rgba(255, 220, 150, 0.4) 240deg 244deg,
+      transparent 244deg 270deg,
+      rgba(255, 220, 150, 0.4) 270deg 274deg,
+      transparent 274deg 300deg,
+      rgba(255, 220, 150, 0.4) 300deg 304deg,
+      transparent 304deg 330deg,
+      rgba(255, 220, 150, 0.4) 330deg 334deg,
+      transparent 334deg 360deg
+    );
+  mask: radial-gradient(
+    circle,
+    transparent 35%,
+    black 45%,
+    black 75%,
+    transparent 90%
+  );
+  -webkit-mask: radial-gradient(
+    circle,
+    transparent 35%,
+    black 45%,
+    black 75%,
+    transparent 90%
+  );
+  animation: rays-spin 18s linear infinite;
+  z-index: 2;
+}
+
+@keyframes rays-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Pulse rings — concentric waves radiating outward from the sun. */
+.visual-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 220, 160, 0.7);
+  opacity: 0;
+  animation: ring-expand 3s ease-out infinite;
+  z-index: 1;
+}
+
+.visual-ring-1 { animation-delay: 0s; }
+.visual-ring-2 { animation-delay: 1s; }
+.visual-ring-3 { animation-delay: 2s; }
+
+@keyframes ring-expand {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.85;
+    border-width: 3px;
+  }
+  100% {
+    transform: scale(3.5);
+    opacity: 0;
+    border-width: 1px;
+  }
+}
+
+/* ---------- ORBITING PLANET ---------- */
+.visual-orbit {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: 360px;
+  height: 360px;
+  margin-left: -180px;
+  margin-top: -180px;
+  animation: orbit-spin 11s linear infinite;
+}
+
+@keyframes orbit-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.visual-planet {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 26px;
+  height: 26px;
+  margin-left: -13px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff3d0, #9b6dff 65%, #3d1a6b 100%);
+  box-shadow: 0 0 20px rgba(155, 109, 255, 0.75);
+  /* Counter-rotate so the planet itself doesn't spin — only orbits. */
+  animation: planet-counter 11s linear infinite;
+}
+
+@keyframes planet-counter {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+
+/* ---------- AURORA ---------- */
+.visual-aurora {
+  position: absolute;
+  top: 8%;
+  left: -30%;
+  right: -30%;
+  height: 45%;
+  background: linear-gradient(
+    110deg,
+    transparent 18%,
+    rgba(180, 120, 255, 0.55) 42%,
+    rgba(255, 170, 130, 0.5) 52%,
+    rgba(100, 220, 200, 0.45) 60%,
+    transparent 82%
+  );
+  filter: blur(32px);
+  animation: aurora-sweep 9s ease-in-out infinite;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+@keyframes aurora-sweep {
+  0% { transform: translateX(-35%) skewX(-14deg); opacity: 0.35; }
+  50% { transform: translateX(0%) skewX(-8deg); opacity: 0.9; }
+  100% { transform: translateX(35%) skewX(-14deg); opacity: 0.35; }
+}
+
+/* ---------- GODRAYS ---------- */
+.visual-godray {
+  position: absolute;
+  top: -10%;
+  bottom: 30%;
+  width: 6px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 230, 180, 0.7),
+    transparent 80%
+  );
+  filter: blur(3px);
+  transform-origin: top center;
+  mix-blend-mode: screen;
+  animation: godray-sweep 6s ease-in-out infinite;
+}
+
+.visual-godray-1 { left: 20%; animation-delay: 0s;    transform: rotate(-8deg); }
+.visual-godray-2 { left: 38%; animation-delay: 1.2s;  transform: rotate(-3deg); }
+.visual-godray-3 { left: 62%; animation-delay: 2.4s;  transform: rotate(3deg); }
+.visual-godray-4 { left: 80%; animation-delay: 3.6s;  transform: rotate(9deg); }
+
+@keyframes godray-sweep {
+  0%, 100% { opacity: 0.1; width: 4px; }
+  50% { opacity: 0.9; width: 12px; }
+}
+
+/* ---------- STARS ---------- */
+.visual-star {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #fffbe5;
+  box-shadow: 0 0 8px #fffbe5;
+  animation: star-twinkle 2.4s ease-in-out infinite;
+}
+
+.visual-star-1 { top: 6%;  left: 14%; animation-delay: 0s;   animation-duration: 2.8s; }
+.visual-star-2 { top: 14%; left: 72%; animation-delay: 0.6s; animation-duration: 3.4s; }
+.visual-star-3 { top: 22%; left: 88%; animation-delay: 1.1s; animation-duration: 2.3s; }
+.visual-star-4 { top: 9%;  left: 38%; animation-delay: 1.8s; animation-duration: 2.9s; }
+.visual-star-5 { top: 18%; left: 6%;  animation-delay: 0.3s; animation-duration: 3.6s; }
+.visual-star-6 { top: 12%; left: 54%; animation-delay: 1.5s; animation-duration: 3.1s; }
+.visual-star-7 { top: 4%;  left: 28%; animation-delay: 2.1s; animation-duration: 2.6s; }
+.visual-star-8 { top: 20%; left: 46%; animation-delay: 0.9s; animation-duration: 3.8s; }
+
+@keyframes star-twinkle {
+  0%, 100% { opacity: 0.05; transform: scale(0.4); }
+  40% { opacity: 1; transform: scale(1.8); }
+  60% { opacity: 0.9; transform: scale(1.3); }
+}
+
+/* ---------- SHOOTING STARS ---------- */
+.visual-shooter {
+  position: absolute;
+  width: 90px;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 240, 200, 0.95),
+    rgba(255, 200, 150, 0.8)
+  );
+  filter: blur(0.5px);
+  opacity: 0;
+  transform-origin: right center;
+  /* Diagonal trajectory via skew + rotate. */
+  animation: shoot 7s ease-in infinite;
+}
+
+.visual-shooter-1 {
+  top: 12%;
+  right: -100px;
+  transform: rotate(-18deg);
+  animation-delay: 0.8s;
+}
+
+.visual-shooter-2 {
+  top: 28%;
+  right: -100px;
+  transform: rotate(-22deg);
+  animation-delay: 4s;
+  animation-duration: 6s;
+}
+
+@keyframes shoot {
+  0% {
+    opacity: 0;
+    transform: translateX(0) translateY(0) rotate(-18deg);
+  }
+  10% { opacity: 1; }
+  35% {
+    opacity: 1;
+    transform: translateX(-110vw) translateY(40vh) rotate(-18deg);
+  }
+  36%, 100% { opacity: 0; }
+}
+
+/* ---------- HORIZON ---------- */
+.visual-horizon {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 66%;
+  height: 1px;
+  background: rgba(255, 240, 200, 0.65);
+  box-shadow: 0 0 26px rgba(255, 220, 170, 0.85);
+  animation: horizon-glow 2.6s ease-in-out infinite;
+}
+
+@keyframes horizon-glow {
+  0%, 100% { box-shadow: 0 0 18px rgba(255, 220, 170, 0.5); }
+  50% { box-shadow: 0 0 40px rgba(255, 220, 170, 1); }
+}
+
+/* ---------- EQUALIZER BARS ---------- */
+.visual-eq {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 66%;
+  height: 60px;
+  display: grid;
+  grid-template-columns: repeat(16, 1fr);
+  align-items: end;
+  padding: 0 6%;
+  gap: 3px;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.visual-eq span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 240, 190, 0.9),
+    rgba(255, 150, 80, 0.8) 60%,
+    rgba(255, 90, 120, 0.6) 100%
+  );
+  border-radius: 2px;
+  transform-origin: bottom;
+  animation: eq-bounce 0.9s ease-in-out infinite alternate;
+  animation-delay: calc(var(--i) * -0.11s);
+}
+
+@keyframes eq-bounce {
+  0% { transform: scaleY(0.08); opacity: 0.7; }
+  30% { transform: scaleY(0.25); opacity: 0.85; }
+  60% { transform: scaleY(0.55); opacity: 1; }
+  100% { transform: scaleY(0.9); opacity: 0.95; }
+}
+
+/* ---------- MOUNTAINS ---------- */
+.visual-mtn {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.visual-mtn-far {
+  top: 50%;
+  background: #2a1450;
+  clip-path: polygon(
+    0% 70%,
+    15% 40%,
+    35% 58%,
+    55% 30%,
+    75% 55%,
+    100% 42%,
+    100% 100%,
+    0% 100%
+  );
+  opacity: 0.75;
+}
+
+.visual-mtn-mid {
+  top: 60%;
+  background: #160823;
+  clip-path: polygon(
+    0% 70%,
+    12% 45%,
+    32% 60%,
+    55% 40%,
+    80% 55%,
+    100% 50%,
+    100% 100%,
+    0% 100%
+  );
+}
+
+.visual-mtn-near {
+  top: 78%;
+  background: #030005;
+  clip-path: polygon(
+    0% 65%,
+    10% 45%,
+    28% 55%,
+    52% 35%,
+    78% 50%,
+    100% 45%,
+    100% 100%,
+    0% 100%
+  );
+  z-index: 5;
+}
+
+/* ---------- HUD / LABEL ---------- */
+.visual-label {
+  position: absolute;
+  top: 1.15rem;
+  left: 1.35rem;
+  color: #fff3d0;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.4);
+  z-index: 6;
+}
+
+.visual-eyebrow {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+
+.visual-title {
+  font-size: clamp(1.6rem, 4vw, 2.1rem);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  margin-top: 0.25rem;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.1em;
+}
+
+.visual-title-cursor {
+  color: #ffd280;
+  animation: cursor-blink 0.6s steps(2, end) infinite;
+}
+
+@keyframes cursor-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.visual-meta {
+  font-size: 0.66rem;
+  margin-top: 0.25rem;
+  opacity: 0.75;
+}`;
+
+      const SCENES = {
+        controls: { html: CONTROLS_HTML, css: CONTROLS_CSS },
+        article: { html: ARTICLE_HTML, css: ARTICLE_CSS },
+        visual: { html: VISUAL_HTML, css: VISUAL_CSS },
+      };
+
+      // Resolve root (shadow vs document) — set by the wrapped mount.
       const root = window.__demoRoot ?? document;
       const $ = (id) => root.getElementById(id);
 
@@ -628,59 +1686,160 @@ void main() {
       const glslEditor = $("glsl-editor");
       const previewCanvas = $("preview-canvas");
       const stagingCanvas = $("staging-canvas");
-      const stagingContent = $("staging-content");
+      const scene = $("scene");
+      const stageEl = $("stage");
       const fpsCounter = $("fps-counter");
+      const compileErrorEl = $("compile-error");
       const tabs = root.querySelectorAll(".editor-tab");
       const editorAreas = root.querySelectorAll(".editor-area");
       const presetBtns = root.querySelectorAll(".preset-btn");
+      const sourceBtns = root.querySelectorAll(".source-btn");
 
       /* ==============================================================
-         2D staging context — captures HTML via drawElementImage
+         Live-editable <style> for the scene. Inject into the same
+         root the scene lives in so it scopes correctly (shadow vs
+         document) and doesn't leak to the host page.
          ============================================================== */
-      const ctx2d = stagingCanvas.getContext("2d");
-      // Inject the live-editable <style> into the same root as the
-      // staging content so it scopes correctly in shadow DOM (and
-      // doesn't leak into the host page). In standalone the right
-      // target is document.head; in shadow context it's the shadow
-      // root itself.
       const styleEl = document.createElement("style");
       (root === document ? document.head : root).appendChild(styleEl);
 
-      /* ==============================================================
-         Initialise editors
-         ============================================================== */
-      cssEditor.value = DEFAULT_CSS;
-      glslEditor.value = SHADERS.passthrough;
-      styleEl.textContent = DEFAULT_CSS;
+      glslEditor.value = SHADERS.crt;
 
       /* ==============================================================
-         Tab switching
+         Scene activation. Swaps the innerHTML of #scene and the
+         injected <style>. Generic enough that every source follows
+         the same pipeline: drawElementImage → WebGL → shader.
+         ============================================================== */
+      let currentSource = "controls";
+
+      function activateScene(key) {
+        const s = SCENES[key];
+        if (!s) return;
+        currentSource = key;
+        scene.innerHTML = s.html;
+        styleEl.textContent = s.css;
+        cssEditor.value = s.css;
+        // Reset the meter (only present on the Controls scene).
+        const fill = $("scene-meter-fill");
+        if (fill) fill.style.width = "50%";
+        stagingCanvas.requestPaint?.();
+      }
+
+      /* ==============================================================
+         Scene interactivity — event delegation on the scene so
+         handlers survive innerHTML swaps between sources. The
+         Controls scene wires up clock, input, button; Article and
+         Visual are static and just need a repaint on focus changes.
+         ============================================================== */
+      function tickClock() {
+        const el = $("scene-clock");
+        if (!el) return;
+        const d = new Date();
+        const h = String(d.getHours()).padStart(2, "0");
+        const m = String(d.getMinutes()).padStart(2, "0");
+        const s = String(d.getSeconds()).padStart(2, "0");
+        el.textContent = h + ":" + m + ":" + s;
+        stagingCanvas.requestPaint?.();
+      }
+      setInterval(tickClock, 1000);
+
+      scene.addEventListener("input", () => {
+        stagingCanvas.requestPaint?.();
+      });
+      scene.addEventListener("focusin", () => {
+        stagingCanvas.requestPaint?.();
+      });
+      scene.addEventListener("focusout", () => {
+        stagingCanvas.requestPaint?.();
+      });
+      scene.addEventListener("pointerover", () => {
+        stagingCanvas.requestPaint?.();
+      });
+      scene.addEventListener("pointerout", () => {
+        stagingCanvas.requestPaint?.();
+      });
+      scene.addEventListener("click", (e) => {
+        const target = /** @type {HTMLElement} */ (e.target);
+        if (target.id === "scene-btn" || target.closest("#scene-btn")) {
+          const fill = $("scene-meter-fill");
+          if (fill) {
+            const next = 20 + Math.random() * 78;
+            fill.style.width = next.toFixed(1) + "%";
+          }
+          stagingCanvas.requestPaint?.();
+        }
+        spawnRipple(e);
+      });
+
+      /* Luminous click ripple — a scene-agnostic visual ack. Runs
+         through whatever shader is active, so ASCII / halftone /
+         VHS all turn the burst into their own vocabulary. */
+      function spawnRipple(e) {
+        const rect = scene.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        if (x < 0 || y < 0 || x > rect.width || y > rect.height) return;
+        const ripple = document.createElement("div");
+        ripple.className = "scene-ripple";
+        ripple.style.left = x + "px";
+        ripple.style.top = y + "px";
+        scene.appendChild(ripple);
+        ripple.addEventListener(
+          "animationend",
+          () => ripple.remove(),
+          { once: true },
+        );
+      }
+
+      /* Seed the default scene (Controls) and kick off the clock. */
+      activateScene("controls");
+      tickClock();
+
+      /* Source pill wiring */
+      sourceBtns.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const key = btn.dataset.source;
+          if (!SCENES[key]) return;
+          sourceBtns.forEach((b) =>
+            b.classList.toggle("active", b === btn),
+          );
+          activateScene(key);
+          // Flip to the CSS tab so the user sees the new source's CSS.
+          tabs.forEach((t) =>
+            t.classList.toggle("active", t.dataset.tab === "css"),
+          );
+          editorAreas.forEach((ea) =>
+            ea.classList.toggle("active", ea.dataset.editor === "css"),
+          );
+        });
+      });
+
+      /* ==============================================================
+         Tab switching (CSS / GLSL)
          ============================================================== */
       tabs.forEach((tab) => {
         tab.addEventListener("click", () => {
           const target = tab.dataset.tab;
           tabs.forEach((t) => t.classList.toggle("active", t === tab));
           editorAreas.forEach((ea) =>
-            ea.classList.toggle("active", ea.dataset.editor === target)
+            ea.classList.toggle("active", ea.dataset.editor === target),
           );
         });
       });
 
       /* ==============================================================
-         CSS editor → live style injection
+         CSS editor → live style injection (debounced)
          ============================================================== */
       let cssDebounce = 0;
       cssEditor.addEventListener("input", () => {
         clearTimeout(cssDebounce);
         cssDebounce = setTimeout(() => {
           styleEl.textContent = cssEditor.value;
-          stagingCanvas.requestPaint();
-        }, 120);
+          stagingCanvas.requestPaint?.();
+        }, 100);
       });
 
-      /* ==============================================================
-         Tab key inserts spaces in textareas
-         ============================================================== */
+      /* Tab key inserts spaces in textareas */
       function handleTab(e) {
         if (e.key === "Tab") {
           e.preventDefault();
@@ -699,24 +1858,26 @@ void main() {
       /* ==============================================================
          Shader preset buttons
          ============================================================== */
-      let currentPreset = "passthrough";
+      let currentPreset = "crt";
 
       presetBtns.forEach((btn) => {
         btn.addEventListener("click", () => {
           const preset = btn.dataset.preset;
+          if (!SHADERS[preset]) return;
           currentPreset = preset;
           presetBtns.forEach((b) =>
-            b.classList.toggle("active", b === btn)
+            b.classList.toggle("active", b === btn),
           );
-
           glslEditor.value = SHADERS[preset];
+          // Tag the stage so the "RAW" badge shows on passthrough.
+          stageEl?.setAttribute("data-preset", preset);
 
-          // Switch to shader tab to show the code
+          // Flip to the GLSL tab so the user sees the code behind it.
           tabs.forEach((t) =>
-            t.classList.toggle("active", t.dataset.tab === "glsl")
+            t.classList.toggle("active", t.dataset.tab === "glsl"),
           );
           editorAreas.forEach((ea) =>
-            ea.classList.toggle("active", ea.dataset.editor === "glsl")
+            ea.classList.toggle("active", ea.dataset.editor === "glsl"),
           );
 
           compileShader();
@@ -741,16 +1902,14 @@ void main() {
       });
 
       if (!gl) {
-        // Replace just the preview canvas's parent rather than the
-        // whole body — works in both standalone and shadow contexts.
         const msg = document.createElement("p");
         msg.textContent = "WebGL is not available in this browser.";
-        msg.style.cssText = "padding:2rem;color:#f44";
+        msg.style.cssText =
+          "padding:2rem;color:#f44;text-align:center;font-family:system-ui";
         previewCanvas.replaceWith(msg);
         throw new Error("WebGL unavailable");
       }
 
-      /* Vertex shader — full-screen quad */
       const VERT_SRC = `
 attribute vec2 a_position;
 varying vec2 v_texCoord;
@@ -760,7 +1919,6 @@ void main() {
   gl_Position = vec4(a_position, 0.0, 1.0);
 }`;
 
-      /* Compile helper */
       function createShader(type, source) {
         const s = gl.createShader(type);
         gl.shaderSource(s, source);
@@ -786,16 +1944,14 @@ void main() {
         return { program: p, error: null };
       }
 
-      /* Full-screen quad geometry */
       const quadBuf = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
       gl.bufferData(
         gl.ARRAY_BUFFER,
         new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
-        gl.STATIC_DRAW
+        gl.STATIC_DRAW,
       );
 
-      /* Texture for the HTML-in-Canvas capture */
       const tex = gl.createTexture();
       gl.bindTexture(gl.TEXTURE_2D, tex);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -803,30 +1959,37 @@ void main() {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
-      /* Current GL program + uniform locations */
       let glProgram = null;
       let uTexture = null;
       let uResolution = null;
       let uTime = null;
+      let uMouse = null;
       let aPosition = null;
-      let compileError = null;
 
-      /* ==============================================================
-         Compile the current fragment shader
-         ============================================================== */
+      function showCompileError(msg) {
+        if (!compileErrorEl) return;
+        if (msg) {
+          compileErrorEl.textContent = msg.trim();
+          compileErrorEl.hidden = false;
+        } else {
+          compileErrorEl.textContent = "";
+          compileErrorEl.hidden = true;
+        }
+      }
+
       function compileShader() {
         const fragSrc = glslEditor.value;
-        compileError = null;
+        showCompileError(null);
 
         const vert = createShader(gl.VERTEX_SHADER, VERT_SRC);
         if (vert.error) {
-          compileError = "Vertex: " + vert.error;
+          showCompileError("Vertex: " + vert.error);
           return;
         }
 
         const frag = createShader(gl.FRAGMENT_SHADER, fragSrc);
         if (frag.error) {
-          compileError = frag.error;
+          showCompileError(frag.error);
           gl.deleteShader(vert.shader);
           return;
         }
@@ -836,7 +1999,7 @@ void main() {
         gl.deleteShader(frag.shader);
 
         if (prog.error) {
-          compileError = prog.error;
+          showCompileError(prog.error);
           return;
         }
 
@@ -847,37 +2010,77 @@ void main() {
         uTexture = gl.getUniformLocation(glProgram, "u_texture");
         uResolution = gl.getUniformLocation(glProgram, "u_resolution");
         uTime = gl.getUniformLocation(glProgram, "u_time");
+        uMouse = gl.getUniformLocation(glProgram, "u_mouse");
       }
 
-      /* Initial compile */
       compileShader();
 
       /* ==============================================================
-         Paint callback — captures HTML element into 2D staging canvas
+         Staging canvas paint callback — captures the scene via
+         drawElementImage. Also pushes the returned transform back to
+         the scene so its interactive bounding box stays aligned.
          ============================================================== */
-      let needsCapture = true;
+      const ctx2d = stagingCanvas.getContext("2d");
 
       stagingCanvas.onpaint = () => {
-        ctx2d.clearRect(0, 0, stagingCanvas.width, stagingCanvas.height);
-        ctx2d.drawElementImage(stagingContent, 0, 0);
-        needsCapture = true;
+        const cssW = stagingCanvas.width;
+        const cssH = stagingCanvas.height;
+        ctx2d.clearRect(0, 0, cssW, cssH);
+        // drawElementImage throws "No cached paint record" if it
+        // fires before the scene's paint records are built (mainly
+        // right after innerHTML swaps or on fast re-paint storms).
+        // Swallow and let the next paint cycle catch up.
+        try {
+          const transform = ctx2d.drawElementImage(scene, 0, 0);
+          if (transform) scene.style.transform = transform.toString();
+        } catch {
+          /* next frame will resample */
+        }
       };
 
-      /* Trigger initial paint */
-      stagingCanvas.requestPaint();
+      /* Keep the staging bitmap 1:1 with CSS pixels; Chrome's
+         layoutsubtree lays out children based on the bitmap size. */
+      new ResizeObserver(([entry]) => {
+        const { width, height } = entry.contentRect;
+        const w = Math.max(1, Math.round(width));
+        const h = Math.max(1, Math.round(height));
+        if (stagingCanvas.width !== w || stagingCanvas.height !== h) {
+          stagingCanvas.width = w;
+          stagingCanvas.height = h;
+          stagingCanvas.requestPaint?.();
+        }
+      }).observe(stagingCanvas);
 
       /* ==============================================================
-         Render loop
+         Mouse tracking on the whole stage (not the WebGL canvas — it
+         has pointer-events: none so clicks can fall through to the
+         DOM behind it). Feeds u_mouse so shaders can anchor effects
+         at the cursor.
          ============================================================== */
-      let startTime = performance.now();
+      let mouseUV = [-1, -1];
+      stageEl?.addEventListener("pointermove", (e) => {
+        const r = stageEl.getBoundingClientRect();
+        mouseUV = [
+          (e.clientX - r.left) / r.width,
+          (e.clientY - r.top) / r.height,
+        ];
+      });
+      stageEl?.addEventListener("pointerleave", () => {
+        mouseUV = [-1, -1];
+      });
+
+      /* ==============================================================
+         WebGL render loop
+         ============================================================== */
+      const startTime = performance.now();
       let frameCount = 0;
       let lastFpsUpdate = startTime;
 
       function resizePreview() {
         const rect = previewCanvas.getBoundingClientRect();
         const dpr = devicePixelRatio;
-        const w = Math.round(rect.width * dpr);
-        const h = Math.round(rect.height * dpr);
+        const w = Math.max(1, Math.round(rect.width * dpr));
+        const h = Math.max(1, Math.round(rect.height * dpr));
         if (previewCanvas.width !== w || previewCanvas.height !== h) {
           previewCanvas.width = w;
           previewCanvas.height = h;
@@ -893,18 +2096,16 @@ void main() {
         const now = performance.now();
         const time = (now - startTime) / 1000;
 
-        /* FPS counter */
         frameCount++;
         if (now - lastFpsUpdate > 500) {
           const fps = Math.round(
-            (frameCount * 1000) / (now - lastFpsUpdate)
+            (frameCount * 1000) / (now - lastFpsUpdate),
           );
           fpsCounter.textContent = fps + " fps";
           frameCount = 0;
           lastFpsUpdate = now;
         }
 
-        /* Upload the 2D canvas as a texture */
         gl.bindTexture(gl.TEXTURE_2D, tex);
         gl.texImage2D(
           gl.TEXTURE_2D,
@@ -912,10 +2113,9 @@ void main() {
           gl.RGBA,
           gl.RGBA,
           gl.UNSIGNED_BYTE,
-          stagingCanvas
+          stagingCanvas,
         );
 
-        /* Draw */
         gl.viewport(0, 0, previewCanvas.width, previewCanvas.height);
         gl.useProgram(glProgram);
 
@@ -930,9 +2130,8 @@ void main() {
         if (uResolution) {
           gl.uniform2f(uResolution, previewCanvas.width, previewCanvas.height);
         }
-        if (uTime) {
-          gl.uniform1f(uTime, time);
-        }
+        if (uTime) gl.uniform1f(uTime, time);
+        if (uMouse) gl.uniform2f(uMouse, mouseUV[0], mouseUV[1]);
 
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       }
