@@ -576,7 +576,6 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
     function onPointerDown() {
       isDragging.value = true;
       hoverTarget = 1;
-      glCanvas!.setPointerCapture?.(0);
     }
 
     function onPointerUp() {
