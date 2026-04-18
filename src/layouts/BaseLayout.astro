@@ -119,6 +119,18 @@ const websiteJsonLd = {
     <meta name="theme-color" content="#0a0a0f" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)" />
 
+    {/* Montserrat — preconnect so the TCP/TLS handshake runs in
+        parallel with HTML parsing, then load the stylesheet directly
+        so the preload scanner picks it up before <body>. Loading via
+        CSS `@import` would chain the request behind global.css and
+        delay first text paint. */}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap"
+    />
+
     {/* Favicon — En Dash brand mark, copied from endash.us. */}
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
