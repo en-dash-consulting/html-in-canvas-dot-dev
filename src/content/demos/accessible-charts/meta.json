@@ -1,12 +1,12 @@
 {
   "title": "Accessible Charts",
-  "description": "Bar and pie charts with real HTML labels, ARIA roles, keyboard navigation, and focus rings via drawFocusIfNeeded.",
+  "description": "Bar and pie charts with real HTML labels, ARIA roles, keyboard navigation, and hand-drawn focus rings.",
   "tags": ["accessibility", "charts", "aria", "keyboard-navigation"],
   "author": "En Dash Consulting",
   "dateCreated": "2026-04-10",
   "context": "2d",
   "difficulty": "intermediate",
-  "features": ["layoutsubtree", "drawElementImage", "drawFocusIfNeeded", "onpaint", "requestPaint"],
+  "features": ["layoutsubtree", "drawElementImage", "onpaint", "requestPaint"],
   "browserSupport": {
     "chrome": true,
     "firefox": false,
