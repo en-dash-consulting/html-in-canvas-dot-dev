@@ -1,0 +1,20 @@
+{
+  "title": "Elastic Bulge",
+  "description": "Mouse-driven elastic displacement effect: a WebGL2 shader warps laid-out HTML content with a radial bulge and soft drop-shadow that follow the pointer.",
+  "tags": ["webgl", "shader", "displacement", "interactive", "visual"],
+  "author": "Amit Sheen",
+  "dateCreated": "2026-04-20",
+  "context": "webgl",
+  "difficulty": "intermediate",
+  "features": [
+    "layoutsubtree",
+    "texElementImage2D",
+    "onpaint",
+    "requestPaint"
+  ],
+  "browserSupport": {
+    "chrome": true,
+    "firefox": false,
+    "safari": false
+  }
+}

@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Elastic Bulge — HTML-in-Canvas</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html {
+        height: 100%;
+      }
+
+      body,
+      :host {
+        display: grid;
+        place-items: center;
+        margin: 0;
+        min-height: 100%;
+        background: #111;
+        color: #eee;
+        font-family: system-ui, sans-serif;
+      }
+
+      canvas {
+        background-color: #555;
+        border: 1px solid #333;
+        max-width: 100%;
+      }
+
+      #content {
+        width: 100%;
+        height: 100%;
+        display: grid;
+        place-items: center;
+        perspective: 800px;
+      }
+
+      .frame {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1em;
+        width: min(90%, 360px);
+        padding: 1em;
+        border: 4px solid #aaa;
+        background: #0001;
+        border-radius: 1em;
+        transform: rotateX(45deg) rotateZ(-45deg);
+      }
+
+      h1 {
+        text-align: center;
+        text-wrap: balance;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.5em;
+        width: 100%;
+      }
+
+      .item {
+        display: grid;
+        place-items: center;
+        width: 100%;
+        aspect-ratio: 1;
+        font-weight: bold;
+        border: 4px solid #aaa;
+        border-radius: 0.5em;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas" width="800" height="600" layoutsubtree>
+      <div id="content">
+        <div class="frame">
+          <h1>Hello from HTML-in-Canvas!</h1>
+          <div class="grid">
+            <div class="item">A</div>
+            <div class="item">B</div>
+            <div class="item">C</div>
+            <div class="item">D</div>
+            <div class="item">E</div>
+            <div class="item">F</div>
+            <div class="item">G</div>
+            <div class="item">H</div>
+          </div>
+        </div>
+      </div>
+    </canvas>
+
+    <script>
+      const root = window.__demoRoot ?? document;
+
+      const canvas = root.getElementById("canvas");
+      const gl = canvas.getContext("webgl2", { premultipliedAlpha: false });
+      const content = root.getElementById("content");
+
+      if (!gl || !gl.texElementImage2D) {
+        console.warn("elastic-bulge: WebGL2 HTML-in-Canvas API not supported.");
+      }
+
+      const radius = parseFloat(canvas.getAttribute("data-radius")) || 100;
+      const strength = parseFloat(canvas.getAttribute("data-strength")) || 1;
+      const blur = parseFloat(canvas.getAttribute("data-blur")) || 5;
+
+      // ----- Shaders -----
+      const vsSource = `
+        attribute vec2 p; varying vec2 v;
+        void main() { v = vec2(p.x, -p.y) * 0.5 + 0.5; gl_Position = vec4(p, 0, 1); }
+      `;
+      const fsSource = `
+        precision mediump float;
+        varying vec2 v;
+        uniform sampler2D u;
+        uniform vec2 uMouse;
+        uniform vec2 uResolution;
+        uniform float uRadius;
+        uniform float uStrength;
+        uniform float uBlur;
+
+        void main() {
+          vec2 uv = v;
+          vec2 fragPx = v * uResolution;
+          vec2 mousePx = uMouse * uResolution;
+          float dist = length(fragPx - mousePx);
+
+          // Displacement
+          if (dist < uRadius) {
+            float yOffset = fragPx.y - mousePx.y;
+            float position = uRadius - yOffset;
+            float displacement = (1.0 - (dist / uRadius) * (dist / uRadius)) * position * 0.5 * uStrength;
+            uv.y += displacement / uResolution.y;
+          }
+
+          vec4 col = texture2D(u, clamp(uv, 0.0, 1.0));
+
+          // Shadow layer: blurred original-content alpha
+          float shadowAlpha = 0.0;
+          if (dist < uRadius * 1.5) {
+            float t = dist / (uRadius * 1.5);
+            float blurPx = (1.0 - t) * uBlur;
+            float texelW = 1.0 / uResolution.x;
+            float texelH = 1.0 / uResolution.y;
+            float sum = 0.0;
+            float weight = 0.0;
+            for (float ox = -3.0; ox <= 3.0; ox += 1.0) {
+              for (float oy = -3.0; oy <= 3.0; oy += 1.0) {
+                vec2 off = vec2(ox * texelW * blurPx, oy * texelH * blurPx);
+                float w = exp(-(ox*ox + oy*oy) / 8.0);
+                sum += texture2D(u, v + off).a * w;
+                weight += w;
+              }
+            }
+            shadowAlpha = (sum / weight) * (1.0 - t);
+          }
+
+          // Composite: displaced content over shadow
+          float outA = col.a + shadowAlpha * (1.0 - col.a);
+          vec3 outRGB = outA > 0.0 ? col.rgb * col.a / outA : vec3(0.0);
+          gl_FragColor = vec4(outRGB, outA);
+        }
+      `;
+
+      // ----- Compile & link -----
+      const program = gl.createProgram();
+      [vsSource, fsSource].forEach((src, i) => {
+        const s = gl.createShader(i ? gl.FRAGMENT_SHADER : gl.VERTEX_SHADER);
+        gl.shaderSource(s, src);
+        gl.compileShader(s);
+        gl.attachShader(program, s);
+      });
+      gl.linkProgram(program);
+      gl.useProgram(program);
+
+      // ----- Geometry -----
+      gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+      const pos = gl.getAttribLocation(program, "p");
+      gl.enableVertexAttribArray(pos);
+      gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
+
+      // ----- Texture -----
+      gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+
+      const mouseLoc    = gl.getUniformLocation(program, "uMouse");
+      const resLoc      = gl.getUniformLocation(program, "uResolution");
+      const radiusLoc   = gl.getUniformLocation(program, "uRadius");
+      const strengthLoc = gl.getUniformLocation(program, "uStrength");
+      const blurLoc     = gl.getUniformLocation(program, "uBlur");
+
+      // ----- Pointer tracking -----
+      let mouseX = -1, mouseY = -1;
+
+      canvas.addEventListener("pointermove", (e) => {
+        const r = canvas.getBoundingClientRect();
+        mouseX = (e.clientX - r.left) / r.width;
+        mouseY = (e.clientY - r.top) / r.height;
+        canvas.requestPaint();
+      });
+
+      canvas.addEventListener("pointerleave", () => {
+        mouseX = -1;
+        mouseY = -1;
+        canvas.requestPaint();
+      });
+
+      // ----- Render -----
+      function render() {
+        gl.texElementImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, content);
+        gl.uniform2f(mouseLoc, mouseX, mouseY);
+        gl.uniform2f(resLoc, canvas.width, canvas.height);
+        gl.uniform1f(radiusLoc, radius);
+        gl.uniform1f(strengthLoc, strength);
+        gl.uniform1f(blurLoc, blur);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      }
+
+      canvas.addEventListener("paint", () => requestAnimationFrame(render));
+      canvas.requestPaint();
+
+      // ----- Resize -----
+      const ro = new ResizeObserver(([entry]) => {
+        canvas.width = entry.devicePixelContentBoxSize[0].inlineSize;
+        canvas.height = entry.devicePixelContentBoxSize[0].blockSize;
+        gl.viewport(0, 0, canvas.width, canvas.height);
+      });
+      ro.observe(canvas, { box: "device-pixel-content-box" });
+    </script>
+  </body>
+</html>
