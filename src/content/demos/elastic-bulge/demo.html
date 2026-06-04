@@ -214,7 +214,14 @@
 
       // ----- Render -----
       function render() {
-        gl.texElementImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, content);
+        // This if block is used to ensure older browser support before the 
+        // breaking  update in Chromium 150. For more detail, see:
+        // https://github.com/WICG/html-in-canvas/pull/128/changes
+        if (gl.texElementImage2D.length === 3) {
+          gl.texElementImage2D(gl.TEXTURE_2D, gl.RGBA8, content);
+        } else {
+          gl.texElementImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, content);
+        }
         gl.uniform2f(mouseLoc, mouseX, mouseY);
         gl.uniform2f(resLoc, canvas.width, canvas.height);
         gl.uniform1f(radiusLoc, radius);
