@@ -57,8 +57,12 @@ const {
   ogType = 'website',
 } = Astro.props;
 
-const pageTitle =
-  title === SITE_NAME ? SITE_NAME : `${title} | ${SITE_NAME}`;
+// Home page <title> carries the primary queries (render HTML in
+// canvas, drawElementImage) instead of the bare brand name — brand
+// stays first so the tab label and SERP title still lead with it.
+const HOME_TITLE = `${SITE_NAME} — Render HTML in <canvas> with drawElementImage()`;
+const isHomeTitle = title === SITE_NAME;
+const pageTitle = isHomeTitle ? HOME_TITLE : `${title} | ${SITE_NAME}`;
 
 // Social title is decoupled from the browser-tab <title> so it can be
 // padded to clear social platforms' ~30-char minimum without bloating
@@ -66,7 +70,7 @@ const pageTitle =
 // short; otherwise reuse pageTitle as-is.
 const SOCIAL_TITLE_MIN = 30;
 const socialTitle =
-  pageTitle === SITE_NAME
+  isHomeTitle
     ? `${SITE_NAME} — ${SOCIAL_TAGLINE}`
     : pageTitle.length >= SOCIAL_TITLE_MIN
       ? pageTitle
