@@ -58,6 +58,45 @@ for (const entry of readdirSync(docsDir, { withFileTypes: true })) {
   });
 }
 
+// Hub pages get a lastmod too: each hub inherits the max lastmod of
+// its children (a hub's content changes when a child is added or
+// updated), and the home page gets the newest content date site-wide.
+// /contributing/ has no child URLs, so it uses its own source file's
+// mtime — the same mtime-based signal the docs pages use.
+
+/** @param {(string | undefined)[]} dates ISO YYYY-MM-DD strings */
+const maxDate = (dates) => {
+  const defined = dates.filter((d) => typeof d === 'string');
+  // ISO dates sort lexicographically, so string max is date max.
+  return defined.length
+    ? defined.reduce((a, b) => (a > b ? a : b))
+    : undefined;
+};
+
+/** @param {string} prefix */
+const childLastmods = (prefix) =>
+  [...sitemapHints.entries()]
+    .filter(([path]) => path.startsWith(prefix) && path !== prefix)
+    .map(([, hint]) => hint.lastmod);
+
+const demosLastmod = maxDate(childLastmods('/demos/'));
+const docsLastmod = maxDate(childLastmods('/docs/'));
+const contributingLastmod = statSync('src/pages/contributing/index.astro')
+  .mtime.toISOString()
+  .slice(0, 10);
+
+/** @type {Record<string, string | undefined>} */
+const hubLastmods = {
+  '/': maxDate([demosLastmod, docsLastmod]),
+  '/demos/': demosLastmod,
+  '/docs/': docsLastmod,
+  '/contributing/': contributingLastmod,
+};
+for (const [path, lastmod] of Object.entries(hubLastmods)) {
+  const hint = sitemapHints.get(path);
+  if (hint && lastmod) sitemapHints.set(path, { ...hint, lastmod });
+}
+
 // https://astro.build/config
 export default defineConfig({
   site: 'https://html-in-canvas.dev',

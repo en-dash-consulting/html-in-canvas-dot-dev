@@ -4,7 +4,10 @@
  * Renders a sidebar with ordered navigation links alongside the doc content.
  */
 import { getCollection } from 'astro:content';
+import { statSync } from 'node:fs';
+import { join } from 'node:path';
 import BaseLayout from './BaseLayout.astro';
+import { DOC_DESCRIPTIONS } from '../lib/docsMeta';
 
 interface Props {
   title: string;
@@ -17,8 +20,47 @@ const { title, currentSlug } = Astro.props;
 const allDocs = await getCollection('docs');
 const sortedDocs = allDocs.sort((a, b) => a.data.order - b.data.order);
 
+// Per-page, query-answering meta description. The generic template is
+// only a fallback for docs added without a docsMeta.ts entry.
+const description =
+  DOC_DESCRIPTIONS[currentSlug] ??
+  `${title} — HTML-in-Canvas specification documentation.`;
+
 // Breadcrumb JSON-LD for every docs page — Home › Docs › {Doc Title}.
 const SITE_URL = 'https://html-in-canvas.dev';
+
+// dateModified from the source markdown's mtime — the same source of
+// truth the sitemap serialize hook in astro.config.mjs uses for the
+// per-doc <lastmod> (spec/*.md is rewritten by sync-spec-docs.mjs, so
+// mtime reflects the last upstream sync).
+let dateModified: string | undefined;
+try {
+  dateModified = statSync(join(process.cwd(), 'spec', `${currentSlug}.md`))
+    .mtime.toISOString()
+    .slice(0, 10);
+} catch {
+  // No matching markdown file — omit dateModified rather than guess.
+}
+
+// TechArticle JSON-LD — author/publisher mirror the Organization in
+// BaseLayout's WebSite schema.
+const ORGANIZATION = {
+  '@type': 'Organization',
+  name: 'En Dash Consulting',
+  url: 'https://endash.us',
+};
+const techArticleJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'TechArticle',
+  headline: title,
+  description,
+  url: `${SITE_URL}/docs/${currentSlug}/`,
+  mainEntityOfPage: `${SITE_URL}/docs/${currentSlug}/`,
+  inLanguage: 'en',
+  ...(dateModified ? { dateModified } : {}),
+  author: ORGANIZATION,
+  publisher: ORGANIZATION,
+};
 const breadcrumbJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'BreadcrumbList',
@@ -35,16 +77,17 @@ const breadcrumbJsonLd = {
 };
 ---
 
-<BaseLayout
-  title={title}
-  description={`${title} — HTML-in-Canvas specification documentation.`}
-  ogImage="/og-docs.png"
->
+<BaseLayout title={title} description={description} ogImage="/og-docs.png">
   <Fragment slot="head">
     <script
       is:inline
       type="application/ld+json"
       set:html={JSON.stringify(breadcrumbJsonLd)}
+    />
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify(techArticleJsonLd)}
     />
     {/* Forwarded from individual doc pages (e.g. HowTo JSON-LD for
         browser-support). */}

@@ -32,12 +32,13 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
   <div class="hero-stage" aria-hidden="true">
     {/* Source canvas — a 2D render of the headline via drawElementImage.
         The layoutsubtree child is a duplicate of the real <h1> styled
-        identically. WebGL samples this canvas as a texture. */}
+        identically — a <div>, not a second <h1>, so the page keeps a
+        single level-1 heading. WebGL samples this canvas as a texture. */}
     <canvas class="hero-source-canvas" {...canvasAttrs}>
       <div class="hero-source-inner" aria-hidden="true" tabindex="-1">
-        <h1 class="hero-source-h1">
+        <div class="hero-source-h1">
           Render HTML into Canvas<span class="hero-source-accent"> — natively</span>
-        </h1>
+        </div>
       </div>
     </canvas>
 

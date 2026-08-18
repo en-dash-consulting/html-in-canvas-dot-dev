@@ -4,6 +4,7 @@
  * Renders a redirect to the first doc page (lowest order value).
  */
 import { getCollection } from 'astro:content';
+import { DOCS_HUB_DESCRIPTION } from '../../lib/docsMeta';
 
 const docs = await getCollection('docs');
 const firstDoc = docs.sort((a, b) => a.data.order - b.data.order)[0];
@@ -15,7 +16,11 @@ const target = `/docs/${firstDoc.id}/`;
     <meta charset="utf-8" />
     <meta http-equiv="refresh" content={`0;url=${target}`} />
     <link rel="canonical" href={target} />
-    <title>Redirecting…</title>
+    {/* /docs/ ranks in its own right, so give the redirect page a
+        real title + description for the SERP snippet instead of
+        "Redirecting…". */}
+    <title>Documentation | HTML-in-Canvas</title>
+    <meta name="description" content={DOCS_HUB_DESCRIPTION} />
   </head>
   <body>
     <a href={target}>View documentation</a>
