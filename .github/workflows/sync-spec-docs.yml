@@ -1,0 +1,72 @@
+#
+# Weekly sync of the two "living" doc pages — spec/browser-support.md
+# and spec/open-questions.md — from the WICG/html-in-canvas upstream
+# (README sections + open issue list) via scripts/sync-spec-docs.mjs.
+#
+# The script rewrites both files in full, so this runs on a schedule
+# and opens a PR for review instead of committing to main directly.
+# If nothing changed upstream, create-pull-request is a no-op (and it
+# closes a previously opened sync PR if the diff disappears).
+#
+# Note: PRs opened with the default GITHUB_TOKEN don't trigger the
+# deploy.yml PR checks automatically (GitHub prevents recursive
+# workflow runs). Close/reopen the PR — or push to its branch — to run
+# CI, or merge after a local check.
+#
+name: Sync spec docs from upstream
+
+on:
+  schedule:
+    # Mondays 06:00 UTC — weekly is enough for a spec explainer.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+# Keep wrapper actions on Node 24, matching deploy.yml.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  sync:
+    name: Sync & open PR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # The script only uses Node builtins (fetch + fs), so no npm ci.
+      # GITHUB_TOKEN raises the GitHub API rate limit.
+      - name: Sync spec docs
+        run: node scripts/sync-spec-docs.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Open PR with changes
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: sync/spec-docs
+          add-paths: spec/
+          commit-message: 'Sync spec docs from WICG/html-in-canvas upstream'
+          title: 'Sync spec docs from WICG/html-in-canvas upstream'
+          body: |
+            Automated weekly sync of `spec/browser-support.md` and
+            `spec/open-questions.md` from the
+            [WICG/html-in-canvas](https://github.com/WICG/html-in-canvas)
+            README and issue list, via `scripts/sync-spec-docs.mjs`.
+
+            Review the diff for upstream changes worth reflecting
+            elsewhere on the site (e.g. the HowTo JSON-LD steps in
+            `src/pages/docs/[slug].astro`).
+          delete-branch: true
