@@ -1,6 +1,6 @@
 import type { AstroIntegration } from 'astro';
 import type { Loader } from 'astro/loaders';
-import { readdir, readFile, cp, mkdir, unlink } from 'node:fs/promises';
+import { readdir, readFile, writeFile, cp, mkdir, unlink } from 'node:fs/promises';
 import { createReadStream, existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -149,6 +149,26 @@ export function demosIntegration(): AstroIntegration {
           const metaDest = join(dest, 'meta.json');
           if (existsSync(metaDest)) {
             await unlink(metaDest);
+          }
+
+          // The standalone /demos/{slug}/demo.html is a raw duplicate
+          // of the wrapped /demos/{slug}/ page (no layout, no
+          // canonical). Inject noindex into the built copy so search
+          // engines index only the wrapped page. Source files stay
+          // untouched; a <meta> inside the shadow-DOM mount on the
+          // wrapped page is inert, so this can't affect it.
+          const demoDest = join(dest, 'demo.html');
+          if (existsSync(demoDest)) {
+            const html = await readFile(demoDest, 'utf-8');
+            const injected = html.replace(
+              /<head(\s[^>]*)?>/i,
+              (match) => `${match}\n    <meta name="robots" content="noindex" />`,
+            );
+            if (injected !== html) {
+              await writeFile(demoDest, injected);
+            } else {
+              logger.warn(`No <head> found in ${d.name}/demo.html — noindex not injected`);
+            }
           }
 
           logger.info(`Copied demo: ${d.name}`);
