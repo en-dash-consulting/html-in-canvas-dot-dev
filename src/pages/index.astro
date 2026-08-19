@@ -159,6 +159,11 @@ element.style.transform =
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></svg>
       </a>
     </div>
+    <p class="section-sub demos-sub">
+      A sample of the gallery — browse all {demos.length} interactive
+      <a href="/demos/">HTML canvas examples</a>, complete and forkable,
+      across 2D, WebGL, and WebGPU contexts.
+    </p>
 
     {demos.length > 0 ? (
       <div class="demo-grid">
@@ -867,8 +872,13 @@ element.style.transform =
     margin: 0 auto 1rem;
   }
 
+  .demos-sub {
+    margin-bottom: 1.5rem;
+  }
+
   /* In-text link: underline so it is distinguishable without relying on
      color alone (axe link-in-text-block, WCAG 1.4.1). */
+  .demos-sub a,
   .gs-migrate a {
     text-decoration: underline;
     text-underline-offset: 2px;
