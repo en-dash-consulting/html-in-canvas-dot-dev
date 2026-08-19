@@ -200,6 +200,11 @@ element.style.transform =
           <a href={`/demos/${demos[0].id}/`} class="btn btn-secondary">Try Your First Demo</a>
         )}
       </div>
+      <p class="gs-migrate">
+        Coming from <code>html2canvas</code>? See how to
+        <a href="/render-html-to-canvas/">render HTML to canvas</a> with the
+        native API — comparison, code, and migration notes.
+      </p>
       <p class="gs-spec-link">
         Track the spec at
         <a href={WICG_REPO} target="_blank" rel="noopener noreferrer">{WICG_REPO.replace('https://', '')}</a>
@@ -853,6 +858,13 @@ element.style.transform =
     justify-content: center;
     flex-wrap: wrap;
     margin-bottom: 1.5rem;
+  }
+
+  .gs-migrate {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    max-width: 34rem;
+    margin: 0 auto 1rem;
   }
 
   .gs-spec-link {
