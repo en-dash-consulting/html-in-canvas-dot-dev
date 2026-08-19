@@ -4,9 +4,14 @@
   "tags": ["webgl", "shader", "visual", "glass", "refraction", "interactive"],
   "author": "En Dash Consulting",
   "dateCreated": "2026-04-10",
+  "dateUpdated": "2026-08-19",
   "context": "webgl",
   "difficulty": "advanced",
   "features": ["layoutsubtree", "drawElementImage", "onpaint", "requestPaint"],
+  "relatedArticle": {
+    "title": "Recreate Apple's liquid glass effect on the web (CSS vs WebGL)",
+    "url": "/liquid-glass-effect/"
+  },
   "browserSupport": {
     "chrome": true,
     "firefox": false,

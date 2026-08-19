@@ -41,6 +41,7 @@ const {
   dateUpdated,
   features,
   browserSupport,
+  relatedArticle,
 } = demo.data;
 
 // ---------------------------------------------------------------------------
@@ -298,6 +299,13 @@ const demoJsonLd = {
 
     {/* ------- Description ------- */}
     <p class="demo-description">{description}</p>
+
+    {relatedArticle && (
+      <p class="demo-related">
+        How it works, step by step:
+        <a href={relatedArticle.url}>{relatedArticle.title}</a>.
+      </p>
+    )}
 
     {/* ------- Details strip ------- */}
     <aside class="demo-details">
@@ -569,6 +577,20 @@ const demoJsonLd = {
     color: var(--text-secondary);
     max-width: 52rem;
     font-size: 0.9rem;
+  }
+
+  .demo-related {
+    margin: -0.75rem 0 0;
+    color: var(--text-secondary);
+    max-width: 52rem;
+    font-size: 0.9rem;
+  }
+
+  /* In-text link: underline so it is distinguishable without relying on
+     color alone (axe link-in-text-block, WCAG 1.4.1). */
+  .demo-related a {
+    text-decoration: underline;
+    text-underline-offset: 2px;
   }
 
   /* ------- Badges (shared palette with DemoCard) ------- */

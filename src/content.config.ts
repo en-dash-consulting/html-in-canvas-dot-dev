@@ -23,6 +23,13 @@ const demos = defineCollection({
       .default('beginner'),
     /** Which HTML-in-Canvas spec features this demo exercises */
     features: z.array(z.string()).default([]),
+    /** Optional companion tutorial/article covering this demo's technique */
+    relatedArticle: z
+      .object({
+        title: z.string(),
+        url: z.string(),
+      })
+      .optional(),
     browserSupport: z
       .object({
         chrome: z.boolean().default(false),
