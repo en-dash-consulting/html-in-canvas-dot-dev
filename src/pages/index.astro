@@ -867,6 +867,13 @@ element.style.transform =
     margin: 0 auto 1rem;
   }
 
+  /* In-text link: underline so it is distinguishable without relying on
+     color alone (axe link-in-text-block, WCAG 1.4.1). */
+  .gs-migrate a {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
   .gs-spec-link {
     font-size: 0.85rem;
     color: var(--text-muted);
