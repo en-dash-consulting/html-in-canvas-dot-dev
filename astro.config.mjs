@@ -23,6 +23,7 @@ const SITE_ROUTE_DEFAULTS = [
   { path: '/demos/', priority: 0.9, changefreq: 'weekly' },
   { path: '/docs/', priority: 0.8, changefreq: 'weekly' },
   { path: '/contributing/', priority: 0.6, changefreq: 'monthly' },
+  { path: '/render-html-to-canvas/', priority: 0.8, changefreq: 'monthly' },
 ];
 for (const route of SITE_ROUTE_DEFAULTS) sitemapHints.set(route.path, route);
 
@@ -84,6 +85,12 @@ const docsLastmod = maxDate(childLastmods('/docs/'));
 const contributingLastmod = statSync('src/pages/contributing/index.astro')
   .mtime.toISOString()
   .slice(0, 10);
+// Standalone article page — same mtime-based signal /contributing/ uses.
+const renderHtmlToCanvasLastmod = statSync(
+  'src/pages/render-html-to-canvas.astro',
+)
+  .mtime.toISOString()
+  .slice(0, 10);
 
 /** @type {Record<string, string | undefined>} */
 const hubLastmods = {
@@ -91,6 +98,7 @@ const hubLastmods = {
   '/demos/': demosLastmod,
   '/docs/': docsLastmod,
   '/contributing/': contributingLastmod,
+  '/render-html-to-canvas/': renderHtmlToCanvasLastmod,
 };
 for (const [path, lastmod] of Object.entries(hubLastmods)) {
   const hint = sitemapHints.get(path);

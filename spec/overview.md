@@ -5,6 +5,35 @@ order: 1
 
 # HTML-in-Canvas Spec Overview
 
+**HTML-in-Canvas** is a proposed web API (a [WICG explainer](https://github.com/WICG/html-in-canvas)) for drawing real, live DOM elements directly into a `<canvas>` — rendered by the browser's own engine, accessible, and redrawable every frame. It replaces DOM-screenshotting workarounds like `html2canvas` with three native primitives.
+
+The whole API in one taste:
+
+```html
+<canvas id="c" layoutsubtree>
+  <div id="content">Hello, canvas</div>
+</canvas>
+<script>
+  const ctx = c.getContext('2d');
+  c.onpaint = () => {
+    ctx.reset();
+    const t = ctx.drawElementImage(content, 0, 0);
+    content.style.transform = t.toString(); // keep DOM + pixels in sync
+  };
+</script>
+```
+
+`layoutsubtree` opts the canvas's children into layout, `drawElementImage()` paints a child into the canvas, and the `paint` event tells you when to redraw.
+
+**Where to go next:**
+
+- [API Reference](/docs/api-reference/) — full IDL, overloads, and behavior notes
+- [Browser Support](/docs/browser-support/) — enable `chrome://flags/#canvas-draw-element` in two minutes
+- [Demo gallery](/demos/) — live examples running in your browser
+- How to [render HTML to canvas](/render-html-to-canvas/) — the native API vs `html2canvas`, with migration notes
+
+## Background
+
 **Source:** https://github.com/WICG/html-in-canvas  
 **Status:** Living explainer, continuously updated. Dev trial behind `chrome://flags/#canvas-draw-element` in Chrome Canary, and also available in recent Brave Stable builds (≥ 1.89.132 / Chromium 147) at `brave://flags/#canvas-draw-element`.  
 **Authors:** Philip Rogers (pdr@chromium.org), Stephen Chenney (Igalia), Chris Harrelson, Philip Jagenstedt, Khushal Sagar, Vladimir Levin, Fernando Serboncini (all Chromium)

@@ -1,0 +1,476 @@
+---
+/**
+ * Evergreen tutorial/comparison page — /render-html-to-canvas/
+ *
+ * Targets the generic "html to canvas" / "render html to canvas"
+ * queries: a direct answer up top, an honest html2canvas vs native
+ * drawElementImage() comparison, complete working code, and migration
+ * notes. Links out to the docs and live demos rather than duplicating
+ * them.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { statSync } from 'node:fs';
+import { join } from 'node:path';
+
+const TITLE =
+  'Render HTML to Canvas: html2canvas vs the Native drawElementImage() API';
+const DESCRIPTION =
+  'Two ways to render HTML to canvas: the html2canvas library or the native drawElementImage() API. Comparison table, working code, and migration notes.';
+
+const SITE_URL = 'https://html-in-canvas.dev';
+const PAGE_URL = `${SITE_URL}/render-html-to-canvas/`;
+
+// dateModified from this file's own mtime — the same source-of-truth
+// pattern the docs pages and the sitemap serialize hook use.
+const dateModified = statSync(
+  join(process.cwd(), 'src/pages/render-html-to-canvas.astro'),
+)
+  .mtime.toISOString()
+  .slice(0, 10);
+
+// TechArticle JSON-LD, mirroring the DocsLayout pattern —
+// author/publisher match the Organization in BaseLayout's WebSite
+// schema.
+const ORGANIZATION = {
+  '@type': 'Organization',
+  name: 'En Dash Consulting',
+  url: 'https://endash.us',
+};
+const techArticleJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'TechArticle',
+  headline: TITLE,
+  description: DESCRIPTION,
+  url: PAGE_URL,
+  mainEntityOfPage: PAGE_URL,
+  inLanguage: 'en',
+  dateModified,
+  author: ORGANIZATION,
+  publisher: ORGANIZATION,
+};
+const breadcrumbJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE_URL}/` },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: 'Render HTML to Canvas',
+      item: PAGE_URL,
+    },
+  ],
+};
+
+const html2canvasExample = `import html2canvas from 'html2canvas';
+
+const target = document.querySelector('#card');
+const canvas = await html2canvas(target);
+document.body.appendChild(canvas);
+// or export it:
+const png = canvas.toDataURL('image/png');`;
+
+const nativeExample = `<canvas id="c" layoutsubtree>
+  <div id="content">Hello</div>
+</canvas>
+<script>
+  const ctx = c.getContext('2d');
+
+  // The paint event fires whenever a child element's rendering
+  // changes — redraw there, once per frame at most.
+  c.onpaint = () => {
+    ctx.reset();
+    const t = ctx.drawElementImage(content, 0, 0);
+    // Sync the DOM position with the drawn position so hit
+    // testing and accessibility keep working.
+    content.style.transform = t.toString();
+  };
+
+  // Size the canvas grid to device pixels to prevent blurriness.
+  new ResizeObserver(([e]) => {
+    c.width = e.devicePixelContentBoxSize[0].inlineSize;
+    c.height = e.devicePixelContentBoxSize[0].blockSize;
+  }).observe(c, { box: 'device-pixel-content-box' });
+</script>`;
+
+const exportExample = `// One-shot export, html2canvas style: force a paint,
+// draw, then read the pixels out.
+c.addEventListener('paint', () => {
+  ctx.reset();
+  ctx.drawElementImage(content, 0, 0);
+  c.toBlob((blob) => downloadOrUpload(blob), 'image/png');
+}, { once: true });
+c.requestPaint();`;
+---
+
+<BaseLayout title={TITLE} description={DESCRIPTION}>
+  <Fragment slot="head">
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify(breadcrumbJsonLd)}
+    />
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify(techArticleJsonLd)}
+    />
+  </Fragment>
+
+  <article class="rhtc">
+    <h1>Render HTML to Canvas</h1>
+
+    <p class="rhtc-lead">
+      There are two ways to render HTML into a <code>&lt;canvas&gt;</code>:
+      a DOM-screenshotting library like <strong>html2canvas</strong>, which
+      re-implements CSS rendering in JavaScript, or the native
+      <strong><code>drawElementImage()</code></strong> API from the WICG
+      HTML-in-Canvas spec, which has the browser paint real, live DOM
+      elements directly into the canvas.
+    </p>
+
+    <h2 id="comparison">html2canvas vs drawElementImage() at a glance</h2>
+
+    <div class="rhtc-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col"></th>
+            <th scope="col">html2canvas (library)</th>
+            <th scope="col">drawElementImage() (native)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Fidelity</th>
+            <td>
+              Approximation — CSS is re-implemented in JS, so ligatures,
+              subpixel text, some filters, and newer CSS features render
+              differently or not at all
+            </td>
+            <td>
+              The browser's own renderer paints the element — output matches
+              what the page shows, fonts and layout included
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">Performance</th>
+            <td>
+              Clones the DOM and rasterizes in JavaScript — typically tens to
+              hundreds of milliseconds per capture on real pages
+            </td>
+            <td>
+              Uses the browser's paint pipeline; fast enough to redraw every
+              frame for animation and video capture
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">Live / interactive content</th>
+            <td>One-shot static snapshot; re-capture for every change</td>
+            <td>
+              Continuous — the <code>paint</code> event fires when a child's
+              rendering changes, and hit testing plus the accessibility tree
+              keep working via <code>layoutsubtree</code>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">Browser support</th>
+            <td>All modern browsers</td>
+            <td>
+              Chromium dev trial — Chrome Canary and Brave Stable behind the
+              <code>canvas-draw-element</code> flag; no Firefox or Safari
+              implementation yet
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">Bundle size</th>
+            <td>~45&nbsp;kB min+gzip shipped to every visitor</td>
+            <td>0&nbsp;kB — built into the browser</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="html2canvas">The html2canvas approach — and its limits</h2>
+
+    <p>
+      <a
+        href="https://html2canvas.hertzen.com/"
+        target="_blank"
+        rel="noopener noreferrer">html2canvas</a
+      >
+      has been the standard answer for over a decade, and for good reason: it
+      works in every browser today, needs no flags, and captures (almost) any
+      element on the page with one call:
+    </p>
+
+    <pre tabindex="0"><code set:html={html2canvasExample} /></pre>
+
+    <p>
+      Under the hood it does something heroic: it walks the DOM, reads every
+      computed style, and redraws the whole tree onto a canvas using 2D
+      drawing commands — effectively a CSS renderer written in JavaScript.
+      That design is also the source of its limits:
+    </p>
+
+    <ul>
+      <li>
+        <strong>It's not the real renderer.</strong> Text is drawn with
+        <code>fillText()</code>, so ligatures, kerning, and subpixel
+        antialiasing differ from the page. Unsupported or partially supported
+        CSS (some filters, blend modes, <code>conic-gradient</code>, newer
+        layout features) silently renders wrong.
+      </li>
+      <li>
+        <strong>Snapshots are static.</strong> Every change to the source
+        element means another full capture — too slow for animation,
+        interaction, or video.
+      </li>
+      <li>
+        <strong>Large DOMs are slow.</strong> Cloning and rasterizing a big
+        tree in JavaScript blocks the main thread, often for hundreds of
+        milliseconds.
+      </li>
+      <li>
+        <strong>Cross-origin content is a constant fight.</strong>
+        Cross-origin images taint the canvas or need a proxy;
+        <code>iframe</code> content can't be captured at all.
+      </li>
+      <li>
+        <strong>It's a dependency.</strong> Roughly 45&nbsp;kB of gzipped
+        JavaScript that must keep chasing the CSS spec forever.
+      </li>
+    </ul>
+
+    <p>
+      None of this is a knock on the library — it solves a problem the web
+      platform simply had no API for. The HTML-in-Canvas proposal is that
+      missing API.
+    </p>
+
+    <h2 id="native">The native way: layoutsubtree + drawElementImage()</h2>
+
+    <p>
+      The
+      <a href="https://github.com/WICG/html-in-canvas"
+        target="_blank"
+        rel="noopener noreferrer">WICG HTML-in-Canvas spec</a
+      >
+      adds a small API surface to <code>&lt;canvas&gt;</code>: a
+      <code>layoutsubtree</code> attribute that opts the canvas's children
+      into layout, a <code>drawElementImage()</code> context method that
+      paints a child into the canvas, and a <code>paint</code> event that
+      tells you when to redraw. A complete working example:
+    </p>
+
+    <pre tabindex="0"><code set:html={nativeExample.replace(/</g, '&lt;')} /></pre>
+
+    <p>Key behaviors to know:</p>
+
+    <ul>
+      <li>
+        The element must be a <strong>direct child</strong> of a canvas with
+        <code>layoutsubtree</code> set. Children are laid out, hit-testable,
+        and in the accessibility tree, but invisible until drawn.
+      </li>
+      <li>
+        <code>drawElementImage()</code> mirrors the
+        <code>drawImage()</code> overloads — position, destination size, and
+        source-rect variants — and applies the canvas's current transform.
+      </li>
+      <li>
+        It returns a <code>DOMMatrix</code>: apply it to
+        <code>element.style.transform</code> so the DOM position matches the
+        drawn position (CSS transforms on the source element are ignored for
+        drawing but still affect hit testing).
+      </li>
+      <li>
+        WebGL and WebGPU get equivalents —
+        <code>gl.texElementImage2D()</code> and
+        <code>queue.copyElementImageToTexture()</code> — so HTML can be a
+        live texture. Workers are covered via
+        <code>captureElementImage()</code> and transferable
+        <code>ElementImage</code> snapshots.
+      </li>
+      <li>
+        Cross-origin content, visited-link state, spellcheck markers, and
+        other sensitive data are excluded from painting by design.
+      </li>
+    </ul>
+
+    <p>
+      Full signatures and IDL are in the
+      <a href="/docs/api-reference/">API reference</a>. The API is currently
+      a Chromium dev trial: enable
+      <code>chrome://flags/#canvas-draw-element</code> in Chrome Canary or
+      Brave Stable — the <a href="/docs/browser-support/">browser support
+      page</a> has the two-minute setup.
+    </p>
+
+    <h2 id="migration">Migrating from html2canvas</h2>
+
+    <ul>
+      <li>
+        <strong>Restructure the markup.</strong> html2canvas captures any
+        element anywhere; <code>drawElementImage()</code> only draws direct
+        children of a <code>layoutsubtree</code> canvas. Move (or duplicate)
+        the content you want to render inside the canvas element.
+      </li>
+      <li>
+        <strong>Replace capture calls with the paint loop.</strong> Instead
+        of <code>await html2canvas(el)</code>, draw inside the canvas's
+        <code>paint</code> event and call <code>requestPaint()</code> when
+        you want a frame. For a one-shot export:
+      </li>
+    </ul>
+
+    <pre tabindex="0"><code set:html={exportExample} /></pre>
+
+    <ul>
+      <li>
+        <strong>Export works the same.</strong> Once pixels are in the
+        canvas, <code>toBlob()</code>, <code>toDataURL()</code>, and
+        <code>captureStream()</code> behave exactly as before.
+      </li>
+      <li>
+        <strong>Drop the workarounds.</strong> Font-loading waits,
+        cross-origin image proxies, and CSS-support shims can go — the
+        browser renders its own layout, and cross-origin data is excluded
+        (not tainted) by the spec.
+      </li>
+      <li>
+        <strong>Keep html2canvas as the fallback.</strong> Until the API
+        ships beyond the flag, feature-detect and branch:
+        <code>'drawElementImage' in CanvasRenderingContext2D.prototype</code>.
+      </li>
+    </ul>
+
+    <h2 id="demos">See it running</h2>
+
+    <p>Three live demos cover the common html2canvas use cases end to end:</p>
+
+    <ul>
+      <li>
+        <a href="/demos/hello-world/">Hello World</a> — the minimal
+        boilerplate: one styled <code>&lt;div&gt;</code> drawn into a canvas,
+        with annotated code.
+      </li>
+      <li>
+        <a href="/demos/html-to-image/">HTML-to-Image Export</a> — a social
+        card generator that exports rich HTML as PNG/JPEG, the direct
+        html2canvas replacement.
+      </li>
+      <li>
+        <a href="/demos/html-video-recording/">HTML Video Recording</a> —
+        records animated HTML to WebM via <code>captureStream()</code> +
+        <code>MediaRecorder</code>, something DOM screenshotting can't do.
+      </li>
+    </ul>
+
+    <p>
+      Next steps: the <a href="/docs/overview/">spec overview</a> for the
+      full design, or the <a href="/docs/browser-support/">flag setup
+      guide</a> to try the demos in your own browser.
+    </p>
+  </article>
+</BaseLayout>
+
+<style>
+  .rhtc {
+    max-width: 52rem;
+    margin: 0 auto;
+    padding: 1rem 0 3rem;
+  }
+
+  .rhtc h1 {
+    font-size: 2.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .rhtc-lead {
+    font-size: 1.1rem;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    margin: 0 0 1.5rem;
+  }
+
+  .rhtc-lead strong {
+    color: var(--text-primary);
+  }
+
+  .rhtc h2 {
+    font-size: 1.5rem;
+    margin-top: 2.5rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.375rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .rhtc p {
+    margin-block: 0.75em;
+    line-height: 1.7;
+    color: var(--text-secondary);
+  }
+
+  .rhtc ul {
+    margin-block: 0.75em;
+    padding-left: 1.5rem;
+  }
+
+  .rhtc li {
+    margin-block: 0.35em;
+    color: var(--text-secondary);
+    line-height: 1.65;
+  }
+
+  .rhtc strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .rhtc pre {
+    margin-block: 1rem;
+    font-size: 0.85rem;
+    line-height: 1.55;
+  }
+
+  /* ------- Comparison table ------- */
+  .rhtc-table-wrap {
+    overflow-x: auto;
+    margin-block: 1rem;
+  }
+
+  .rhtc table {
+    width: 100%;
+    min-width: 40rem;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+
+  .rhtc th,
+  .rhtc td {
+    text-align: left;
+    vertical-align: top;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .rhtc thead th {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    background: var(--bg-surface);
+  }
+
+  .rhtc tbody th {
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+  }
+
+  .rhtc td {
+    color: var(--text-secondary);
+  }
+</style>
