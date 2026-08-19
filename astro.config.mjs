@@ -24,6 +24,7 @@ const SITE_ROUTE_DEFAULTS = [
   { path: '/docs/', priority: 0.8, changefreq: 'weekly' },
   { path: '/contributing/', priority: 0.6, changefreq: 'monthly' },
   { path: '/render-html-to-canvas/', priority: 0.8, changefreq: 'monthly' },
+  { path: '/liquid-glass-effect/', priority: 0.8, changefreq: 'monthly' },
 ];
 for (const route of SITE_ROUTE_DEFAULTS) sitemapHints.set(route.path, route);
 
@@ -91,6 +92,9 @@ const renderHtmlToCanvasLastmod = statSync(
 )
   .mtime.toISOString()
   .slice(0, 10);
+const liquidGlassEffectLastmod = statSync('src/pages/liquid-glass-effect.astro')
+  .mtime.toISOString()
+  .slice(0, 10);
 
 /** @type {Record<string, string | undefined>} */
 const hubLastmods = {
@@ -99,6 +103,7 @@ const hubLastmods = {
   '/docs/': docsLastmod,
   '/contributing/': contributingLastmod,
   '/render-html-to-canvas/': renderHtmlToCanvasLastmod,
+  '/liquid-glass-effect/': liquidGlassEffectLastmod,
 };
 for (const [path, lastmod] of Object.entries(hubLastmods)) {
   const hint = sitemapHints.get(path);

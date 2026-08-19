@@ -1,0 +1,504 @@
+---
+/**
+ * Evergreen tutorial page — /liquid-glass-effect/
+ *
+ * Targets "liquid glass webgl" / "liquid glass css effect" /
+ * "apple liquid glass effect css" queries: what the aesthetic is, an
+ * honest CSS-vs-WebGL comparison, and the real technique from the
+ * site's two glass demos (liquid-glass, frosted-glass-backdrop) with
+ * key code excerpts. Links to the live demos rather than duplicating
+ * them.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { statSync } from 'node:fs';
+import { join } from 'node:path';
+
+const TITLE = "Liquid Glass Effect in CSS and WebGL: Recreate Apple's Design";
+const DESCRIPTION =
+  "Recreate Apple's liquid glass effect on the web — CSS backdrop-filter vs a WebGL refraction shader over live HTML. Working code from two open-source demos.";
+
+const SITE_URL = 'https://html-in-canvas.dev';
+const PAGE_URL = `${SITE_URL}/liquid-glass-effect/`;
+
+// dateModified from this file's own mtime — the same source-of-truth
+// pattern the docs pages and the sitemap serialize hook use.
+const dateModified = statSync(
+  join(process.cwd(), 'src/pages/liquid-glass-effect.astro'),
+)
+  .mtime.toISOString()
+  .slice(0, 10);
+
+// TechArticle JSON-LD, mirroring the DocsLayout pattern —
+// author/publisher match the Organization in BaseLayout's WebSite
+// schema.
+const ORGANIZATION = {
+  '@type': 'Organization',
+  name: 'En Dash Consulting',
+  url: 'https://endash.us',
+};
+const techArticleJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'TechArticle',
+  headline: TITLE,
+  description: DESCRIPTION,
+  url: PAGE_URL,
+  mainEntityOfPage: PAGE_URL,
+  inLanguage: 'en',
+  dateModified,
+  author: ORGANIZATION,
+  publisher: ORGANIZATION,
+};
+const breadcrumbJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE_URL}/` },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: 'Liquid Glass Effect',
+      item: PAGE_URL,
+    },
+  ],
+};
+
+const cssExample = `.liquid-glass {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px) saturate(1.6);
+  -webkit-backdrop-filter: blur(18px) saturate(1.6);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 20px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25), /* top specular line */
+    inset 0 -1px 0 rgba(255, 255, 255, 0.06),
+    0 8px 32px rgba(0, 0, 0, 0.35);
+}`;
+
+const svgFilterExample = `<svg width="0" height="0" aria-hidden="true">
+  <filter id="liquid-lens">
+    <feTurbulence type="fractalNoise" baseFrequency="0.008"
+                  numOctaves="2" result="noise" />
+    <feDisplacementMap in="SourceGraphic" in2="noise" scale="60"
+                       xChannelSelector="R" yChannelSelector="G" />
+  </filter>
+</svg>
+
+<style>
+  .liquid-glass {
+    /* Chromium-only: url() filters inside backdrop-filter are not
+       supported in Safari or Firefox — keep a blur-only fallback. */
+    backdrop-filter: blur(4px) url(#liquid-lens);
+  }
+</style>`;
+
+const pipelineExample = `<!-- 2D source canvas: the HTML card is a real, live child -->
+<canvas id="source-canvas" layoutsubtree>
+  <div class="card" id="card">…fully styled, interactive HTML…</div>
+</canvas>
+
+<!-- WebGL overlay: the refraction shader draws on top -->
+<canvas id="glass-canvas" style="pointer-events: none"></canvas>
+
+<script>
+  // 1. Draw the live DOM into the 2D canvas whenever it changes
+  sourceCanvas.onpaint = () => {
+    ctx2d.clearRect(0, 0, sourceCanvas.width, sourceCanvas.height);
+    ctx2d.drawElementImage(card, 0, 0,
+      sourceCanvas.width, sourceCanvas.height);
+  };
+
+  // 2. Every animation frame, feed it to the shader as a texture
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA,
+    gl.UNSIGNED_BYTE, sourceCanvas);
+</script>`;
+
+const shaderExample = `/* --- Glass lens geometry: a dome that follows the mouse --- */
+float radius = 0.30 * u_hover;
+float dome   = smoothstep(radius, radius * 0.08, dist);
+
+/* --- Refraction displacement (convex lens, pushes inward) --- */
+float refractStr = 0.06 * dome;
+vec2 refractOffset = -dir * refractStr;
+
+/* --- Organic liquid noise: two simplex fields drifting over time --- */
+float n1 = simplex(uv * 6.0 + vec2(t, -t * 0.7));
+float n2 = simplex(uv * 8.0 + vec2(-t * 0.5, t * 0.8));
+vec2 organicWarp = vec2(n1, n2) * 0.012 * dome;
+
+/* --- Ripple rings radiating from the lens center --- */
+float ripple = sin(dist * 35.0 - u_time * 2.5) * 0.003 * dome;
+
+/* --- Chromatic aberration: sample R/G/B at offset UVs --- */
+float edge = smoothstep(radius * 0.2, radius, dist) * dome;
+float aberr = 0.003 * dome + 0.007 * edge;
+
+vec2 uvR = clamp(uv + offset * 1.07 + dir * aberr, 0.0, 1.0);
+vec2 uvG = clamp(uv + offset, 0.0, 1.0);
+vec2 uvB = clamp(uv + offset * 0.93 - dir * aberr, 0.0, 1.0);
+
+vec3 color = vec3(texture2D(u_texture, uvR).r,
+                  texture2D(u_texture, uvG).g,
+                  texture2D(u_texture, uvB).b);`;
+
+const highlightExample = `/* --- Specular highlight (light from upper-right) --- */
+vec2 lightDir = normalize(vec2(0.6, -0.45));
+float specAngle = dot(dir, lightDir);
+float spec1 = pow(max(specAngle, 0.0), 28.0) * dome * 0.40;
+
+/* --- Fresnel: lens edges catch more light --- */
+float fresnel = pow(smoothstep(radius * 0.25, radius, dist), 0.55)
+              * dome * 0.10;
+
+/* --- Thin bright ring at the glass boundary --- */
+float ring = smoothstep(radius, radius * 0.91, dist)
+           * smoothstep(radius * 0.82, radius * 0.91, dist) * 0.22;
+
+/* --- Cool glass tint (Apple-inspired blue-shift) --- */
+vec3 tint = vec3(0.93, 0.96, 1.06);
+color = mix(color, color * tint, dome * 0.20);
+color += spec1 + spec2 + fresnel + ring + caustic;`;
+
+const frostedExample = `canvas.onpaint = () => {
+  /* 1. Draw the background card grid (live HTML) */
+  ctx.drawElementImage(bgLayer, 0, 0, cssW, cssH);
+
+  /* 2. Copy the pixels behind the panel into a scratch canvas */
+  tempCtx.drawImage(canvas, sx, sy, sw, sh, sx - dpx, sy - dpy, sw, sh);
+
+  /* 3. Blur them in WebGL — two-pass separable gaussian,
+        or directional / tilt-shift kernels */
+  processBlur(dpw, dph);
+
+  /* 4. Composite blurred backdrop + tint + gradient highlight
+        + border inside a rounded clip */
+  ctx.drawImage(blurCanvas, 0, 0, dpw, dph, px, py, pw, ph);
+
+  /* 5. Draw the panel's own HTML content on top */
+  ctx.drawElementImage(frostPanel, px, py, pw, ph);
+};`;
+---
+
+<BaseLayout title={TITLE} description={DESCRIPTION}>
+  <Fragment slot="head">
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify(breadcrumbJsonLd)}
+    />
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify(techArticleJsonLd)}
+    />
+  </Fragment>
+
+  <article class="lge">
+    <h1>Recreate Apple's Liquid Glass Effect on the Web</h1>
+
+    <p class="lge-lead">
+      Liquid Glass is the translucent material Apple introduced across iOS,
+      iPadOS, and macOS in 2025: interface surfaces that behave like real
+      glass — they blur and refract what's behind them, catch specular light
+      at the edges, and subtly warp in motion. On the web you can approximate
+      it with <strong>CSS <code>backdrop-filter</code></strong> or actually
+      simulate it with a <strong>WebGL refraction shader</strong>. This page
+      covers both, with working code from two live demos.
+    </p>
+
+    <h2 id="anatomy">What makes liquid glass "liquid"</h2>
+
+    <p>The effect is a stack of five optical ingredients:</p>
+
+    <ol>
+      <li><strong>Translucency + blur</strong> — the content behind shows through, softened.</li>
+      <li><strong>Refraction</strong> — the glass acts as a lens, displacing the backdrop rather than just blurring it.</li>
+      <li><strong>Chromatic aberration</strong> — red, green, and blue bend slightly differently at the lens edge, producing color fringing.</li>
+      <li><strong>Specular light</strong> — a directional highlight, a brighter fresnel edge, and a thin rim where the glass boundary catches light.</li>
+      <li><strong>Motion</strong> — organic ripples and warp that make the surface read as liquid instead of frosted plastic.</li>
+    </ol>
+
+    <p>
+      CSS gives you ingredient 1 cheaply and universally. Ingredients 2–5 are
+      per-pixel effects, which is shader territory.
+    </p>
+
+    <h2 id="comparison">CSS vs WebGL at a glance</h2>
+
+    <div class="lge-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col"></th>
+            <th scope="col">CSS backdrop-filter</th>
+            <th scope="col">WebGL shader</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Fidelity</th>
+            <td>Frosted-glass look: blur, saturation, borrowed highlights via borders and inset shadows. No true refraction or aberration</td>
+            <td>Full simulation — lens displacement, chromatic fringing, specular, fresnel, animated ripples, all per pixel</td>
+          </tr>
+          <tr>
+            <th scope="row">Browser support</th>
+            <td>All modern browsers (with <code>-webkit-</code> prefix for older Safari)</td>
+            <td>WebGL is universal; feeding it <em>live HTML</em> as a texture needs the HTML-in-Canvas dev trial (Chromium flag)</td>
+          </tr>
+          <tr>
+            <th scope="row">Cost</th>
+            <td>One declaration; compositor-accelerated</td>
+            <td>A render loop, a texture upload per frame, and ~100 lines of GLSL</td>
+          </tr>
+          <tr>
+            <th scope="row">Interactivity under the glass</th>
+            <td>Native — the backdrop is regular DOM</td>
+            <td>Preserved via <code>layoutsubtree</code> + <code>drawElementImage()</code>: the HTML under the shader stays clickable</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="css">The CSS-only approach</h2>
+
+    <p>
+      For most UI — nav bars, cards, control panels — the CSS version is the
+      right call. The core is a translucent background plus
+      <code>backdrop-filter</code>, with the "glass edge" faked using a
+      semi-opaque border and an inset top highlight:
+    </p>
+
+    <pre tabindex="0"><code set:html={cssExample} /></pre>
+
+    <p>
+      That gets you frosted glass, not liquid glass — there's no lensing. You
+      can push refraction into CSS with an SVG displacement filter:
+    </p>
+
+    <pre tabindex="0"><code set:html={svgFilterExample.replace(/</g, '&lt;')} /></pre>
+
+    <p>Honest limits of the CSS route:</p>
+
+    <ul>
+      <li>
+        <strong><code>url()</code> filters in <code>backdrop-filter</code> are
+        Chromium-only.</strong> Safari and Firefox ignore the displacement and
+        fall back to plain blur, so design for the blur-only case.
+      </li>
+      <li>
+        <strong>The distortion is static.</strong> <code>feTurbulence</code>
+        gives one fixed warp field; a lens that follows the pointer, ripples,
+        or eases in and out is not expressible.
+      </li>
+      <li>
+        <strong>No chromatic aberration or physically plausible specular</strong>
+        — the highlights are hand-placed gradients, not derived from lens
+        geometry.
+      </li>
+    </ul>
+
+    <h2 id="webgl">The WebGL shader approach</h2>
+
+    <p>
+      The <a href="/demos/liquid-glass/">Liquid Glass Distortion demo</a> does
+      the real thing. Its pipeline has two canvases: a 2D canvas that holds a
+      live HTML profile card as a
+      <a href="/docs/overview/"><code>layoutsubtree</code></a> child and paints
+      it with <code>drawElementImage()</code>, and a WebGL canvas overlaid on
+      top that treats those pixels as a texture:
+    </p>
+
+    <pre tabindex="0"><code set:html={pipelineExample.replace(/</g, '&lt;')} /></pre>
+
+    <p>
+      All the optics live in the fragment shader. A <code>dome</code> term —
+      a smoothstep falloff around the mouse position — masks every effect to
+      a circular lens, so the same code fades everything in and out as the
+      pointer moves. Refraction is an inward displacement scaled by the dome;
+      liquidity comes from two drifting simplex-noise fields plus a ripple
+      term; and chromatic aberration falls out of sampling the texture three
+      times with per-channel offsets:
+    </p>
+
+    <pre tabindex="0"><code set:html={shaderExample} /></pre>
+
+    <p>
+      Lighting is layered on the same dome mask: a tight specular highlight
+      (exponent 28) from a fixed light direction, a fresnel term that
+      brightens the lens rim, a thin ring at the glass boundary, a faint
+      caustic shimmer, and the blue-shifted tint that gives Apple's material
+      its cool cast:
+    </p>
+
+    <pre tabindex="0"><code set:html={highlightExample} /></pre>
+
+    <h2 id="live-html">The differentiator: live HTML under the glass</h2>
+
+    <p>
+      Any WebGL tutorial can distort a static image. What makes this
+      technique different is that the texture is <em>live DOM</em>. The
+      profile card under the shader is real HTML — its buttons work, its text
+      is selectable in the accessibility tree, and clicking "Follow" through
+      the distortion updates the card, which fires the canvas's
+      <code>paint</code> event, which re-captures the card via
+      <code>drawElementImage()</code>, which the shader picks up on the next
+      frame. The WebGL overlay sets <code>pointer-events:&nbsp;none</code>, so
+      input passes straight through the glass to the elements beneath it.
+    </p>
+
+    <p>
+      That loop — interact, repaint, re-texture — is the piece screenshot
+      libraries and prerendered textures can't do, and it's the core of the
+      <a href="/render-html-to-canvas/">native drawElementImage() approach to
+      rendering HTML to canvas</a>. The API is a Chromium dev trial: the
+      <a href="/docs/browser-support/">flag setup guide</a> takes about two
+      minutes.
+    </p>
+
+    <h2 id="frosted">Frosted glass: going beyond backdrop-filter</h2>
+
+    <p>
+      The companion <a href="/demos/frosted-glass-backdrop/">Frosted Glass
+      Backdrop demo</a> attacks the blur half of the material.
+      <code>backdrop-filter</code> only offers a standard gaussian blur; the
+      demo composites <em>between</em> HTML layers instead, so the kernel is
+      whatever you write — gaussian, directional (motion-blur style), or
+      tilt-shift with a focus band. Per paint, it draws the background HTML,
+      extracts the region behind a draggable panel, blurs it with a two-pass
+      separable gaussian in WebGL, composites tint and highlights, then draws
+      the panel's own HTML on top:
+    </p>
+
+    <pre tabindex="0"><code set:html={frostedExample} /></pre>
+
+    <h2 id="try-it">Try both demos</h2>
+
+    <ul>
+      <li>
+        <a href="/demos/liquid-glass/">Liquid Glass Distortion</a> — the WebGL
+        refraction shader over a live HTML card. Move the mouse to bend the
+        glass; click the buttons through it.
+      </li>
+      <li>
+        <a href="/demos/frosted-glass-backdrop/">Frosted Glass Backdrop</a> —
+        draggable frosted panel with gaussian, directional, and tilt-shift
+        blur composited between HTML layers.
+      </li>
+    </ul>
+
+    <p>
+      Both ship complete annotated source. For more techniques, browse the
+      full gallery of <a href="/demos/">HTML canvas examples</a> or start
+      with the <a href="/docs/overview/">spec overview</a>.
+    </p>
+  </article>
+</BaseLayout>
+
+<style>
+  .lge {
+    max-width: 52rem;
+    margin: 0 auto;
+    padding: 1rem 0 3rem;
+  }
+
+  .lge h1 {
+    font-size: 2.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .lge-lead {
+    font-size: 1.1rem;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    margin: 0 0 1.5rem;
+  }
+
+  .lge-lead strong {
+    color: var(--text-primary);
+  }
+
+  .lge h2 {
+    font-size: 1.5rem;
+    margin-top: 2.5rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.375rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .lge p {
+    margin-block: 0.75em;
+    line-height: 1.7;
+    color: var(--text-secondary);
+  }
+
+  .lge ul,
+  .lge ol {
+    margin-block: 0.75em;
+    padding-left: 1.5rem;
+  }
+
+  .lge li {
+    margin-block: 0.35em;
+    color: var(--text-secondary);
+    line-height: 1.65;
+  }
+
+  .lge strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .lge pre {
+    margin-block: 1rem;
+    font-size: 0.85rem;
+    line-height: 1.55;
+  }
+
+  /* In-text links: underline so they are distinguishable without
+     relying on color alone (axe link-in-text-block, WCAG 1.4.1). */
+  .lge p a,
+  .lge li a {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  /* ------- Comparison table ------- */
+  .lge-table-wrap {
+    overflow-x: auto;
+    margin-block: 1rem;
+  }
+
+  .lge table {
+    width: 100%;
+    min-width: 40rem;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+
+  .lge th,
+  .lge td {
+    text-align: left;
+    vertical-align: top;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .lge thead th {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    background: var(--bg-surface);
+  }
+
+  .lge tbody th {
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+  }
+
+  .lge td {
+    color: var(--text-secondary);
+  }
+</style>

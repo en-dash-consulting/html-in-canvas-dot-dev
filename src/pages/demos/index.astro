@@ -25,9 +25,8 @@ const galleryJsonLd = {
       '@type': 'CollectionPage',
       '@id': `${SITE_URL}/demos/#page`,
       url: `${SITE_URL}/demos/`,
-      name: 'HTML-in-Canvas Demos',
-      description:
-        'A growing collection of interactive demos exploring the WICG HTML-in-Canvas specification.',
+      name: 'HTML Canvas Examples — Interactive Demos',
+      description: `${demos.length} interactive HTML canvas examples across 2D, WebGL, and WebGPU, each drawing live DOM elements into the canvas with the WICG HTML-in-Canvas spec's drawElementImage().`,
       isPartOf: { '@id': `${SITE_URL}/#website` },
       mainEntity: { '@id': `${SITE_URL}/demos/#list` },
     },
@@ -55,8 +54,8 @@ const galleryJsonLd = {
 ---
 
 <BaseLayout
-  title="Demos"
-  description="Interactive HTML-in-Canvas demos showcasing the spec in action."
+  title={`HTML Canvas Examples — ${demos.length} Interactive Demos (2D, WebGL, WebGPU)`}
+  description={`${demos.length} interactive HTML canvas examples with annotated source — 2D, WebGL, and WebGPU demos drawing live HTML into canvas with drawElementImage().`}
   ogImage="/og-demos.png"
 >
   <Fragment slot="head">
@@ -67,8 +66,16 @@ const galleryJsonLd = {
     />
   </Fragment>
   <div class="gallery-header">
-    <h1>Demos</h1>
-    <p>Interactive examples showcasing the HTML-in-Canvas specification.</p>
+    <h1>HTML Canvas Examples</h1>
+    <p>
+      Interactive HTML canvas examples — {demos.length} open-source demos
+      spanning 2D, WebGL, and WebGPU, each with annotated source you can fork.
+      Every demo is built on the WICG HTML-in-Canvas spec's
+      <code>drawElementImage()</code>, which draws live DOM elements straight
+      into the canvas: real CSS rendering, working hit testing, no screenshot
+      libraries. Building glass UI? Start with the
+      <a href="/liquid-glass-effect/">liquid glass effect tutorial</a>.
+    </p>
   </div>
 
   <div class="gallery-filters" role="search" aria-label="Filter demos">
@@ -186,6 +193,14 @@ const galleryJsonLd = {
 
   .gallery-header p {
     margin: 0;
+    max-width: 52rem;
+  }
+
+  /* In-text link: underline so it is distinguishable without relying on
+     color alone (axe link-in-text-block, WCAG 1.4.1). */
+  .gallery-header a {
+    text-decoration: underline;
+    text-underline-offset: 2px;
   }
 
   /* --- Filters --- */
