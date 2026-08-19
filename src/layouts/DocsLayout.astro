@@ -7,7 +7,7 @@ import { getCollection } from 'astro:content';
 import { statSync } from 'node:fs';
 import { join } from 'node:path';
 import BaseLayout from './BaseLayout.astro';
-import { DOC_DESCRIPTIONS } from '../lib/docsMeta';
+import { DOC_DESCRIPTIONS, DOC_TITLES } from '../lib/docsMeta';
 
 interface Props {
   title: string;
@@ -25,6 +25,11 @@ const sortedDocs = allDocs.sort((a, b) => a.data.order - b.data.order);
 const description =
   DOC_DESCRIPTIONS[currentSlug] ??
   `${title} — HTML-in-Canvas specification documentation.`;
+
+// SEO <title> override — the sidebar and breadcrumb keep the short
+// frontmatter title; only the tab/SERP title and TechArticle headline
+// use the query-matching variant from docsMeta.ts.
+const seoTitle = DOC_TITLES[currentSlug] ?? title;
 
 // Breadcrumb JSON-LD for every docs page — Home › Docs › {Doc Title}.
 const SITE_URL = 'https://html-in-canvas.dev';
@@ -52,7 +57,7 @@ const ORGANIZATION = {
 const techArticleJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'TechArticle',
-  headline: title,
+  headline: seoTitle,
   description,
   url: `${SITE_URL}/docs/${currentSlug}/`,
   mainEntityOfPage: `${SITE_URL}/docs/${currentSlug}/`,
@@ -77,7 +82,7 @@ const breadcrumbJsonLd = {
 };
 ---
 
-<BaseLayout title={title} description={description} ogImage="/og-docs.png">
+<BaseLayout title={seoTitle} description={description} ogImage="/og-docs.png">
   <Fragment slot="head">
     <script
       is:inline
