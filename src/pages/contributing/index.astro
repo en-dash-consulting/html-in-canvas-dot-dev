@@ -306,6 +306,17 @@ git push origin my-branch
         </li>
       </ul>
     </section>
+
+    {/* ------------------------------------------------------------------ */}
+    <section class="section-colophon">
+      <h2>Who builds this</h2>
+      <p>
+        HTML-in-Canvas is built and maintained by En Dash, a small technology
+        company in Richmond, VA that builds software to make work feel better.
+        We publish demos, tools, and writing at
+        <a href="https://endash.us">endash.us</a>.
+      </p>
+    </section>
   </article>
 </BaseLayout>
 
@@ -478,6 +489,24 @@ git push origin my-branch
     height: 6px;
     background: var(--accent);
     border-radius: 50%;
+  }
+
+  /* --- Colophon --- */
+  .section-colophon {
+    margin-top: 3rem;
+    margin-bottom: 0;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .section-colophon h2 {
+    font-size: 1rem;
+  }
+
+  .section-colophon p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.55;
   }
 
   /* --- Responsive --- */
