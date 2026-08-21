@@ -13,9 +13,44 @@ const WICG_REPO = 'https://github.com/WICG/html-in-canvas';
 
 // `layoutsubtree` isn't in Astro's typed HTML attribute surface.
 const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
+
+// FAQ content rendered both as the visible FAQ section below and as
+// FAQPage JSON-LD (answer text must mirror what's on the page). The
+// questions match rising question-phrased queries that already land
+// on this page ("can i use html in canvas", "html inside canvas").
+const SITE_URL = 'https://html-in-canvas.dev';
+const faqs = [
+  {
+    question: 'Can I use HTML inside a canvas element?',
+    answer:
+      'Historically, no — <canvas> is a bitmap drawing surface, and any HTML placed inside it is treated as invisible fallback content. The WICG HTML-in-Canvas proposal changes that: its drawElementImage() method renders live DOM elements directly into 2D, WebGL, and WebGPU canvases, available today behind a Chrome flag. See it in action in the hello-world demo.',
+  },
+  {
+    question: 'How do I put HTML inside a canvas today?',
+    answer:
+      'You have two options: enable the flag-gated native API (chrome://flags/#canvas-draw-element in Chrome Canary or Brave) and draw elements with drawElementImage(), or use a screenshot-style library like html2canvas that re-implements rendering in JavaScript. See the render HTML to canvas comparison for code and trade-offs, and the browser support guide for flag setup.',
+  },
+];
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  '@id': `${SITE_URL}/#faq`,
+  mainEntity: faqs.map((f) => ({
+    '@type': 'Question',
+    name: f.question,
+    acceptedAnswer: { '@type': 'Answer', text: f.answer },
+  })),
+};
 ---
 
 <BaseLayout>
+  <Fragment slot="head">
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify(faqJsonLd)}
+    />
+  </Fragment>
   <LandingHero />
 
   {/* ---------- API Primitives ---------- */}
@@ -214,6 +249,39 @@ element.style.transform =
         Track the spec at
         <a href={WICG_REPO} target="_blank" rel="noopener noreferrer">{WICG_REPO.replace('https://', '')}</a>
       </p>
+    </div>
+  </section>
+
+  {/* ---------- FAQ ---------- */}
+  <section class="faq" aria-labelledby="faq-heading">
+    <h2 id="faq-heading" class="section-heading">Frequently Asked Questions</h2>
+    <div class="faq-list">
+      <div class="faq-item">
+        <h3>Can I use HTML inside a canvas element?</h3>
+        <p>
+          Historically, no — <code>&lt;canvas&gt;</code> is a bitmap drawing
+          surface, and any HTML placed inside it is treated as invisible
+          fallback content. The WICG HTML-in-Canvas proposal changes that:
+          its <code>drawElementImage()</code> method renders live DOM
+          elements directly into 2D, WebGL, and WebGPU canvases, available
+          today behind a Chrome flag. See it in action in the
+          <a href="/demos/hello-world/">hello-world demo</a>.
+        </p>
+      </div>
+      <div class="faq-item">
+        <h3>How do I put HTML inside a canvas today?</h3>
+        <p>
+          You have two options: enable the flag-gated native API
+          (<code>chrome://flags/#canvas-draw-element</code> in Chrome Canary
+          or Brave) and draw elements with <code>drawElementImage()</code>,
+          or use a screenshot-style library like <code>html2canvas</code>
+          that re-implements rendering in JavaScript. See the
+          <a href="/render-html-to-canvas/">render HTML to canvas</a>
+          comparison for code and trade-offs, and the
+          <a href="/docs/browser-support/">browser support guide</a> for
+          flag setup.
+        </p>
+      </div>
     </div>
   </section>
 </BaseLayout>
@@ -888,6 +956,44 @@ element.style.transform =
     font-size: 0.85rem;
     color: var(--text-muted);
     margin: 0;
+  }
+
+  /* ===== FAQ ===== */
+  .faq {
+    padding: 3rem 0 1rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .faq-list {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .faq-item {
+    padding: 1.5rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+  }
+
+  .faq-item h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .faq-item p {
+    font-size: 0.9rem;
+    line-height: 1.65;
+    color: var(--text-secondary);
+    margin: 0;
+    max-width: 52rem;
+  }
+
+  /* In-text links: underline so they are distinguishable without
+     relying on color alone (axe link-in-text-block, WCAG 1.4.1). */
+  .faq-item a {
+    text-decoration: underline;
+    text-underline-offset: 2px;
   }
 
   /* ===== Responsive ===== */
