@@ -9,6 +9,7 @@
  * "Open in new tab" / fork-on-GitHub use.
  */
 import { getCollection } from 'astro:content';
+import { existsSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import BaseLayout from '../../layouts/BaseLayout.astro';
@@ -42,6 +43,9 @@ const {
   features,
   browserSupport,
   relatedArticle,
+  faq = [],
+  related = [],
+  why,
 } = demo.data;
 
 // ---------------------------------------------------------------------------
@@ -101,7 +105,7 @@ const githubUrl = `${GITHUB_REPO}/tree/main/src/content/demos/${demo.id}`;
 // plus a BreadcrumbList so Google can render Home › Demos › {Title}
 // in the SERP result.
 const SITE_URL = 'https://html-in-canvas.dev';
-const demoJsonLd = {
+const demoJsonLd: { '@context': string; '@graph': Record<string, unknown>[] } = {
   '@context': 'https://schema.org',
   '@graph': [
     {
@@ -145,13 +149,34 @@ const demoJsonLd = {
     },
   ],
 };
+
+if (faq.length > 0) {
+  demoJsonLd['@graph'].push({
+    '@type': 'FAQPage',
+    mainEntity: faq.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
+  });
+}
+
+if (tags.includes('wgsl') || tags.includes('webgpu')) {
+  const src = demoJsonLd['@graph'].find((n) => n['@type'] === 'SoftwareSourceCode');
+  if (src) src.programmingLanguage = ['HTML', 'CSS', 'JavaScript', 'WGSL'];
+}
+
+const demoOgFile = `og-demo-${demo.id}.png`;
+const ogImage = existsSync(join(process.cwd(), 'public', demoOgFile))
+  ? `/${demoOgFile}`
+  : '/og-image.png';
 ---
 
 <BaseLayout
   title={title}
   description={description}
   ogType="article"
-  ogImage={`/og-demo-${demo.id}.png`}
+  ogImage={ogImage}
 >
   <Fragment slot="head">
     {/* Article metadata — mirrors the TechArticle JSON-LD below so
@@ -305,6 +330,47 @@ const demoJsonLd = {
         How it works, step by step:
         <a href={relatedArticle.url}>{relatedArticle.title}</a>.
       </p>
+    )}
+
+    {why && (
+      <section class="demo-why" aria-labelledby="demo-why-heading">
+        <h2 id="demo-why-heading">{why.heading}</h2>
+        <p class="demo-why-lede">{why.lede}</p>
+        <div class="demo-why-grid">
+          {why.points.map((point) => (
+            <article>
+              <h3>{point.title}</h3>
+              <p>{point.body}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {related.length > 0 && (
+      <nav class="demo-related" aria-label="Related">
+        {related.map((link) => (
+          <a
+            href={link.href}
+            target={link.href.startsWith('http') ? '_blank' : undefined}
+            rel={link.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+          >
+            {link.label}
+          </a>
+        ))}
+      </nav>
+    )}
+
+    {faq.length > 0 && (
+      <section class="demo-faq" aria-labelledby="demo-faq-heading">
+        <h2 id="demo-faq-heading">Questions this demo answers</h2>
+        {faq.map((item) => (
+          <details>
+            <summary>{item.q}</summary>
+            <p>{item.a}</p>
+          </details>
+        ))}
+      </section>
     )}
 
     {/* ------- Details strip ------- */}
@@ -856,6 +922,93 @@ const demoJsonLd = {
   .demo-source h2 {
     font-size: 1.25rem;
     margin-bottom: 0.75rem;
+  }
+
+  .demo-why {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    max-width: 52rem;
+  }
+
+  .demo-why h2 {
+    font-size: 1.25rem;
+    margin: 0;
+  }
+
+  .demo-why-lede {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.55;
+  }
+
+  .demo-why-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 0.85rem;
+  }
+
+  .demo-why-grid article {
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-surface);
+  }
+
+  .demo-why-grid h3 {
+    margin: 0 0 0.4rem;
+    font-size: 0.92rem;
+  }
+
+  .demo-why-grid p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    line-height: 1.5;
+  }
+
+  .demo-related {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.85rem;
+  }
+
+  .demo-related a {
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+
+  .demo-faq {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-width: 46rem;
+  }
+
+  .demo-faq h2 {
+    font-size: 1.15rem;
+    margin: 0 0 0.25rem;
+  }
+
+  .demo-faq details {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-surface);
+    padding: 0.7rem 0.9rem;
+  }
+
+  .demo-faq summary {
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.92rem;
+  }
+
+  .demo-faq details p {
+    margin: 0.55rem 0 0;
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    line-height: 1.5;
   }
 
   /* ------- Responsive ------- */

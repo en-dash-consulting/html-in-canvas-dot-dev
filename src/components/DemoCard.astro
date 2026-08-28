@@ -11,6 +11,7 @@ interface Props {
   context: '2d' | 'webgl' | 'webgpu';
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   tags: string[];
+  featured?: boolean;
   /** Heading level for the card title. Defaults to h3 (cards sit under
    *  an h2 section heading on the home page). On pages where the cards
    *  sit directly under the page h1 (e.g. /demos/), pass 2 to avoid a
@@ -25,6 +26,7 @@ const {
   context,
   difficulty,
   tags,
+  featured = false,
   headingLevel = 3,
 } = Astro.props;
 const HeadingTag = `h${headingLevel}` as 'h2' | 'h3';
@@ -44,6 +46,7 @@ const difficultyLabels: Record<string, string> = {
 
 <a href={`/demos/${slug}/`} class="demo-card" data-context={context} data-difficulty={difficulty} data-tags={tags.join(',')}>
   <div class="demo-card-header">
+    {featured && <span class="featured-badge">Featured</span>}
     <span class={`context-badge context-${context}`}>{contextLabels[context]}</span>
     <span class={`difficulty-badge difficulty-${difficulty}`}>{difficultyLabels[difficulty]}</span>
   </div>
@@ -83,6 +86,18 @@ const difficultyLabels: Record<string, string> = {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+  }
+
+  .featured-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+    line-height: 1.4;
+    background: var(--badge-purple-bg);
+    color: var(--accent-purple-text);
   }
 
   .context-badge,
