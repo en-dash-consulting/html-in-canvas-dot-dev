@@ -11,7 +11,7 @@
     "llms-full": "node scripts/generate-llms-full.mjs",
     "prebuild": "npm run og && npm run llms-full",
     "build": "astro build",
-    "postbuild": "node -e \"require('node:fs').copyFileSync('dist/sitemap-index.xml', 'dist/sitemap.xml')\"",
+    "postbuild": "node scripts/flatten-sitemap.mjs",
     "preview": "astro preview",
     "check": "astro check",
     "astro": "astro",

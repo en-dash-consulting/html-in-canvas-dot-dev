@@ -42,4 +42,4 @@ Allow: /
 User-agent: Bytespider
 Allow: /
 
-Sitemap: https://html-in-canvas.dev/sitemap-index.xml
+Sitemap: https://html-in-canvas.dev/sitemap.xml
