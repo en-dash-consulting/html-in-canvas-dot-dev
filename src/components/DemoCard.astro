@@ -70,6 +70,8 @@ const difficultyLabels: Record<string, string> = {
     background: var(--bg-surface);
     border: 1px solid var(--border-color);
     border-radius: 10px;
+    min-width: 0;
+    max-width: 100%;
     text-decoration: none;
     color: inherit;
     transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
@@ -85,6 +87,7 @@ const difficultyLabels: Record<string, string> = {
   .demo-card-header {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 0.5rem;
   }
 
@@ -146,6 +149,7 @@ const difficultyLabels: Record<string, string> = {
     font-weight: 600;
     color: var(--text-primary);
     margin: 0;
+    overflow-wrap: anywhere;
   }
 
   .demo-card-desc {
