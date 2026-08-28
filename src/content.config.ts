@@ -37,6 +37,24 @@ const demos = defineCollection({
         safari: z.boolean().default(false),
       })
       .default({ chrome: false, firefox: false, safari: false }),
+    /** Pin on the homepage featured grid */
+    featured: z.boolean().optional(),
+    /** Crawlable FAQ on the demo page (AEO + FAQPage JSON-LD) */
+    faq: z
+      .array(z.object({ q: z.string(), a: z.string() }))
+      .optional(),
+    /** Outbound / related links shown under the demo */
+    related: z
+      .array(z.object({ label: z.string(), href: z.string() }))
+      .optional(),
+    /** Optional commentary block under the live demo */
+    why: z
+      .object({
+        heading: z.string(),
+        lede: z.string(),
+        points: z.array(z.object({ title: z.string(), body: z.string() })),
+      })
+      .optional(),
   }),
 });
 

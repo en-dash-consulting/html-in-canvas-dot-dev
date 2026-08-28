@@ -1,0 +1,89 @@
+{
+  "title": "vgpu WebGPU Shader on Live HTML",
+  "description": "Shade live HTML with Vercel vgpu: drawElementImage paints a real DOM card into canvas, a WebGPU foil shader warps it on hover, and the same pass snapshots for OG images via vgpu/node. An HTML-in-Canvas demo by En Dash.",
+  "tags": [
+    "featured",
+    "vgpu",
+    "vercel",
+    "webgpu",
+    "html-in-canvas",
+    "drawElementImage",
+    "canvas",
+    "shader",
+    "wgsl",
+    "holographic",
+    "og-image",
+    "endash"
+  ],
+  "author": "En Dash Consulting",
+  "dateCreated": "2026-08-28",
+  "dateUpdated": "2026-08-28",
+  "context": "webgpu",
+  "difficulty": "intermediate",
+  "featured": true,
+  "features": [
+    "layoutsubtree",
+    "drawElementImage",
+    "onpaint",
+    "requestPaint"
+  ],
+  "browserSupport": {
+    "chrome": true,
+    "firefox": false,
+    "safari": false
+  },
+  "related": [
+    {
+      "label": "En Dash toolkit \u2014 live tools",
+      "href": "https://endash.us/toolkit"
+    },
+    {
+      "label": "vgpu docs",
+      "href": "https://vgpu.sh"
+    },
+    {
+      "label": "HTML-in-Canvas spec",
+      "href": "https://github.com/WICG/html-in-canvas"
+    }
+  ],
+  "faq": [
+    {
+      "q": "What is vgpu?",
+      "a": "vgpu is Vercel\u2019s TypeScript WebGPU library. The same small API runs in the browser, headless Node (Dawn), and CI \u2014 so one shader can be a live canvas, an OG image, and a pixel snapshot."
+    },
+    {
+      "q": "Can I use vgpu with HTML-in-Canvas?",
+      "a": "Yes. HTML-in-Canvas drawElementImage paints live DOM into a canvas (including WebGPU). This demo uploads those pixels into a vgpu effect, so real HTML type sits under a holographic foil shader."
+    },
+    {
+      "q": "How do you shade live HTML with WebGPU?",
+      "a": "Lay out HTML as a canvas child with layoutsubtree, paint it with drawElementImage, copy the canvas into a GPU texture, then run a vgpu fragment effect. Hover still hits the real DOM because the WebGPU canvas uses pointer-events: none."
+    },
+    {
+      "q": "Can vgpu render this on a server for OG images?",
+      "a": "The snapshot pane is a target.read() of the same shader pass. That is the browser stand-in for vgpu/node, which can render the WGSL headlessly for Open Graph cards and CI."
+    },
+    {
+      "q": "Does this work on a phone?",
+      "a": "The layout is phone-friendly. Slide a finger to warp the type. The HTML-in-Canvas API itself still needs Chrome Canary or Brave with the canvas-draw-element flag, so iOS Safari will show the setup note until the spec ships there."
+    }
+  ],
+  "why": {
+    "heading": "Why vgpu is cool",
+    "lede": "Most WebGPU libraries want to be an engine. vgpu wants to be a 25 KB function. You write one program, and it is a live canvas, a serverless PNG, and a CI snapshot. That is the trick this page is showing.",
+    "points": [
+      {
+        "title": "Same shader, three runtimes",
+        "body": "The foil on the left is the browser. The still on the right is a target.read() of that same pass. Swap the import to vgpu/node and Dawn renders it on a server with no window. The mock adapter runs the same API in tests. One file. Browser, Node, CI."
+      },
+      {
+        "title": "A library, not a scene graph",
+        "body": "init, effect, frame, target. No 500 KB engine, no hidden global, no 'add this mesh to the world'. Bindings are the WGSL names. Agents can read the docs, pull an example, and ship a shader without learning Three.js."
+      },
+      {
+        "title": "Built for the thing next to the canvas",
+        "body": "OG images, pixel diffs, headless CI, MCP, llms.txt. vgpu assumes the GPU program has a life outside the tab. HTML-in-Canvas is the other half: the pixels can start as real, clickable HTML. Together you get a link that opens a new tab and a PNG of the shader that shaded it."
+      }
+    ]
+  }
+}

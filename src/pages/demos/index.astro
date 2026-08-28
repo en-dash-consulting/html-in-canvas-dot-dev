@@ -8,6 +8,12 @@ import DemoCard from '../../components/DemoCard.astro';
 import { getCollection } from 'astro:content';
 
 const demos = await getCollection('demos');
+const featuredDemos = [...demos].sort((a, b) => {
+  const af = a.data.featured ? 1 : 0;
+  const bf = b.data.featured ? 1 : 0;
+  if (bf !== af) return bf - af;
+  return (b.data.dateCreated ?? '').localeCompare(a.data.dateCreated ?? '');
+});
 
 // Derive unique values for filter options
 const allContexts = [...new Set(demos.map((d) => d.data.context))].sort();
@@ -34,7 +40,7 @@ const galleryJsonLd = {
       '@type': 'ItemList',
       '@id': `${SITE_URL}/demos/#list`,
       numberOfItems: demos.length,
-      itemListElement: demos.map((d, idx) => ({
+      itemListElement: featuredDemos.map((d, idx) => ({
         '@type': 'ListItem',
         position: idx + 1,
         url: `${SITE_URL}/demos/${d.id}/`,
@@ -113,7 +119,7 @@ const galleryJsonLd = {
   </div>
 
   <div class="demo-grid" id="demo-grid">
-    {demos.map((demo) => (
+    {featuredDemos.map((demo) => (
       <DemoCard
         slug={demo.id}
         title={demo.data.title}
@@ -121,6 +127,7 @@ const galleryJsonLd = {
         context={demo.data.context}
         difficulty={demo.data.difficulty}
         tags={demo.data.tags}
+        featured={demo.data.featured}
         headingLevel={2}
       />
     ))}

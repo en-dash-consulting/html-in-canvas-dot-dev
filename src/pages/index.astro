@@ -9,6 +9,12 @@ import LandingHero from '../components/LandingHero.astro';
 import { getCollection } from 'astro:content';
 
 const demos = await getCollection('demos');
+const featuredDemos = [...demos].sort((a, b) => {
+  const af = a.data.featured ? 1 : 0;
+  const bf = b.data.featured ? 1 : 0;
+  if (bf !== af) return bf - af;
+  return (b.data.dateCreated ?? '').localeCompare(a.data.dateCreated ?? '');
+});
 const WICG_REPO = 'https://github.com/WICG/html-in-canvas';
 
 // `layoutsubtree` isn't in Astro's typed HTML attribute surface.
@@ -202,7 +208,7 @@ element.style.transform =
 
     {demos.length > 0 ? (
       <div class="demo-grid">
-        {demos.slice(0, 6).map((demo) => (
+        {featuredDemos.slice(0, 6).map((demo) => (
           <DemoCard
             slug={demo.id}
             title={demo.data.title}
@@ -210,6 +216,7 @@ element.style.transform =
             context={demo.data.context}
             difficulty={demo.data.difficulty}
             tags={demo.data.tags}
+            featured={demo.data.featured}
           />
         ))}
       </div>

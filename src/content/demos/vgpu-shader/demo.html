@@ -1,0 +1,809 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>vgpu WebGPU Shader on Live HTML — HTML-in-Canvas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * { box-sizing: border-box; }
+      html { height: 100%; }
+      body,
+      :host {
+        display: block;
+        position: relative;
+        margin: 0;
+        width: 100%;
+        min-height: min(78vh, 820px);
+        background:
+          radial-gradient(ellipse at 12% 0%, rgba(108, 65, 240, 0.2), transparent 50%),
+          radial-gradient(ellipse at 88% 110%, rgba(0, 229, 185, 0.14), transparent 55%),
+          #07070d;
+        color: #f0f0f0;
+        font-family: Inter, system-ui, -apple-system, sans-serif;
+      }
+      .page {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1.25rem 1.25rem 1.5rem;
+        max-width: 1180px;
+        margin: 0 auto;
+      }
+      .page-hero h1 {
+        margin: 0 0 0.4rem;
+        font-size: 1.45rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+      }
+      .page-hero h1 .accent {
+        background: linear-gradient(90deg, #9a7cff, #00e5b9);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .page-hero p {
+        margin: 0;
+        max-width: 46rem;
+        color: #a0a0b8;
+        font-size: 0.9rem;
+        line-height: 1.55;
+      }
+      .page-hero code {
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        padding: 0.05rem 0.35rem;
+        border-radius: 4px;
+        background: rgba(108, 65, 240, 0.16);
+        color: #cbbcff;
+      }
+      .duo {
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+        gap: 0.85rem;
+        align-items: stretch;
+      }
+      .panel {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        min-width: 0;
+      }
+      .panel-label {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.5rem;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #8a8aa0;
+      }
+      .panel-label strong { color: #cbbcff; font-weight: 700; }
+      .stage {
+        position: relative;
+        height: min(52vh, 460px);
+        min-height: 300px;
+        border: 1px solid #282840;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #0a0a14;
+        cursor: crosshair;
+        touch-action: none;
+      }
+      #source-canvas,
+      #live-canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      #source-canvas { z-index: 0; }
+      #live-canvas {
+        z-index: 1;
+        pointer-events: none;
+        background: transparent;
+      }
+      #live-canvas[hidden] { display: none; }
+      #card {
+        width: 100%;
+        height: 100%;
+        padding: 12% 10%;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        gap: 0.55rem;
+        background:
+          radial-gradient(circle at 88% 8%, rgba(255, 255, 255, 0.16), transparent 34%),
+          linear-gradient(155deg, #1a1433 0%, #0c0c18 55%, #14102a 100%);
+        color: #f6f3ff;
+        font-family: Inter, system-ui, sans-serif;
+      }
+      .card-kicker {
+        align-self: flex-start;
+        padding: 0.28em 0.7em;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        background: rgba(255, 255, 255, 0.1);
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #efe8ff;
+      }
+      #headline, #tagline { margin: 0; outline: none; }
+      #headline {
+        display: inline;
+        font-size: clamp(1.8rem, 5vw, 3.4rem);
+        font-weight: 800;
+        letter-spacing: -0.035em;
+        line-height: 0.98;
+        color: #ffffff;
+        text-wrap: balance;
+        text-decoration: underline;
+        text-decoration-thickness: 0.08em;
+        text-underline-offset: 0.12em;
+        cursor: pointer;
+      }
+      #tagline {
+        max-width: 28rem;
+        font-size: clamp(0.82rem, 1.5vw, 1.02rem);
+        font-weight: 500;
+        line-height: 1.45;
+        color: rgba(255, 255, 255, 0.78);
+      }
+      #headline:focus, #tagline:focus {
+        text-decoration: underline;
+        text-decoration-thickness: 2px;
+        text-underline-offset: 0.12em;
+      }
+      .stage-hud {
+        position: absolute;
+        top: 0.7rem;
+        left: 0.7rem;
+        z-index: 2;
+        pointer-events: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.3rem 0.65rem;
+        background: rgba(10, 10, 20, 0.78);
+        border: 1px solid rgba(0, 229, 185, 0.4);
+        border-radius: 999px;
+        color: #a8ffe3;
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+      .stage-hud.is-error {
+        border-color: rgba(255, 89, 38, 0.55);
+        color: #ffc4a8;
+      }
+      .stage-hud::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+        box-shadow: 0 0 8px currentColor;
+      }
+      .snapshot-frame {
+        flex: 1;
+        min-height: 300px;
+        display: grid;
+        place-items: center;
+        border: 1px solid #282840;
+        border-radius: 12px;
+        overflow: hidden;
+        background: repeating-conic-gradient(#12121c 0% 25%, #0a0a12 0% 50%) 0 0 / 16px 16px;
+      }
+      #snapshot {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        background: #0a0a14;
+      }
+      #snapshot[hidden] { display: none; }
+      .snapshot-placeholder {
+        padding: 1.25rem;
+        color: #8a8aa0;
+        font-size: 0.82rem;
+        text-align: center;
+        max-width: 18rem;
+        line-height: 1.45;
+      }
+      .snapshot-status {
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #d0d0e4;
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.7rem 0.85rem;
+        background: rgba(15, 15, 22, 0.72);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+      }
+      .controls label {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #8a8aa0;
+        flex: 1 1 12rem;
+      }
+      .controls input[type="text"] {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        font-family: inherit;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-transform: none;
+        letter-spacing: 0;
+        color: #f0f0f0;
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+      }
+      .controls input[type="text"]:focus {
+        outline: none;
+        border-color: rgba(108, 65, 240, 0.6);
+        box-shadow: 0 0 0 3px rgba(108, 65, 240, 0.2);
+      }
+      #snap-btn {
+        appearance: none;
+        margin-left: auto;
+        padding: 0.55rem 0.95rem;
+        border: 1px solid rgba(0, 229, 185, 0.35);
+        border-radius: 999px;
+        background: rgba(0, 229, 185, 0.12);
+        color: #a8ffe3;
+        font: inherit;
+        font-size: 0.8rem;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      #snap-btn:hover, #snap-btn:focus-visible {
+        background: rgba(0, 229, 185, 0.2);
+        outline: none;
+      }
+      #snap-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+      .fallback {
+        padding: 1rem 1.1rem;
+        border: 1px solid rgba(255, 89, 38, 0.4);
+        border-radius: 10px;
+        background: rgba(255, 89, 38, 0.08);
+        color: #ffc4a8;
+        font-size: 0.88rem;
+        line-height: 1.5;
+      }
+      .fallback[hidden] { display: none; }
+      .fallback code {
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 0.8rem;
+      }
+      .endash-cta {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        padding: 0.55rem 0.9rem;
+        border-radius: 999px;
+        border: 1px solid rgba(154, 124, 255, 0.45);
+        background: rgba(108, 65, 240, 0.16);
+        color: #ddd4ff;
+        font-size: 0.82rem;
+        font-weight: 700;
+        text-decoration: none;
+        white-space: nowrap;
+      }
+      .endash-cta:hover { background: rgba(108, 65, 240, 0.28); }
+      @media (max-width: 800px) {
+        .duo { grid-template-columns: 1fr; }
+        .page { padding: 0.85rem 0.8rem 1.1rem; gap: 0.75rem; }
+        .page-hero h1 { font-size: 1.15rem; }
+        .page-hero p { font-size: 0.82rem; }
+        .stage { min-height: 220px; height: 48vh; }
+        .snapshot-frame { min-height: 160px; height: 28vh; }
+        #headline { font-size: clamp(1.35rem, 8vw, 2.2rem); }
+        #snap-btn, .endash-cta { margin-left: 0; width: 100%; }
+        .controls { flex-direction: column; align-items: stretch; }
+      }
+      @media (max-width: 480px) {
+        .panel-label span:last-child { display: none; }
+        .snapshot-frame { height: 22vh; min-height: 140px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="page-hero">
+        <h1>HTML-in-Canvas, shaded by <span class="accent">vgpu</span></h1>
+        <p>
+          Hover or slide a finger — live HTML warps under a
+          <code>vgpu</code> WebGPU shader. Click the type: it is a real
+          <code>&lt;a target="_blank"&gt;</code> opening
+          <a href="https://endash.us/toolkit" target="_blank" rel="noopener noreferrer">endash.us/toolkit</a>.
+        </p>
+      </header>
+
+      <div id="fallback" class="fallback" hidden></div>
+
+      <div class="duo">
+        <section class="panel">
+          <div class="panel-label">
+            <span>Live <strong>WebGPU</strong> · vgpu effect</span>
+            <span>hover or slide to warp</span>
+          </div>
+          <div class="stage" id="stage">
+            <canvas id="source-canvas" layoutsubtree aria-label="Live HTML card drawn into canvas">
+              <article id="card">
+                <span class="card-kicker">HTML-in-Canvas × vgpu</span>
+                <h2>
+                  <a id="headline" href="https://endash.us/toolkit" target="_blank" rel="noopener noreferrer">Visit endash.us/toolkit</a>
+                </h2>
+                <p id="tagline" contenteditable="true" spellcheck="false" aria-label="Editable tagline">This is a real HTML link. Click it — new tab.</p>
+              </article>
+            </canvas>
+            <canvas id="live-canvas" hidden aria-hidden="true"></canvas>
+            <div class="stage-hud" id="stage-hud">Starting vgpu…</div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-label">
+            <span>Snapshot · same shader</span>
+            <span class="snapshot-status" id="snap-status">waiting</span>
+          </div>
+          <div class="snapshot-frame" id="snapshot-frame">
+            <p class="snapshot-placeholder" id="snapshot-placeholder">
+              The same vgpu pass, read back as a PNG. It should refresh as you move.
+            </p>
+            <img id="snapshot" hidden alt="Still PNG of the same vgpu holographic shader pass" />
+          </div>
+        </section>
+      </div>
+
+      <div class="controls">
+        <label>
+          Headline
+          <input id="headline-input" type="text" value="Visit endash.us/toolkit" autocomplete="off" spellcheck="false" />
+        </label>
+        <label>
+          Tagline
+          <input id="tagline-input" type="text" value="This is a real HTML link. Click it — new tab." autocomplete="off" spellcheck="false" />
+        </label>
+        <button id="snap-btn" type="button">Freeze this frame</button>
+        <a class="endash-cta" id="endash-cta" href="https://endash.us/toolkit" target="_blank" rel="noopener noreferrer">
+          Open endash.us/toolkit
+        </a>
+      </div>
+    </div>
+
+    <script>
+      const root = window.__demoRoot ?? document;
+      const $ = (id) => root.getElementById(id);
+
+      const sourceCanvas = $("source-canvas");
+      const liveCanvas = $("live-canvas");
+      const card = $("card");
+      const headline = $("headline");
+      const tagline = $("tagline");
+      const headlineInput = $("headline-input");
+      const taglineInput = $("tagline-input");
+      const snapBtn = $("snap-btn");
+      const snapshotImg = $("snapshot");
+      const snapshotFrame = $("snapshot-frame");
+      const snapshotPlaceholder = $("snapshot-placeholder");
+      const snapStatus = $("snap-status");
+      const fallbackEl = $("fallback");
+      const stage = $("stage");
+      const stageHud = $("stage-hud");
+
+      const ctx2d = sourceCanvas.getContext("2d", { willReadFrequently: true });
+      const drawElementInto =
+        ctx2d.drawElementImage?.bind(ctx2d) ??
+        ctx2d.drawElement?.bind(ctx2d);
+
+      function showFallback(message) {
+        fallbackEl.hidden = false;
+        fallbackEl.innerHTML = message;
+      }
+
+      function setHud(text, isError) {
+        stageHud.textContent = text;
+        stageHud.classList.toggle("is-error", Boolean(isError));
+      }
+
+      function setSnapStatus(text) {
+        snapStatus.textContent = text;
+      }
+
+      const hasHtmlInCanvas = typeof drawElementInto === "function";
+      if (!hasHtmlInCanvas) {
+        setHud("flag off", true);
+        setSnapStatus("needs flag");
+        showFallback(
+          "This demo needs the <code>canvas-draw-element</code> flag in <strong>Chrome Canary</strong> or <strong>Brave Stable</strong> (Chromium 147+). " +
+            "See <code>chrome://flags/#canvas-draw-element</code>.",
+        );
+      }
+
+      function setText(el, input, value) {
+        const next = value || " ";
+        if (el.textContent !== next) el.textContent = next;
+        if (input.value !== value) input.value = value;
+        sourceCanvas.requestPaint?.();
+      }
+      headlineInput.addEventListener("input", () => setText(headline, headlineInput, headlineInput.value));
+      taglineInput.addEventListener("input", () => setText(tagline, taglineInput, taglineInput.value));
+      tagline.addEventListener("input", () => setText(tagline, taglineInput, tagline.textContent));
+
+      if (hasHtmlInCanvas) {
+        sourceCanvas.onpaint = () => {
+          ctx2d.clearRect(0, 0, sourceCanvas.width, sourceCanvas.height);
+          try {
+            const transform = drawElementInto(card, 0, 0);
+            if (transform) card.style.transform = transform.toString();
+          } catch {
+            /* paint records not ready */
+          }
+        };
+      }
+
+      new ResizeObserver(([entry]) => {
+        const w = Math.max(1, Math.round(entry.contentRect.width));
+        const h = Math.max(1, Math.round(entry.contentRect.height));
+        if (sourceCanvas.width !== w || sourceCanvas.height !== h) {
+          sourceCanvas.width = w;
+          sourceCanvas.height = h;
+          sourceCanvas.requestPaint?.();
+        }
+      }).observe(sourceCanvas);
+
+      let pointerX = 0.55;
+      let pointerY = 0.45;
+      let velX = 0;
+      let velY = 0;
+      let lastPtrX = pointerX;
+      let lastPtrY = pointerY;
+
+      function trackPointer(e) {
+        const r = stage.getBoundingClientRect();
+        if (r.width < 1 || r.height < 1) return;
+        const x = (e.clientX - r.left) / r.width;
+        const y = (e.clientY - r.top) / r.height;
+        velX = x - lastPtrX;
+        velY = y - lastPtrY;
+        lastPtrX = pointerX = x;
+        lastPtrY = pointerY = y;
+      }
+
+      for (const el of [stage, sourceCanvas, card, headline, tagline]) {
+        el.addEventListener("pointermove", trackPointer);
+        el.addEventListener("pointerdown", trackPointer);
+      }
+      stage.addEventListener("pointerenter", trackPointer);
+
+      const FOIL_WGSL = `
+struct Params {
+  time: f32,
+  pointer_x: f32,
+  pointer_y: f32,
+  width: f32,
+  height: f32,
+  vel_x: f32,
+  vel_y: f32,
+  _pad: f32,
+}
+
+@group(0) @binding(0) var src: texture_2d<f32>;
+@group(0) @binding(1) var samp: sampler;
+@group(0) @binding(2) var<uniform> params: Params;
+
+fn hsv2rgb(c: vec3f) -> vec3f {
+  let k = vec4f(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+  let p = abs(fract(c.xxx + k.xyz) * 6.0 - k.www);
+  return c.z * mix(k.xxx, clamp(p - k.xxx, vec3f(0.0), vec3f(1.0)), c.y);
+}
+
+@fragment
+fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
+  let ptr = vec2f(params.pointer_x, params.pointer_y);
+  let delta = uv - ptr;
+  let aspect = vec2f(params.width / max(params.height, 1.0), 1.0);
+  let d = length(delta * aspect);
+  let ripple = sin(d * 28.0 - params.time * 6.0);
+  let bulge = exp(-d * d * 14.0);
+  let warpAmt = bulge * 0.16 + ripple * bulge * 0.04;
+  let dir = delta / max(d, 0.0008);
+  let warped = uv - dir * warpAmt;
+
+  let chroma = bulge * 0.018 + length(vec2f(params.vel_x, params.vel_y)) * 0.08;
+  let r = textureSampleLevel(src, samp, warped + vec2f(chroma, 0.0), 0.0).r;
+  let g = textureSampleLevel(src, samp, warped, 0.0).g;
+  let b = textureSampleLevel(src, samp, warped - vec2f(chroma, 0.0), 0.0).b;
+  let a = textureSampleLevel(src, samp, warped, 0.0).a;
+  var rgb = vec3f(r, g, b);
+
+  let hue = fract(d * -0.7 + params.time * 0.12 + params.pointer_x * 0.35 + uv.y * 0.2);
+  let foil = hsv2rgb(vec3f(hue, 0.85, 1.0));
+  rgb = mix(rgb, foil, clamp(bulge * 0.55 + 0.12, 0.0, 0.75));
+
+  let spec = exp(-d * d * 48.0);
+  rgb += vec3f(spec * 0.95);
+  rgb += foil * (0.18 + 0.22 * sin(params.time * 2.2 + uv.x * 10.0));
+
+  let ring = smoothstep(0.18, 0.08, abs(d - 0.11 - 0.02 * sin(params.time * 4.0)));
+  rgb += vec3f(0.55, 0.95, 0.85) * ring * 0.45;
+
+  return vec4f(rgb, max(a, 0.08 + bulge * 0.4));
+}
+`;
+
+      function withTimeout(promise, ms, label) {
+        return Promise.race([
+          promise,
+          new Promise((_, reject) => {
+            setTimeout(() => reject(new Error(label + " timed out after " + ms + "ms")), ms);
+          }),
+        ]);
+      }
+
+      function pickVgpuApi(mod) {
+        const a = mod && (mod.default && (mod.default.init || mod.default.effect) ? mod.default : mod);
+        return {
+          init: a.init,
+          effect: a.effect,
+          surface: a.surface,
+          target: a.target,
+          sampler: a.sampler,
+          clock: a.clock,
+          frameLoop: a.frameLoop,
+        };
+      }
+
+      (async () => {
+        if (!hasHtmlInCanvas) return;
+
+        if (!navigator.gpu) {
+          setHud("no WebGPU", true);
+          setSnapStatus("no WebGPU");
+          snapshotPlaceholder.textContent = "WebGPU is missing, so there is no vgpu pass to snapshot. Try Chrome Canary or a recent Chromium build.";
+          showFallback(
+            "WebGPU is required for <code>vgpu</code>. The HTML card still paints via <code>drawElementImage</code>, but the foil shader did not start.",
+          );
+          return;
+        }
+
+        let api;
+        try {
+          const mod = await withTimeout(import("https://esm.sh/vgpu@0.3.1"), 12000, "esm.sh/vgpu");
+          api = pickVgpuApi(mod);
+          if (typeof api.init !== "function" || typeof api.effect !== "function") {
+            throw new Error("vgpu module loaded but init/effect were missing");
+          }
+        } catch (err) {
+          const msg = err && err.message ? err.message : String(err);
+          setHud("vgpu load failed", true);
+          setSnapStatus("load failed");
+          snapshotPlaceholder.textContent = "Could not load vgpu: " + msg;
+          showFallback("Could not load <code>vgpu</code> from <code>esm.sh</code>: " + msg);
+          return;
+        }
+
+        const { init, effect, surface, target, sampler, clock, frameLoop } = api;
+
+        let gpu;
+        try {
+          gpu = await withTimeout(init(), 8000, "vgpu.init");
+        } catch (err) {
+          const msg = err && err.message ? err.message : String(err);
+          setHud("init failed", true);
+          setSnapStatus("init failed");
+          snapshotPlaceholder.textContent = "vgpu.init() failed: " + msg;
+          showFallback("<code>vgpu.init()</code> failed: " + msg);
+          return;
+        }
+
+        try {
+          if (typeof gpu.onError === "function") {
+            gpu.onError((err) => {
+              const msg = err && (err.message || String(err));
+              if (msg) {
+                setHud("vgpu error", true);
+                showFallback("vgpu: " + msg);
+              }
+            });
+          }
+
+          const samp = sampler(gpu, {
+            minFilter: "linear",
+            magFilter: "linear",
+            addressModeU: "clamp-to-edge",
+            addressModeV: "clamp-to-edge",
+          });
+          const foil = effect(gpu, FOIL_WGSL, { label: "liquid-foil" });
+
+          let htmlTex = null;
+          let liveSurface = null;
+          let snapshotTarget = null;
+          let gpuW = 0;
+          let gpuH = 0;
+          let snapW = 0;
+          let snapH = 0;
+          let frozen = false;
+          let capturing = false;
+
+          function paramsBag() {
+            const t = clock && clock(gpu);
+            return {
+              time: t && typeof t.time === "number" ? t.time : performance.now() / 1000,
+              pointer_x: pointerX,
+              pointer_y: pointerY,
+              width: gpuW,
+              height: gpuH,
+              vel_x: velX,
+              vel_y: velY,
+              _pad: 0,
+            };
+          }
+
+          function uploadHtml() {
+            if (!htmlTex || gpuW < 1 || gpuH < 1) return;
+            gpu.gpu.queue.copyExternalImageToTexture(
+              { source: sourceCanvas },
+              { texture: htmlTex },
+              [gpuW, gpuH],
+            );
+          }
+
+          function bindFoil() {
+            foil.set({ src: htmlTex, samp, params: paramsBag() });
+          }
+
+          function ensureGpuResources(w, h) {
+            if (w === gpuW && h === gpuH && htmlTex && liveSurface && snapshotTarget) return;
+            gpuW = w;
+            gpuH = h;
+            const scale = Math.min(1, 480 / Math.max(w, 1));
+            snapW = Math.max(1, Math.round(w * scale));
+            snapH = Math.max(1, Math.round(h * scale));
+
+            htmlTex?.destroy?.();
+            htmlTex = gpu.gpu.createTexture({
+              label: "html-in-canvas-source",
+              size: [w, h],
+              format: "rgba8unorm",
+              usage:
+                GPUTextureUsage.TEXTURE_BINDING |
+                GPUTextureUsage.COPY_DST |
+                GPUTextureUsage.COPY_SRC |
+                GPUTextureUsage.RENDER_ATTACHMENT,
+            });
+
+            liveCanvas.width = w;
+            liveCanvas.height = h;
+            if (!liveSurface) {
+              liveSurface = surface(gpu, liveCanvas, {
+                dpr: 1,
+                autoResize: false,
+                size: [w, h],
+                format: "rgba8unorm",
+                label: "live-foil",
+              });
+            } else if (liveSurface.resize) {
+              liveSurface.resize([w, h]);
+            }
+
+            if (!snapshotTarget) {
+              snapshotTarget = target(gpu, {
+                size: [snapW, snapH],
+                format: "rgba8unorm",
+                label: "foil-snapshot",
+              });
+            } else if (snapshotTarget.resize) {
+              snapshotTarget.resize([snapW, snapH]);
+            }
+
+            bindFoil();
+          }
+
+          async function captureSnapshot() {
+            if (capturing || !snapshotTarget || !htmlTex) return;
+            capturing = true;
+            setSnapStatus(frozen ? "frozen" : "capturing");
+            try {
+              uploadHtml();
+              foil.set({ params: paramsBag() });
+              if (typeof foil.draw === "function") {
+                foil.draw(snapshotTarget);
+              } else {
+                throw new Error("effect.draw is not available");
+              }
+              if (gpu.settled) await withTimeout(gpu.settled(), 2500, "gpu.settled");
+              const pixels = await withTimeout(snapshotTarget.read(), 2500, "target.read");
+              const bytes = pixels instanceof Uint8Array ? pixels : new Uint8Array(pixels);
+              const expected = snapW * snapH * 4;
+              if (bytes.byteLength < expected) {
+                throw new Error("readback was " + bytes.byteLength + " bytes, expected " + expected);
+              }
+              const imageData = new ImageData(new Uint8ClampedArray(bytes.buffer, bytes.byteOffset, expected), snapW, snapH);
+              const enc = document.createElement("canvas");
+              enc.width = snapW;
+              enc.height = snapH;
+              enc.getContext("2d").putImageData(imageData, 0, 0);
+              snapshotImg.src = enc.toDataURL("image/png");
+              snapshotImg.hidden = false;
+              snapshotPlaceholder.hidden = true;
+              setSnapStatus(frozen ? "frozen" : "live still");
+            } catch (err) {
+              const msg = err && err.message ? err.message : String(err);
+              snapshotPlaceholder.hidden = false;
+              snapshotPlaceholder.textContent = "Readback failed: " + msg;
+              setSnapStatus("readback failed");
+            } finally {
+              capturing = false;
+            }
+          }
+
+          snapBtn.addEventListener("click", () => {
+            frozen = !frozen;
+            snapBtn.textContent = frozen ? "Resume live still" : "Freeze this frame";
+            if (!frozen) void captureSnapshot();
+            else {
+              void captureSnapshot();
+              setSnapStatus("frozen");
+            }
+          });
+
+          ensureGpuResources(Math.max(1, sourceCanvas.width), Math.max(1, sourceCanvas.height));
+          liveCanvas.hidden = false;
+          sourceCanvas.requestPaint?.();
+          setHud("vgpu live · hover");
+          setSnapStatus("live still");
+
+          frameLoop(gpu, (frame) => {
+            velX *= 0.88;
+            velY *= 0.88;
+            ensureGpuResources(Math.max(1, sourceCanvas.width), Math.max(1, sourceCanvas.height));
+            sourceCanvas.requestPaint?.();
+            uploadHtml();
+            foil.set({ params: paramsBag() });
+            frame.pass(liveSurface, foil);
+          });
+
+          void captureSnapshot();
+          setInterval(() => {
+            if (!frozen) void captureSnapshot();
+          }, 450);
+        } catch (err) {
+          const msg = err && err.message ? err.message : String(err);
+          setHud("setup failed", true);
+          setSnapStatus("setup failed");
+          snapshotPlaceholder.textContent = "vgpu setup failed: " + msg;
+          showFallback("vgpu setup failed: " + msg);
+        }
+      })();
+    </script>
+  </body>
+</html>
