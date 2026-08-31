@@ -7,7 +7,8 @@
 This site is a community resource maintained by En Dash Consulting that
 shows what becomes possible when the browser can paint live HTML into a
 canvas: real text editing, native i18n, accessible chart labels, video
-recording from HTML scenes, GPU shader effects on DOM content, and 3D
+recording from HTML scenes, WebGL and WebGPU shader effects on DOM
+content (including a demo built on Vercel's vgpu library), and 3D
 scenes that use HTML elements as textures. The relevant Chromium feature
 ships behind `chrome://flags/#canvas-draw-element` in Chrome Canary, and
 is also available in recent Brave Stable builds (Chromium 147+) at
@@ -83,13 +84,22 @@ HTML file you can fork). The demo source is in
   WebGL blur kernels (gaussian, directional, tilt-shift)
 - /demos/liquid-glass/ — refraction distortion via WebGL applied to
   HTML content captured into the canvas
+- /demos/elastic-bulge/ — mouse-driven elastic displacement: a WebGL2
+  shader warps laid-out HTML content around the pointer
+- /demos/vgpu-shader/ — WebGPU shading of live HTML using vgpu
+  (https://github.com/vercel-labs/vgpu, Vercel's TypeScript WebGPU
+  library): `drawElementImage` paints a real DOM card into the canvas,
+  those pixels upload to a GPU texture, and a WGSL foil effect warps
+  them on hover while hit testing stays on the underlying DOM. The
+  still beside it is a `target.read()` of the same pass — the browser
+  stand-in for rendering the identical shader headlessly through
+  `vgpu/node` (Dawn) for OG images and CI snapshots
 - /demos/pixel-disintegration/ — `getImageData()` on rendered HTML
   drives a particle scatter / reassemble effect
 - /demos/morphing-text-transitions/ — pixel-level blends between two
   entirely different HTML layouts (crossfade, dissolve, wave, sort)
 - /demos/page-curl-book-turn/ — cylindrical WebGL deformation that
   curls a captured HTML page like a turning book
-- /demos/css-to-shader/ — see above
 
 ## Project
 

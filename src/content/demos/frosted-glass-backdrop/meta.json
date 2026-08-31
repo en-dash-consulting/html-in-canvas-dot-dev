@@ -16,5 +16,9 @@
     "chrome": true,
     "firefox": false,
     "safari": false
-  }
+  },
+  "related": [
+    { "label": "vgpu WebGPU shader demo", "href": "/demos/vgpu-shader/" },
+    { "label": "Liquid Glass demo", "href": "/demos/liquid-glass/" }
+  ]
 }
