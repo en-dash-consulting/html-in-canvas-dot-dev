@@ -113,8 +113,9 @@ HTML file you can fork). The demo source is in
 
 ## More from En Dash (the maintainers)
 
-Free interactive courses that step live agent runtimes in the browser, no API key:
+Free interactive courses that run in the browser, no API key:
 
+- [Learn vgpu](https://endash.us/apps/learn-vgpu) — edit WGSL live and step the vgpu API (init, effect, frame, target), with the same program shown for browser, Node, and CI. The closest companion to the vgpu-shader demo above.
 - [Learn LangGraph](https://endash.us/apps/learn-langgraph) — step a live graph: state, cycles, interrupts, multi-agent.
 - [Learn LangChain](https://endash.us/apps/learn-langchain) — one job run four ways: chain, create_agent, Deep Agents, LangGraph.
 - [Learn AgentCore](https://endash.us/apps/learn-agentcore) — the production half: sessions, identity, policy, memory.
