@@ -52,3 +52,4 @@ playwright/.cache/
 .rex/n-dx_workflow.md
 .rex/execution-log*.jsonl
 .run-logs/
+.n-dx.local.json
