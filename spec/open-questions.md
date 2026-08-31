@@ -5,7 +5,7 @@ order: 5
 
 # Open Questions & Issues
 
-_Auto-synced from [`WICG/html-in-canvas` issues](https://github.com/WICG/html-in-canvas/issues) on 2026-08-24 via `scripts/sync-spec-docs.mjs`._
+_Auto-synced from [`WICG/html-in-canvas` issues](https://github.com/WICG/html-in-canvas/issues) on 2026-08-31 via `scripts/sync-spec-docs.mjs`._
 
 There are currently **0** open issues on the spec repository. Each heading below links to the upstream discussion — follow the link to read the full thread and leave a comment.
 
