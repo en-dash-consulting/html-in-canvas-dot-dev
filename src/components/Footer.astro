@@ -31,6 +31,13 @@ const GITHUB_REPO =
     <p class="footer-tagline">
       We build tools that make work better and feel better.
     </p>
+    <p class="footer-learn">
+      More free interactive learning from En Dash:
+      <a href="https://endash.us/apps/learn-langgraph" target="_blank" rel="noopener noreferrer">Learn LangGraph</a>,
+      <a href="https://endash.us/apps/learn-langchain" target="_blank" rel="noopener noreferrer">Learn LangChain</a>, and
+      <a href="https://endash.us/apps/learn-agentcore" target="_blank" rel="noopener noreferrer">Learn AgentCore</a>
+      — step live agent runtimes in your browser, no API key.
+    </p>
     <a
       class="footer-cta"
       href="https://endash.us/toolkit?tag=development&sort=new-old"
@@ -148,6 +155,21 @@ const GITHUB_REPO =
     font-size: 1rem;
     color: var(--text-secondary);
     max-width: 36ch;
+  }
+
+  .footer-learn {
+    margin: 0.25rem 0 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    max-width: 52ch;
+  }
+
+  .footer-learn a {
+    color: var(--accent-teal-text);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
   }
 
   .footer-cta {
