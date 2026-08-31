@@ -100,3 +100,11 @@ HTML file you can fork). The demo source is in
   containing `meta.json` + `demo.html`. The site picks it up
   automatically. See https://html-in-canvas.dev/contributing/ for the
   full guide.
+
+## More from En Dash (the maintainers)
+
+Free interactive courses that step live agent runtimes in the browser, no API key:
+
+- [Learn LangGraph](https://endash.us/apps/learn-langgraph) — step a live graph: state, cycles, interrupts, multi-agent.
+- [Learn LangChain](https://endash.us/apps/learn-langchain) — one job run four ways: chain, create_agent, Deep Agents, LangGraph.
+- [Learn AgentCore](https://endash.us/apps/learn-agentcore) — the production half: sessions, identity, policy, memory.
