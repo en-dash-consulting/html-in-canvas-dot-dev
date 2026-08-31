@@ -16,5 +16,9 @@
     "chrome": true,
     "firefox": false,
     "safari": false
-  }
+  },
+  "related": [
+    { "label": "vgpu WebGPU shader demo", "href": "/demos/vgpu-shader/" },
+    { "label": "CSS-to-Shader demo", "href": "/demos/css-to-shader/" }
+  ]
 }

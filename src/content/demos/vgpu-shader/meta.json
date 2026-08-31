@@ -34,6 +34,14 @@
   },
   "related": [
     {
+      "label": "Liquid Glass demo",
+      "href": "/demos/liquid-glass/"
+    },
+    {
+      "label": "CSS-to-Shader demo",
+      "href": "/demos/css-to-shader/"
+    },
+    {
       "label": "En Dash toolkit \u2014 live tools",
       "href": "https://endash.us/toolkit"
     },
