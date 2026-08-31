@@ -1,11 +1,17 @@
 {
   "llm": {
-    "vendor": "claude"
+    "vendor": "claude",
+    "claude": {
+      "model": "claude-opus-4-7"
+    }
   },
   "cli": {
     "timeouts": {
       "work": 7200000
     }
   },
-  "_initVersion": "0.2.2"
+  "_initVersion": "0.4.0",
+  "claude": {
+    "model": "claude-opus-4-7"
+  }
 }
