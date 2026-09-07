@@ -5,7 +5,7 @@ order: 6
 
 # Browser Support
 
-_Auto-synced from [`WICG/html-in-canvas` README](https://github.com/WICG/html-in-canvas/blob/main/README.md) on 2026-08-31 via `scripts/sync-spec-docs.mjs`._
+_Auto-synced from [`WICG/html-in-canvas` README](https://github.com/WICG/html-in-canvas/blob/main/README.md) on 2026-09-07 via `scripts/sync-spec-docs.mjs`._
 
 ## Status
 
