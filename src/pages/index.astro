@@ -27,6 +27,11 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
 const SITE_URL = 'https://html-in-canvas.dev';
 const faqs = [
   {
+    question: 'What is the HTML canvas element?',
+    answer:
+      'The <canvas> element is an HTML element that gives you a bitmap drawing surface controlled from JavaScript through a 2D, WebGL, or WebGPU context. On its own it cannot render HTML. The WICG HTML-in-Canvas spec adds drawElementImage(), which draws live DOM elements into that surface. Browse the HTML canvas examples for 2D, WebGL, and WebGPU demos.',
+  },
+  {
     question: 'Can I use HTML inside a canvas element?',
     answer:
       'Historically, no — <canvas> is a bitmap drawing surface, and any HTML placed inside it is treated as invisible fallback content. The WICG HTML-in-Canvas proposal changes that: its drawElementImage() method renders live DOM elements directly into 2D, WebGL, and WebGPU canvases, available today behind a Chrome flag. See it in action in the hello-world demo.',
@@ -263,6 +268,19 @@ element.style.transform =
   <section class="faq" aria-labelledby="faq-heading">
     <h2 id="faq-heading" class="section-heading">Frequently Asked Questions</h2>
     <div class="faq-list">
+      <div class="faq-item">
+        <h3>What is the HTML canvas element?</h3>
+        <p>
+          The <code>&lt;canvas&gt;</code> element is an HTML element that
+          gives you a bitmap drawing surface controlled from JavaScript
+          through a 2D, WebGL, or WebGPU context. On its own it cannot
+          render HTML. The WICG HTML-in-Canvas spec adds
+          <code>drawElementImage()</code>, which draws live DOM elements
+          into that surface. Browse the
+          <a href="/demos/">HTML canvas examples</a> for 2D, WebGL, and
+          WebGPU demos.
+        </p>
+      </div>
       <div class="faq-item">
         <h3>Can I use HTML inside a canvas element?</h3>
         <p>
