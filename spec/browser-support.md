@@ -5,7 +5,7 @@ order: 6
 
 # Browser Support
 
-_Auto-synced from [`WICG/html-in-canvas` README](https://github.com/WICG/html-in-canvas/blob/main/README.md) on 2026-09-07 via `scripts/sync-spec-docs.mjs`._
+_Auto-synced from [`WICG/html-in-canvas` README](https://github.com/WICG/html-in-canvas/blob/main/README.md) on 2026-10-05 via `scripts/sync-spec-docs.mjs`._
 
 ## Status
 
@@ -15,13 +15,7 @@ The APIs described here are implemented behind a flag in Chromium and can be ena
 
 ## Developer Trial (dev trial) Information
 
-The HTML-in-Canvas features may be enabled with `chrome://flags/#canvas-draw-element` in Chrome Canary.
-
-We are most interested in feedback on the following topics:
-* What content works, and what fails? Which failure modes are most important to fix?
-* How does the feature interact with accessibility features? How can accessibility support be improved?
-
-Please file bugs or design issues [here](https://github.com/WICG/html-in-canvas/issues/new).
+_(not found in upstream README)_
 
 ## How to try it
 
