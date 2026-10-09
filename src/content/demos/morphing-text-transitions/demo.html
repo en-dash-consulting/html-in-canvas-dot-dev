@@ -464,9 +464,10 @@
     <button class="morph-btn" id="morph-btn">Morph</button>
 
     <div class="scene" id="scene">
-      <canvas id="canvas" width="840" height="1120" layoutsubtree>
+      <!-- layoutsubtree = Brave 153; content="drawable" + drawable = Chrome Canary 157. -->
+      <canvas id="canvas" width="840" height="1120" layoutsubtree content="drawable">
         <!-- Layout A: Magazine editorial style -->
-        <div class="layout-a" id="layout-a">
+        <div class="layout-a" id="layout-a" drawable>
           <div class="glow"></div>
           <div class="content">
             <div class="eyebrow">The Future of the Web</div>
@@ -487,7 +488,7 @@
         </div>
 
         <!-- Layout B: Changelog / code announcement style -->
-        <div class="layout-b" id="layout-b">
+        <div class="layout-b" id="layout-b" drawable>
           <div class="glow"></div>
           <div class="content">
             <div class="version-badge">spec v1.0</div>

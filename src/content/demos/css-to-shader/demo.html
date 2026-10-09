@@ -542,7 +542,8 @@
       <!-- =============================================================
            COMPOSITE STAGE
            The staging canvas (with the scene as its layoutsubtree
-           child) sits at the back. The WebGL shader canvas sits on
+           child; Canary 157+ spells it content="drawable" + `drawable`
+           on the child, so both are set) sits at the back. The WebGL shader canvas sits on
            top with pointer-events disabled, so clicks / focus / Tab
            fall through to the real DOM underneath.
            ============================================================= -->
@@ -550,9 +551,10 @@
         <canvas
           id="staging-canvas"
           layoutsubtree
+          content="drawable"
           aria-label="Live interactive HTML scene — contains the form controls below"
         >
-          <div id="scene">
+          <div id="scene" drawable>
             <div class="scene-stack">
               <div class="scene-eyebrow">Live HTML · shaded in real time</div>
               <h2 class="scene-title">Hello, Shaders</h2>

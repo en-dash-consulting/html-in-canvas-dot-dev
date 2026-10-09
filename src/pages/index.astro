@@ -6,6 +6,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import DemoCard from '../components/DemoCard.astro';
 import LandingHero from '../components/LandingHero.astro';
+import GraviewShowcase from '../components/GraviewShowcase.astro';
 import { getCollection } from 'astro:content';
 
 const demos = await getCollection('demos');
@@ -17,8 +18,17 @@ const featuredDemos = [...demos].sort((a, b) => {
 });
 const WICG_REPO = 'https://github.com/WICG/html-in-canvas';
 
-// `layoutsubtree` isn't in Astro's typed HTML attribute surface.
-const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
+// Both spellings of the canvas opt-in: `layoutsubtree` for Chromium
+// ≤156 (Brave Stable) and `content="drawable"` for Chrome Canary 157+,
+// which renamed it (see CLAUDE.md). Each build ignores the one it
+// doesn't know. Neither is in Astro's typed HTML attribute surface,
+// and Canary 157 also wants `drawable` on every child handed to
+// drawElementImage.
+const canvasAttrs: Record<string, string> = {
+  layoutsubtree: '',
+  content: 'drawable',
+};
+const drawableAttrs: Record<string, string> = { drawable: '' };
 
 // FAQ content rendered both as the visible FAQ section below and as
 // FAQPage JSON-LD (answer text must mirror what's on the page). The
@@ -26,6 +36,11 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
 // on this page ("can i use html in canvas", "html inside canvas").
 const SITE_URL = 'https://html-in-canvas.dev';
 const faqs = [
+  {
+    question: 'What is the HTML canvas element?',
+    answer:
+      'The <canvas> element is an HTML element that gives you a bitmap drawing surface controlled from JavaScript through a 2D, WebGL, or WebGPU context. On its own it cannot render HTML. The WICG HTML-in-Canvas spec adds drawElementImage(), which draws live DOM elements into that surface. Browse the HTML canvas examples for 2D, WebGL, and WebGPU demos.',
+  },
   {
     question: 'Can I use HTML inside a canvas element?',
     answer:
@@ -59,6 +74,9 @@ const faqJsonLd = {
   </Fragment>
   <LandingHero />
 
+  {/* ---------- In production: Graview ---------- */}
+  <GraviewShowcase />
+
   {/* ---------- API Primitives ---------- */}
   <section class="primitives" aria-labelledby="primitives-heading">
     <h2 id="primitives-heading" class="section-heading">Three Primitives, One New Superpower</h2>
@@ -74,10 +92,12 @@ const faqJsonLd = {
         <p>
           Add this attribute to a <code>&lt;canvas&gt;</code> to opt its
           children into layout and hit testing — they behave like normal DOM
-          elements but remain invisible until drawn.
+          elements but remain invisible until drawn. Chrome Canary 157+
+          spells it <code>content="drawable"</code> and wants
+          <code>drawable</code> on each drawn child, so set both.
         </p>
-        <pre><code>&lt;canvas layoutsubtree&gt;
-  &lt;div id="content"&gt;
+        <pre><code>&lt;canvas layoutsubtree content="drawable"&gt;
+  &lt;div id="content" drawable&gt;
     Laid out, accessible,
     ready to draw.
   &lt;/div&gt;
@@ -87,7 +107,7 @@ const faqJsonLd = {
             class="primitive-demo-canvas"
             data-primitive-canvas="layoutsubtree"
             {...canvasAttrs}
-          ><span class="primitive-demo-content" data-demo-target>Laid out. Drawn.</span></canvas>
+          ><span class="primitive-demo-content" data-demo-target {...drawableAttrs}>Laid out. Drawn.</span></canvas>
           <span class="primitive-demo-caption">Live <code>layoutsubtree</code> — the span is laid out inside the canvas and painted via <code>drawElementImage</code></span>
         </div>
       </div>
@@ -110,7 +130,7 @@ element.style.transform =
             class="primitive-demo-canvas"
             data-primitive-canvas="drawElementImage"
             {...canvasAttrs}
-          ><span class="primitive-demo-content primitive-demo-content--gradient" data-demo-target>drawElement</span></canvas>
+          ><span class="primitive-demo-content primitive-demo-content--gradient" data-demo-target {...drawableAttrs}>drawElement</span></canvas>
           <span class="primitive-demo-caption">One DOM element, drawn in a slow-rotating ring</span>
         </div>
       </div>
@@ -137,6 +157,7 @@ element.style.transform =
               class="primitive-demo-content primitive-demo-content--pulse"
               data-demo-target
               data-demo-counter
+              {...drawableAttrs}
             >Painted 0 times</span></canvas>
           <span class="primitive-demo-caption">The span's text is updated every paint event → triggers the next paint → counter climbs</span>
         </div>
@@ -264,6 +285,19 @@ element.style.transform =
     <h2 id="faq-heading" class="section-heading">Frequently Asked Questions</h2>
     <div class="faq-list">
       <div class="faq-item">
+        <h3>What is the HTML canvas element?</h3>
+        <p>
+          The <code>&lt;canvas&gt;</code> element is an HTML element that
+          gives you a bitmap drawing surface controlled from JavaScript
+          through a 2D, WebGL, or WebGPU context. On its own it cannot
+          render HTML. The WICG HTML-in-Canvas spec adds
+          <code>drawElementImage()</code>, which draws live DOM elements
+          into that surface. Browse the
+          <a href="/demos/">HTML canvas examples</a> for 2D, WebGL, and
+          WebGPU demos.
+        </p>
+      </div>
+      <div class="faq-item">
         <h3>Can I use HTML inside a canvas element?</h3>
         <p>
           Historically, no — <code>&lt;canvas&gt;</code> is a bitmap drawing
@@ -386,17 +420,22 @@ element.style.transform =
     const canvas = document.createElement('canvas');
     canvas.dataset.dogfoodOverlay = 'true';
     canvas.setAttribute('aria-hidden', 'true');
+    // Both spellings of the opt-in (layoutsubtree ≤ Chromium 156,
+    // content="drawable" from Chrome Canary 157).
     canvas.setAttribute('layoutsubtree', '');
+    canvas.setAttribute('content', 'drawable');
     canvas.width = w;
     canvas.height = h;
     canvas.style.cssText =
       'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;';
 
-    // Runtime clone of the card's content as a layoutsubtree child.
-    // Strip IDs from the clone so we don't collide with the real
-    // card's IDs in the DOM.
+    // Runtime clone of the card's content as a layoutsubtree /
+    // content="drawable" child. Strip IDs from the clone so we don't
+    // collide with the real card's IDs in the DOM. Canary 157+ also
+    // requires `drawable` on the element handed to drawElementImage.
     const clone = card.cloneNode(true) as HTMLElement;
     clone.removeAttribute('id');
+    clone.setAttribute('drawable', '');
     clone.querySelectorAll('[id]').forEach((el) => el.removeAttribute('id'));
     clone.setAttribute('aria-hidden', 'true');
     clone.style.cssText =
@@ -422,9 +461,15 @@ element.style.transform =
 
     const start = performance.now();
     const DURATION = 500;
+    const paintCanvas = canvas as LayoutsubtreeCanvas;
 
-    function frame(now: number) {
-      const t = Math.min(1, (now - start) / DURATION);
+    // drawElementImage only works once the browser holds a cached
+    // paint record for the clone, so the draw lives inside `onpaint`
+    // (same pattern as LandingHero / GraviewShowcase). Drawing eagerly
+    // from rAF throws "No cached paint record for element" on the
+    // first tick, which would kill the loop before it paints anything.
+    paintCanvas.onpaint = () => {
+      const t = Math.min(1, (performance.now() - start) / DURATION);
       // easeOutCubic for a gentle "settling" feel.
       const eased = 1 - Math.pow(1 - t, 3);
 
@@ -434,9 +479,19 @@ element.style.transform =
       ctx!.reset();
       ctx!.clearRect(0, 0, w, h);
       ctx!.globalAlpha = alpha;
-      draw!(clone, 0, offsetY);
+      try {
+        draw!(clone, 0, offsetY);
+      } catch {
+        // Paint record still unavailable on the very first tick in
+        // some tabs; the next frame requests paint again.
+      }
+    };
 
-      if (t < 1) {
+    // The rAF loop just advances the clock: each frame asks for a
+    // paint (which runs onpaint above) until the animation is done.
+    function frame(now: number) {
+      if (now - start < DURATION) {
+        paintCanvas.requestPaint?.();
         requestAnimationFrame(frame);
       } else {
         canvas.remove();
@@ -444,9 +499,7 @@ element.style.transform =
       }
     }
 
-    // requestPaint kicks the browser's paint pipeline so
-    // drawElementImage has a current layout snapshot to read from.
-    (canvas as LayoutsubtreeCanvas).requestPaint?.();
+    paintCanvas.requestPaint?.();
     requestAnimationFrame(frame);
   }
 
@@ -785,8 +838,8 @@ element.style.transform =
   }
 
   /* Canvas child — the "source" element that gets drawn. It's laid
-     out but kept out of the visible page flow (layoutsubtree hides
-     it visually; in flag-off browsers the .primitive-demo wrapper
+     out but kept out of the visible page flow (layoutsubtree /
+     content="drawable" hides it visually; in flag-off browsers the .primitive-demo wrapper
      is hidden entirely anyway). */
   .primitive-demo-content {
     position: absolute;

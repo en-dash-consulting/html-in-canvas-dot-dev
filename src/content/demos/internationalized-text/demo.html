@@ -228,9 +228,10 @@
               width="400"
               height="175"
               layoutsubtree
+              content="drawable"
               aria-label="drawElementImage rendering of RTL Arabic and Hebrew text"
             >
-              <div class="i18n-content rtl-text">
+              <div class="i18n-content rtl-text" drawable>
                 <div>
                   <div lang="ar">مرحباً بالعالم! هذا نص عربي.</div>
                   <div lang="he" style="margin-top: 8px">
@@ -278,9 +279,10 @@
               width="400"
               height="175"
               layoutsubtree
+              content="drawable"
               aria-label="drawElementImage rendering of vertical CJK text"
             >
-              <div class="i18n-content vertical-cjk" lang="ja">
+              <div class="i18n-content vertical-cjk" drawable lang="ja">
                 <div>
                   国境の長いトンネルを抜けると雪国であった。
                 </div>
@@ -325,9 +327,10 @@
               width="400"
               height="175"
               layoutsubtree
+              content="drawable"
               aria-label="drawElementImage rendering of Thai text"
             >
-              <div class="i18n-content thai-text" lang="th">
+              <div class="i18n-content thai-text" drawable lang="th">
                 สวัสดีครับ ยินดีต้อนรับสู่เว็บไซต์
               </div>
             </canvas>
@@ -370,9 +373,10 @@
               width="400"
               height="175"
               layoutsubtree
+              content="drawable"
               aria-label="drawElementImage rendering of mixed-direction text"
             >
-              <div class="i18n-content mixed-dir">
+              <div class="i18n-content mixed-dir" drawable>
                 <div>
                   The term
                   <span dir="rtl" lang="ar" style="font-size: 1.1em"
@@ -427,9 +431,10 @@
               width="400"
               height="175"
               layoutsubtree
+              content="drawable"
               aria-label="drawElementImage rendering of emoji with skin tone modifiers"
             >
-              <div class="i18n-content emoji-text">
+              <div class="i18n-content emoji-text" drawable>
                 👩🏽‍💻 👨🏿‍🎨 👩🏻‍🔬 🧑🏾‍🍳 👨🏼‍🚀 👩🏽‍⚕️
               </div>
             </canvas>
@@ -473,9 +478,10 @@
               width="400"
               height="175"
               layoutsubtree
+              content="drawable"
               aria-label="drawElementImage rendering of text with ruby annotations"
             >
-              <div class="i18n-content ruby-text" lang="ja">
+              <div class="i18n-content ruby-text" drawable lang="ja">
                 <ruby>東<rt>ひがし</rt></ruby
                 ><ruby>京<rt>きょう</rt></ruby
                 ><ruby>都<rt>と</rt></ruby
@@ -651,7 +657,8 @@
 
       // =============================================================
       // drawElementImage CANVASES
-      // Each HTML canvas uses layoutsubtree + drawElementImage to
+      // Each HTML canvas uses layoutsubtree (Brave) / content="drawable"
+      // + drawable (Chrome Canary 157) + drawElementImage to
       // render its child HTML. The browser's full text engine handles
       // bidi, shaping, writing-mode, and ruby positioning.
       // =============================================================

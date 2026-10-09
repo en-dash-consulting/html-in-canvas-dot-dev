@@ -247,13 +247,13 @@
     </style>
   </head>
   <body>
-    <canvas id="canvas" layoutsubtree>
-      <div id="card-a" class="card">
+    <canvas id="canvas" layoutsubtree content="drawable">
+      <div id="card-a" class="card" drawable>
         <h3>✏️ Text input</h3>
         <input type="text" placeholder="Type something..." value="Real DOM!" aria-label="Demo text input" />
       </div>
 
-      <div id="card-b" class="card">
+      <div id="card-b" class="card" drawable>
         <h3>🎚️ Range</h3>
         <div class="slider-label">
           <span id="slider-label-text">Drag the slider</span>
@@ -262,9 +262,9 @@
         <input id="slider" type="range" min="0" max="100" value="50" aria-labelledby="slider-label-text slider-val" />
       </div>
 
-      <div id="card-c" class="card-image" role="img" aria-label="Decorative palette emoji">&#x1F3A8;</div>
+      <div id="card-c" class="card-image" drawable role="img" aria-label="Decorative palette emoji">&#x1F3A8;</div>
 
-      <div id="card-d" class="card">
+      <div id="card-d" class="card" drawable>
         <h3>📋 Select</h3>
         <select aria-label="Demo transition type">
           <option>Crossfade</option>
@@ -274,7 +274,7 @@
         </select>
       </div>
 
-      <button id="card-e" class="card-button">Shuffle z-order</button>
+      <button id="card-e" class="card-button" drawable>Shuffle z-order</button>
     </canvas>
 
     <div class="info-badge">
@@ -490,7 +490,7 @@
       });
 
       // ResizeObserver: keep the bitmap 1:1 with CSS pixels. Chrome's
-      // layoutsubtree uses canvas.width as the layout viewport for
+      // layoutsubtree (Canary 157+: content="drawable") uses canvas.width as the layout viewport for
       // child elements — DPR scaling would break card layout.
       // requestPaint() so the browser's paint pipeline generates the
       // cached paint records that drawElementImage depends on.

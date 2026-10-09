@@ -146,7 +146,7 @@ test.describe('landing hero (flag-off, simulated non-Chromium)', () => {
     await expect(chips).toContainText(/no install/i);
 
     await expect(
-      page.getByRole('link', { name: /explore demos/i }),
+      page.getByRole('link', { name: /explore html canvas examples/i }),
     ).toBeVisible();
     await expect(
       page.getByRole('link', { name: /read the spec/i }),

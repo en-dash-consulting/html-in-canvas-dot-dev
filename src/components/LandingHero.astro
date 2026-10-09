@@ -20,11 +20,20 @@
  * heading.
  */
 import FlagSetupSteps from './FlagSetupSteps.astro';
+import GraviewLogo from './GraviewLogo.astro';
 
 const WICG_REPO = 'https://github.com/WICG/html-in-canvas';
 
-// `layoutsubtree` isn't in Astro's typed HTML attribute surface.
-const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
+// Both spellings of the canvas opt-in: `layoutsubtree` for Chromium
+// ≤156 (Brave Stable) and `content="drawable"` for Chrome Canary 157+,
+// which renamed it (see CLAUDE.md). Neither is in Astro's typed HTML
+// attribute surface, and Canary 157 also wants `drawable` on the child
+// handed to drawElementImage.
+const canvasAttrs: Record<string, string> = {
+  layoutsubtree: '',
+  content: 'drawable',
+};
+const drawableAttrs: Record<string, string> = { drawable: '' };
 ---
 
 <section class="hero" aria-label="Introduction">
@@ -35,7 +44,7 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
         identically — a <div>, not a second <h1>, so the page keeps a
         single level-1 heading. WebGL samples this canvas as a texture. */}
     <canvas class="hero-source-canvas" {...canvasAttrs}>
-      <div class="hero-source-inner" aria-hidden="true" tabindex="-1">
+      <div class="hero-source-inner" aria-hidden="true" tabindex="-1" {...drawableAttrs}>
         <div class="hero-source-h1">
           Render HTML into Canvas<span class="hero-source-accent"> — natively</span>
         </div>
@@ -73,8 +82,9 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
     </div>
 
     <p class="hero-sub">
-      The spec adds three primitives that draw fully-styled, accessible
-      HTML straight into <code>&lt;canvas&gt;</code> — no
+      A canvas in HTML is a bitmap you draw on with JavaScript — it can't
+      show HTML. This spec adds three primitives that draw fully-styled,
+      accessible HTML straight into <code>&lt;canvas&gt;</code> — no
       <code>html2canvas</code>, no screenshots, no libraries.
     </p>
 
@@ -85,7 +95,7 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
     </ul>
 
     <div class="hero-actions">
-      <a href="/demos/" class="btn btn-primary">Explore Demos</a>
+      <a href="/demos/" class="btn btn-primary">Explore HTML Canvas Examples</a>
       <a
         href={WICG_REPO}
         class="btn btn-secondary"
@@ -96,6 +106,13 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7" /><path d="M7 7h10v10" /></svg>
       </a>
     </div>
+
+    {/* Early pointer to the Graview section just below the hero. */}
+    <a href="#graview" class="hero-prod-pill">
+      <GraviewLogo variant="symbol" class="hero-prod-logo" />
+      In production — see it running in Graview
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14" /><path d="m19 12-7 7-7-7" /></svg>
+    </a>
   </div>
 
   {/* Flag-off only: the enablement pitch directly inside the hero. */}
@@ -734,7 +751,7 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
     z-index: 2;
     max-width: 48rem;
     margin: 0 auto;
-    padding: 4rem 1rem 3.5rem;
+    padding: 3rem 1rem 2.5rem;
     text-align: center;
   }
 
@@ -1130,12 +1147,17 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
      massive headline at the same vertical anchor as the static h1
      so the two line up. */
   :global([data-flag-supported='true']) .hero-content {
-    min-height: 78vh;
+    /* Kept short enough that the "in production" section below starts
+       inside the first viewport on a laptop. */
+    min-height: 58vh;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
+    /* Must match .hero-source-inner's padding-top: the WebGL text is
+       painted at that offset, and the transparent static <h1> below
+       reserves the same slot so the sub copy never slides under it. */
     padding-top: 10rem;
-    padding-bottom: 3rem;
+    padding-bottom: 2.5rem;
   }
 
   :global([data-flag-supported='true']) .hero-eyebrow {
@@ -1158,15 +1180,55 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
     /* The static h1 stays in the DOM for a11y but its visible pixels
        are gone (color:transparent). Giving it a modest block height
        here reserves room; the WebGL canvas does the visible
-       rendering. */
-    margin: 0;
+       rendering. The bottom margin keeps the sub copy clear of the
+       painted headline on short viewports. */
+    margin: 0 0 1rem;
   }
 
   :global([data-flag-supported='true']) .hero-sub,
-  :global([data-flag-supported='true']) .hero-actions {
+  :global([data-flag-supported='true']) .hero-actions,
+  :global([data-flag-supported='true']) .hero-prod-pill {
     /* Ensure these sit above the GL canvas (z-index: 2). */
     position: relative;
     z-index: 3;
+  }
+
+  /* "In production" pill under the CTAs — a quiet pointer to the
+     Graview section so it's discoverable from the first viewport. */
+  .hero-prod-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    width: fit-content;
+    margin: 1.5rem auto 0;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    background: rgba(108, 65, 240, 0.12);
+    border: 1px solid rgba(154, 124, 255, 0.45);
+    border-radius: 999px;
+    backdrop-filter: blur(6px);
+    text-decoration: none;
+    transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.1s ease;
+  }
+
+  .hero-prod-pill:hover {
+    text-decoration: none;
+    color: var(--text-primary);
+    border-color: var(--accent);
+    background: rgba(108, 65, 240, 0.2);
+    transform: translateY(-1px);
+  }
+
+  .hero-prod-pill:focus-visible {
+    outline: 2px solid var(--color-purple);
+    outline-offset: var(--focus-offset);
+  }
+
+  .hero-prod-pill :global(.hero-prod-logo) {
+    height: 1.15em;
+    color: var(--text-primary);
   }
 
 
@@ -1199,7 +1261,7 @@ const canvasAttrs: Record<string, string> = { layoutsubtree: '' };
   /* ===== Responsive ===== */
   @media (max-width: 768px) {
     :global([data-flag-supported='true']) .hero-content {
-      min-height: 72vh;
+      min-height: 54vh;
     }
 
     .hero-live-badge {

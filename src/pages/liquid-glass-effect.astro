@@ -91,9 +91,11 @@ const svgFilterExample = `<svg width="0" height="0" aria-hidden="true">
   }
 </style>`;
 
-const pipelineExample = `<!-- 2D source canvas: the HTML card is a real, live child -->
-<canvas id="source-canvas" layoutsubtree>
-  <div class="card" id="card">…fully styled, interactive HTML…</div>
+const pipelineExample = `<!-- 2D source canvas: the HTML card is a real, live child.
+     layoutsubtree: Chromium ≤156; content="drawable" + drawable:
+     Chrome Canary 157+. Set both. -->
+<canvas id="source-canvas" layoutsubtree content="drawable">
+  <div class="card" id="card" drawable>…fully styled, interactive HTML…</div>
 </canvas>
 
 <!-- WebGL overlay: the refraction shader draws on top -->
@@ -253,7 +255,7 @@ const frostedExample = `canvas.onpaint = () => {
           <tr>
             <th scope="row">Interactivity under the glass</th>
             <td>Native — the backdrop is regular DOM</td>
-            <td>Preserved via <code>layoutsubtree</code> + <code>drawElementImage()</code>: the HTML under the shader stays clickable</td>
+            <td>Preserved via <code>layoutsubtree</code> / <code>content="drawable"</code> + <code>drawElementImage()</code>: the HTML under the shader stays clickable</td>
           </tr>
         </tbody>
       </table>
@@ -303,9 +305,10 @@ const frostedExample = `canvas.onpaint = () => {
       The <a href="/demos/liquid-glass/">Liquid Glass Distortion demo</a> does
       the real thing. Its pipeline has two canvases: a 2D canvas that holds a
       live HTML profile card as a
-      <a href="/docs/overview/"><code>layoutsubtree</code></a> child and paints
-      it with <code>drawElementImage()</code>, and a WebGL canvas overlaid on
-      top that treats those pixels as a texture:
+      <a href="/docs/overview/"><code>layoutsubtree</code></a> /
+      <code>content="drawable"</code> child and paints it with
+      <code>drawElementImage()</code>, and a WebGL canvas overlaid on top
+      that treats those pixels as a texture:
     </p>
 
     <pre tabindex="0"><code set:html={pipelineExample.replace(/</g, '&lt;')} /></pre>
