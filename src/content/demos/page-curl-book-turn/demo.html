@@ -80,7 +80,7 @@
          Staging canvases
          ------------------------------------------------------------
          Wrapped in a 1×1 visible container pinned to the corner of
-         the stage. Chrome's <canvas layoutsubtree> silently skips
+         the stage. Chrome's <canvas layoutsubtree> (Canary 157+: content="drawable") silently skips
          paint records for elements at `left: -9999px`, which is
          what the site previously used here — the WebGL shader ended
          up sampling blank textures and the demo rendered black.
@@ -402,8 +402,9 @@
       width="600"
       height="800"
       layoutsubtree
+      content="drawable"
     >
-      <div class="book-page page-front" id="page1-content">
+      <div class="book-page page-front" id="page1-content" drawable>
         <div class="chapter-label">Chapter One</div>
         <h2 class="chapter-title">
           The Promise of<br />
@@ -441,8 +442,9 @@
       width="600"
       height="800"
       layoutsubtree
+      content="drawable"
     >
-      <div class="book-page page-back" id="page2-content">
+      <div class="book-page page-back" id="page2-content" drawable>
         <div class="pullquote">
           &ldquo;Any sufficiently advanced technology is indistinguishable from
           magic.&rdquo;

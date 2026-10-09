@@ -1,0 +1,184 @@
+---
+/**
+ * Graview top banner — a slim strip under the nav on every page except
+ * the home page (which carries the full `GraviewShowcase` hero instead)
+ * pointing at where the HTML-in-Canvas API runs in production:
+ * graview.dev (the open framework) and graview.cloud (the hosted
+ * product built on it).
+ *
+ * Dismissible; the choice persists to localStorage. Rendered `hidden`
+ * and revealed by script so a returning visitor who dismissed it never
+ * sees a flash. BaseLayout decides whether to render it at all.
+ */
+import GraviewLogo from './GraviewLogo.astro';
+
+const GRAVIEW_DEV = 'https://graview.dev';
+const GRAVIEW_CLOUD = 'https://graview.cloud';
+---
+
+<div class="gv-banner" id="gv-banner" hidden>
+  <div class="gv-banner-inner">
+    <span class="gv-banner-mark">
+      <GraviewLogo variant="symbol" class="gv-banner-logo" />
+    </span>
+
+    <p class="gv-banner-message">
+      <strong>In production:</strong> Graview renders app views with
+      HTML-in-Canvas — see it at
+      <a href={GRAVIEW_DEV} target="_blank" rel="noopener noreferrer">graview.dev</a>
+      and
+      <a href={GRAVIEW_CLOUD} target="_blank" rel="noopener noreferrer">graview.cloud</a>.
+    </p>
+
+    <a class="gv-banner-link" href="/#graview">Why&nbsp;it&nbsp;matters&nbsp;&rarr;</a>
+
+    <button
+      class="gv-banner-dismiss"
+      id="gv-banner-dismiss"
+      type="button"
+      aria-label="Dismiss Graview banner"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="18" y1="6" x2="6" y2="18" />
+        <line x1="6" y1="6" x2="18" y2="18" />
+      </svg>
+    </button>
+  </div>
+</div>
+
+<script>
+  function initGraviewBanner() {
+    const banner = document.getElementById('gv-banner');
+    const dismissBtn = document.getElementById('gv-banner-dismiss');
+    if (!banner || !dismissBtn) return;
+
+    const STORAGE_KEY = 'hic-graview-banner-dismissed';
+
+    let dismissed = false;
+    try {
+      dismissed = localStorage.getItem(STORAGE_KEY) === 'true';
+    } catch {
+      // Storage blocked (private mode, etc.) — show the banner.
+    }
+    if (dismissed) return;
+
+    banner.hidden = false;
+
+    dismissBtn.addEventListener('click', () => {
+      banner.hidden = true;
+      try {
+        localStorage.setItem(STORAGE_KEY, 'true');
+      } catch {
+        // Nothing to persist to; the banner stays hidden for this page.
+      }
+    });
+  }
+
+  initGraviewBanner();
+  document.addEventListener('astro:after-swap', initGraviewBanner);
+</script>
+
+<style>
+  .gv-banner {
+    position: relative;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  /* Slim brand gradient along the top edge. */
+  .gv-banner::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--color-teal), var(--color-purple));
+  }
+
+  .gv-banner-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 0.5rem 1.5rem;
+  }
+
+  .gv-banner-mark {
+    flex-shrink: 0;
+    display: inline-flex;
+    color: var(--text-primary);
+  }
+
+  .gv-banner-mark :global(.gv-banner-logo) {
+    height: 1.25rem;
+  }
+
+  .gv-banner-message {
+    flex: 1;
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--text-primary);
+  }
+
+  .gv-banner-message strong {
+    color: var(--accent-purple-text);
+    font-weight: 700;
+  }
+
+  .gv-banner-message a {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+
+  .gv-banner-link {
+    flex-shrink: 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 720px) {
+    .gv-banner-inner {
+      flex-wrap: wrap;
+      gap: 0.4rem 0.75rem;
+    }
+
+    .gv-banner-message {
+      flex-basis: calc(100% - 2.75rem);
+      min-width: 0;
+    }
+
+    .gv-banner-link {
+      order: 3;
+      margin-left: 1.625rem;
+    }
+  }
+
+  .gv-banner-dismiss {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.15s ease, background-color 0.15s ease;
+  }
+
+  .gv-banner-dismiss:hover {
+    color: var(--text-primary);
+    background: rgba(108, 65, 240, 0.14);
+  }
+
+  .gv-banner-dismiss:focus-visible {
+    outline: 2px solid var(--color-purple);
+    outline-offset: var(--focus-offset);
+  }
+</style>

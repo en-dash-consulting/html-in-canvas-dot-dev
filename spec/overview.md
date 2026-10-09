@@ -10,8 +10,8 @@ order: 1
 The whole API in one taste:
 
 ```html
-<canvas id="c" layoutsubtree>
-  <div id="content">Hello, canvas</div>
+<canvas id="c" layoutsubtree content="drawable">
+  <div id="content" drawable>Hello, canvas</div>
 </canvas>
 <script>
   const ctx = c.getContext('2d');
@@ -24,6 +24,8 @@ The whole API in one taste:
 ```
 
 `layoutsubtree` opts the canvas's children into layout, `drawElementImage()` paints a child into the canvas, and the `paint` event tells you when to redraw.
+
+> **Naming note:** Chrome Canary 157+ spells the opt-in `<canvas content="drawable">` and requires a `drawable` attribute on each element you draw; Brave Stable (Chromium ≤156) still uses `layoutsubtree`. Each build ignores the attribute it doesn't know, so this site sets both. See [Browser Support](/docs/browser-support/).
 
 **Where to go next:**
 
@@ -57,13 +59,13 @@ There is no web API to render complex HTML layouts into a `<canvas>`. Canvas-bas
 
 ## Solution: Three Primitives + One Helper
 
-### 1. `layoutsubtree` attribute
+### 1. `layoutsubtree` attribute (`content="drawable"` in Chrome 157+)
 
-An attribute on `<canvas>` that opts its direct children into layout and hit testing.
+An attribute on `<canvas>` that opts its direct children into layout and hit testing. The current explainer spells it `content="drawable"` and pairs it with a `drawable` attribute on each child that will be drawn; Chromium ≤156 (Brave Stable) still uses `layoutsubtree`. Set both.
 
 ```html
-<canvas layoutsubtree>
-  <div id="content">I'm laid out but invisible until drawn</div>
+<canvas layoutsubtree content="drawable">
+  <div id="content" drawable>I'm laid out but invisible until drawn</div>
 </canvas>
 ```
 

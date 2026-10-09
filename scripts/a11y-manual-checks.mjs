@@ -4,7 +4,7 @@
  *   - One and only one <h1> per page, and no heading-level skips
  *   - Every focusable interactive element receives a visible focus ring
  *     (outline width ≥ 2px on :focus-visible)
- *   - Every <canvas> has either layoutsubtree children (which provide the
+ *   - Every <canvas> has either layoutsubtree / content="drawable" children (which provide the
  *     accessibility tree per HTML-in-Canvas spec) or an aria-label
  *
  * Run against the dev server:
@@ -116,7 +116,7 @@ for (const route of ROUTES) {
     for (const [idx, c] of canvases.entries()) {
       if (!c.hasChildren && !c.hasAriaLabel) {
         problems.push(
-          `${route}: canvas #${idx} has no layoutsubtree children and no aria-label`,
+          `${route}: canvas #${idx} has no layoutsubtree/drawable children and no aria-label`,
         );
       }
     }

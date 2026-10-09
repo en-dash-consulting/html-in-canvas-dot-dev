@@ -161,14 +161,16 @@ npm install</code></pre>
 
       <div class="pattern-grid">
         <div class="pattern-card">
-          <h3><code>layoutsubtree</code></h3>
+          <h3><code>layoutsubtree</code> / <code>content="drawable"</code></h3>
           <p>
-            Add the <code>layoutsubtree</code> attribute to your
-            <code>&lt;canvas&gt;</code> element. This tells the browser to lay
-            out the canvas's child elements so they can be painted.
+            Opt the <code>&lt;canvas&gt;</code> in so the browser lays out
+            its child elements for painting. Set <em>both</em> spellings:
+            Brave Stable understands <code>layoutsubtree</code>, Chrome
+            Canary 157+ understands <code>content="drawable"</code> and
+            also needs <code>drawable</code> on each child you draw.
           </p>
-          <pre><code>&lt;canvas id="canvas" layoutsubtree&gt;
-  &lt;div id="content"&gt;...&lt;/div&gt;
+          <pre><code>&lt;canvas id="canvas" layoutsubtree content="drawable"&gt;
+  &lt;div id="content" drawable&gt;...&lt;/div&gt;
 &lt;/canvas&gt;</code></pre>
         </div>
 
