@@ -343,9 +343,10 @@
     </p>
 
     <div class="scene" id="scene">
-      <!-- 2D source canvas: HTML card rendered via drawElementImage -->
-      <canvas id="source-canvas" width="840" height="1120" layoutsubtree>
-        <div class="card" id="card">
+      <!-- 2D source canvas: HTML card rendered via drawElementImage.
+           layoutsubtree = Brave 153; content="drawable" + drawable = Chrome Canary 157. -->
+      <canvas id="source-canvas" width="840" height="1120" layoutsubtree content="drawable">
+        <div class="card" id="card" drawable>
           <div class="card-glow card-glow-1"></div>
           <div class="card-glow card-glow-2"></div>
           <div class="card-inner">

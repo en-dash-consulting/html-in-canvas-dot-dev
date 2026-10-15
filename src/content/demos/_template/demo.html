@@ -43,9 +43,12 @@
     <!--
       The `layoutsubtree` attribute tells the browser to lay out
       the canvas's child elements so they can be painted onto it.
+      Chrome Canary 157+ renamed it to `content="drawable"` and requires
+      each drawn child to carry `drawable`; set both spellings so the
+      demo works in Brave Stable (old names) and Canary (new names).
     -->
-    <canvas id="canvas" width="800" height="600" layoutsubtree>
-      <div id="content" style="padding: 2rem; font-size: 1.5rem">
+    <canvas id="canvas" width="800" height="600" layoutsubtree content="drawable">
+      <div id="content" drawable style="padding: 2rem; font-size: 1.5rem">
         Hello from HTML-in-Canvas!
       </div>
     </canvas>

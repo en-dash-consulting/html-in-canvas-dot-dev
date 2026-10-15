@@ -353,7 +353,7 @@
 
       <!-- ============================================
            CANVAS WITH EDITABLE CONTENT
-           The <canvas> with layoutsubtree renders its
+           The <canvas> with layoutsubtree (Canary 157+: content="drawable") renders its
            child contenteditable div. The canvas paint
            callback applies effects that pure CSS cannot
            achieve: multi-pass neon glow, outline via
@@ -365,9 +365,10 @@
           width="1280"
           height="720"
           layoutsubtree
+          content="drawable"
           aria-label="Rich text editor canvas with visual effects"
         >
-          <div id="editor" contenteditable="true">
+          <div id="editor" contenteditable="true" drawable>
             <h2>Creative Canvas Typography</h2>
             <p>
               Click here and start typing. This text is

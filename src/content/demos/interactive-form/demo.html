@@ -39,7 +39,8 @@
       }
 
       /* The canvas fills the stage; the form is laid out by the
-         layoutsubtree contract and drawn into the canvas pixels. */
+         layoutsubtree contract (content="drawable" + drawable in Chrome
+         Canary 157) and drawn into the canvas pixels. */
       #canvas {
         position: absolute;
         inset: 0;
@@ -302,8 +303,8 @@
     </style>
   </head>
   <body>
-    <canvas id="canvas" layoutsubtree>
-      <div id="form-root">
+    <canvas id="canvas" layoutsubtree content="drawable">
+      <div id="form-root" drawable>
         <h1 class="form-title">Sign up</h1>
         <div class="form-grid">
           <div class="field">

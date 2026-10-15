@@ -926,8 +926,9 @@
       width="800"
       height="500"
       layoutsubtree
+      content="drawable"
     >
-      <div id="monitor-content">
+      <div id="monitor-content" drawable>
         <div class="dash-header">
           <div class="dash-title">
             <span class="dash-dot"></span>
@@ -1001,8 +1002,9 @@
       width="500"
       height="700"
       layoutsubtree
+      content="drawable"
     >
-      <div id="poster-content">
+      <div id="poster-content" drawable>
         <div class="poster-form-header">
           <div class="poster-form-eyebrow">Contact En Dash</div>
           <h2 class="poster-form-title">Drop us<br />a note</h2>
@@ -1058,8 +1060,9 @@
       width="800"
       height="450"
       layoutsubtree
+      content="drawable"
     >
-      <div id="tv-content">
+      <div id="tv-content" drawable>
         <div class="tv-gradient"></div>
         <div class="tv-orb tv-orb-1"></div>
         <div class="tv-orb tv-orb-2"></div>
@@ -1343,6 +1346,9 @@
       /* ==============================================================
          Content surfaces with HTML-in-Canvas textures.
 
+         (layoutsubtree is the Brave Stable spelling; Chrome Canary 157+
+         uses content="drawable" on the canvas plus `drawable` on each
+         drawn child. The markup sets both.)
          The dance: each <canvas layoutsubtree> staging canvas hosts a
          DOM tree that drawElementImage paints onto its bitmap. We
          can't hand that bitmap directly to Three.js's CanvasTexture

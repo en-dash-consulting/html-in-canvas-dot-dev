@@ -77,8 +77,9 @@
     </style>
   </head>
   <body>
-    <canvas id="canvas" width="800" height="600" layoutsubtree>
-      <div id="content">
+    <!-- layoutsubtree = Brave Stable spelling; content="drawable" + drawable = Chrome Canary 157+ spelling. Both are set. -->
+    <canvas id="canvas" width="800" height="600" layoutsubtree content="drawable">
+      <div id="content" drawable>
         <div class="frame">
           <h1>Hello from HTML-in-Canvas!</h1>
           <div class="grid">

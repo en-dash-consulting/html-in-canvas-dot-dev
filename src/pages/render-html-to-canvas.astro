@@ -70,8 +70,10 @@ document.body.appendChild(canvas);
 // or export it:
 const png = canvas.toDataURL('image/png');`;
 
-const nativeExample = `<canvas id="c" layoutsubtree>
-  <div id="content">Hello</div>
+const nativeExample = `<!-- layoutsubtree: Chromium ≤156 (Brave Stable);
+     content="drawable" + drawable: Chrome Canary 157+. Set both. -->
+<canvas id="c" layoutsubtree content="drawable">
+  <div id="content" drawable>Hello</div>
 </canvas>
 <script>
   const ctx = c.getContext('2d');
@@ -170,7 +172,8 @@ c.requestPaint();`;
             <td>
               Continuous — the <code>paint</code> event fires when a child's
               rendering changes, and hit testing plus the accessibility tree
-              keep working via <code>layoutsubtree</code>
+              keep working via <code>layoutsubtree</code> /
+              <code>content="drawable"</code>
             </td>
           </tr>
           <tr>
@@ -258,9 +261,12 @@ c.requestPaint();`;
       >
       adds a small API surface to <code>&lt;canvas&gt;</code>: a
       <code>layoutsubtree</code> attribute that opts the canvas's children
-      into layout, a <code>drawElementImage()</code> context method that
-      paints a child into the canvas, and a <code>paint</code> event that
-      tells you when to redraw. A complete working example:
+      into layout (Chrome Canary 157+ renamed it
+      <code>content="drawable"</code> and also wants <code>drawable</code>
+      on each drawn child — set both until Brave catches up), a
+      <code>drawElementImage()</code> context method that paints a child
+      into the canvas, and a <code>paint</code> event that tells you when
+      to redraw. A complete working example:
     </p>
 
     <pre tabindex="0"><code set:html={nativeExample.replace(/</g, '&lt;')} /></pre>
@@ -270,8 +276,10 @@ c.requestPaint();`;
     <ul>
       <li>
         The element must be a <strong>direct child</strong> of a canvas with
-        <code>layoutsubtree</code> set. Children are laid out, hit-testable,
-        and in the accessibility tree, but invisible until drawn.
+        <code>layoutsubtree</code> / <code>content="drawable"</code> set, and
+        carry the <code>drawable</code> attribute itself. Children are laid
+        out, hit-testable, and in the accessibility tree, but invisible until
+        drawn.
       </li>
       <li>
         <code>drawElementImage()</code> mirrors the
@@ -313,8 +321,9 @@ c.requestPaint();`;
       <li>
         <strong>Restructure the markup.</strong> html2canvas captures any
         element anywhere; <code>drawElementImage()</code> only draws direct
-        children of a <code>layoutsubtree</code> canvas. Move (or duplicate)
-        the content you want to render inside the canvas element.
+        <code>drawable</code> children of a <code>layoutsubtree</code> /
+        <code>content="drawable"</code> canvas. Move (or duplicate) the
+        content you want to render inside the canvas element.
       </li>
       <li>
         <strong>Replace capture calls with the paint loop.</strong> Instead

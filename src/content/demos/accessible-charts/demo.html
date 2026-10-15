@@ -281,11 +281,13 @@
           width="400"
           height="300"
           layoutsubtree
+          content="drawable"
           role="list"
           aria-label="Quarterly revenue bar chart"
         >
           <div
             class="bar-label"
+            drawable
             role="listitem"
             tabindex="0"
             aria-label="Q1 2025: $42,000"
@@ -296,6 +298,7 @@
           </div>
           <div
             class="bar-label"
+            drawable
             role="listitem"
             tabindex="0"
             aria-label="Q2 2025: $58,000"
@@ -306,6 +309,7 @@
           </div>
           <div
             class="bar-label"
+            drawable
             role="listitem"
             tabindex="0"
             aria-label="Q3 2025: $35,000"
@@ -316,6 +320,7 @@
           </div>
           <div
             class="bar-label"
+            drawable
             role="listitem"
             tabindex="0"
             aria-label="Q4 2025: $71,000"
@@ -342,11 +347,13 @@
           width="400"
           height="300"
           layoutsubtree
+          content="drawable"
           role="list"
           aria-label="Market share pie chart"
         >
           <div
             class="pie-label"
+            drawable
             role="listitem"
             tabindex="0"
             aria-label="Enterprise: 38%"
@@ -358,6 +365,7 @@
           </div>
           <div
             class="pie-label"
+            drawable
             role="listitem"
             tabindex="0"
             aria-label="SMB: 27%"
@@ -369,6 +377,7 @@
           </div>
           <div
             class="pie-label"
+            drawable
             role="listitem"
             tabindex="0"
             aria-label="Consumer: 22%"
@@ -380,6 +389,7 @@
           </div>
           <div
             class="pie-label"
+            drawable
             role="listitem"
             tabindex="0"
             aria-label="Government: 13%"
@@ -412,6 +422,10 @@
       // Shared 0→1 entry animation progress. Bars grow from the x-axis
       // and pie wedges sweep clockwise, proving the paint pipeline is
       // live: each tick is driven by requestPaint() → onpaint().
+      //
+      // Opt-in spellings: `layoutsubtree` (Brave Stable) and
+      // content="drawable" + per-child `drawable` (Chrome Canary 157+).
+      // Both are set on each canvas / label below.
       //
       // TODO(brave): when Brave's renderer stops crashing on
       // ctx.drawFocusIfNeeded() under layoutsubtree, swap the

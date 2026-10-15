@@ -15,7 +15,7 @@
  */
 export const DOC_DESCRIPTIONS: Record<string, string> = {
   overview:
-    'The WICG HTML-in-Canvas spec explained: layoutsubtree, drawElementImage(), and paint events render live, accessible DOM directly in <canvas>.',
+    'The WICG HTML-in-Canvas spec explained: layoutsubtree (content="drawable" in Chrome 157+), drawElementImage(), and paint events render live, accessible DOM directly in <canvas>.',
   'api-reference':
     'Complete drawElementImage() API reference: IDL for layoutsubtree, captureElementImage(), ElementImage, and paint events, with behavior notes.',
   'browser-support':

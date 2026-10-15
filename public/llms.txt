@@ -18,7 +18,9 @@ is also available in recent Brave Stable builds (Chromium 147+) at
 
 - `<canvas layoutsubtree>` — opts the canvas's direct child elements
   into layout, hit testing, and accessibility while keeping their
-  rendering invisible until explicitly drawn.
+  rendering invisible until explicitly drawn. Chrome Canary 157+
+  renamed this to `<canvas content="drawable">` and also requires a
+  `drawable` attribute on each drawn child; set both spellings.
 - `ctx.drawElementImage(element, x, y, ...)` — paints a direct child of
   the canvas into the canvas. Returns a `DOMMatrix` that can be applied
   back to the source element as a CSS transform to keep DOM hit testing

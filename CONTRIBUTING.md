@@ -73,6 +73,12 @@ A few more gotchas worth knowing about:
   browser's paint pipeline and generates the cached paint records that
   `drawElementImage()` depends on. Calling `onpaint()` directly throws
   "No cached paint record for element."
+- Set **both** opt-in spellings on every capture canvas:
+  `<canvas layoutsubtree content="drawable">`, and put `drawable` on
+  every child you pass to `drawElementImage()`. Chrome Canary 157+
+  only understands the `content`/`drawable` pair (and otherwise paints
+  a silently blank canvas — the error is swallowed inside `onpaint`);
+  Brave Stable 153 only understands `layoutsubtree`.
 - Direct children of `<canvas layoutsubtree>` cannot use
   `position: absolute` — Chrome forces them to `position: static`. Use
   `display: grid` on the canvas with `grid-area: stack` on the children

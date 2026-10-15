@@ -21,7 +21,7 @@ partial interface HTMLCanvasElement {
 
 | Member | Type | Description |
 |--------|------|-------------|
-| `layoutSubtree` | `boolean` attribute | Opts canvas children into layout and hit testing. Reflected as HTML attribute `layoutsubtree`. |
+| `layoutSubtree` | `boolean` attribute | Opts canvas children into layout and hit testing. Reflected as HTML attribute `layoutsubtree`. Chrome Canary 157+ replaces this with `content` (`"fallback"` \| `"drawable"`, reflected as `content="drawable"`) plus a `drawable` attribute on each child to be drawn — set both spellings until Brave catches up. |
 | `onpaint` | `EventHandler` | Handler for the `paint` event, fired when child rendering changes. |
 | `requestPaint()` | method | Forces a `paint` event to fire in the next frame, even if no children changed. Analogous to `requestAnimationFrame()`. |
 | `captureElementImage(element)` | method | Captures a snapshot of a child element as a transferable `ElementImage` for worker use. |
@@ -77,8 +77,8 @@ interface mixin CanvasDrawElementImage {
 **Return value:** `DOMMatrix` — the CSS transform to apply to `element.style.transform` for synchronization.
 
 **Requirements:**
-- `layoutsubtree` must be set on the canvas
-- `element` must be a direct child of the canvas
+- `layoutsubtree` must be set on the canvas (`content="drawable"` on Chrome Canary 157+)
+- `element` must be a direct child of the canvas (and carry the `drawable` attribute on Chrome Canary 157+)
 - `element` must have generated boxes (not `display: none`)
 - CSS transforms on the element are ignored for drawing
 - Canvas CTM is applied
@@ -160,8 +160,8 @@ interface ElementImage {
 ### Basic 2D Canvas
 
 ```html
-<canvas id="c" layoutsubtree>
-  <div id="content">Hello</div>
+<canvas id="c" layoutsubtree content="drawable">
+  <div id="content" drawable>Hello</div>
 </canvas>
 <script>
   const ctx = c.getContext('2d');

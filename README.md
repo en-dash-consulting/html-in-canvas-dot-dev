@@ -40,10 +40,14 @@ great at — render HTML and CSS — and gives canvas authors zero-cost
 access to those pixels. Three primitives:
 
 ```html
-<canvas layoutsubtree>
-  <div id="content">Real, accessible HTML content</div>
+<canvas layoutsubtree content="drawable">
+  <div id="content" drawable>Real, accessible HTML content</div>
 </canvas>
 ```
+
+(`layoutsubtree` is the Chromium ≤156 / Brave Stable spelling;
+`content="drawable"` + a `drawable` child attribute is what Chrome
+Canary 157+ expects. Each ignores the other, so the demos set both.)
 
 ```js
 const ctx = canvas.getContext('2d');

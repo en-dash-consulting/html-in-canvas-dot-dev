@@ -1,0 +1,65 @@
+---
+/**
+ * One "view" panel of the miniature Graview-style app drawn by
+ * `GraviewShowcase`. Rendered twice by the showcase — once as a
+ * layoutsubtree child of the capture canvas (flag-on) and once as
+ * plain DOM (flag-off) — so the markup lives here exactly once.
+ *
+ * Styles are owned by the parent (`.gv-panel*` selectors are declared
+ * there as :global so they apply in both render paths).
+ */
+interface Props {
+  kind: 'kind' | 'lens' | 'rule';
+  /** Extra class on the root — the parent uses `gv-panel--dom` for the
+   *  CSS-transform path. */
+  class?: string;
+  /** Render as a capturable canvas child: Chrome Canary 157+ requires
+   *  the `drawable` attribute on any element handed to
+   *  `drawElementImage`; older builds ignore it. */
+  drawable?: boolean;
+}
+
+const { kind, class: extraClass = '', drawable = false } = Astro.props;
+
+// `drawable` isn't in Astro's typed HTML attribute surface.
+const rootAttrs: Record<string, string> = drawable ? { drawable: '' } : {};
+
+const COPY = {
+  kind: { eyebrow: 'Kind · Task', title: 'Ship the autumn release' },
+  lens: { eyebrow: 'Lens · Timeline', title: 'This week' },
+  rule: { eyebrow: 'Rule · Check', title: 'Every task has an owner' },
+} as const;
+
+const { eyebrow, title } = COPY[kind];
+---
+
+<div class={`gv-panel gv-panel--${kind} ${extraClass}`.trim()} data-panel={kind} {...rootAttrs}>
+  <span class="gv-panel-eyebrow">{eyebrow}</span>
+  <span class="gv-panel-title">{title}</span>
+
+  {kind === 'kind' && (
+    <span class="gv-fields">
+      <span class="gv-field"><span class="gv-field-k">owner</span><span class="gv-field-v">Mara</span></span>
+      <span class="gv-field"><span class="gv-field-k">due</span><span class="gv-field-v">Fri</span></span>
+      <span class="gv-field"><span class="gv-field-k">state</span><span class="gv-field-v gv-field-v--pill">doing</span></span>
+      <span class="gv-acts"><span class="gv-act gv-act--primary">Done</span><span class="gv-act">Hand off</span></span>
+    </span>
+  )}
+
+  {kind === 'lens' && (
+    <span class="gv-bars">
+      <span class="gv-bar" style="--s: 2%; --w: 38%"></span>
+      <span class="gv-bar gv-bar--teal" style="--s: 30%; --w: 44%"></span>
+      <span class="gv-bar" style="--s: 56%; --w: 40%"></span>
+      <span class="gv-bar gv-bar--pink" style="--s: 18%; --w: 22%"></span>
+    </span>
+  )}
+
+  {kind === 'rule' && (
+    <span class="gv-check">
+      <span class="gv-check-row"><span class="gv-dot gv-dot--ok"></span>11 of 12 pass</span>
+      <span class="gv-check-row gv-check-row--flag"><span class="gv-dot gv-dot--flag"></span>"Write changelog" has no owner</span>
+      <span class="gv-check-repair">Repair: assign to Mara</span>
+    </span>
+  )}
+</div>

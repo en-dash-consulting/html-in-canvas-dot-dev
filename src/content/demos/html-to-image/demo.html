@@ -66,7 +66,8 @@
       }
 
       /* ==========================================================
-         The social card — drawn into the canvas via layoutsubtree.
+         The social card — drawn into the canvas via layoutsubtree
+         (Brave 153) / content="drawable" + drawable (Chrome Canary 157).
          All visual richness is pure CSS: gradients, custom fonts,
          border-radius, shadows, layered decorative shapes. One
          drawElementImage() call captures the whole thing.
@@ -329,9 +330,10 @@
         width="1200"
         height="630"
         layoutsubtree
+        content="drawable"
         aria-label="Social card preview"
       >
-        <div id="card">
+        <div id="card" drawable>
           <div class="deco deco-1"></div>
           <div class="deco deco-2"></div>
           <div class="deco deco-3"></div>

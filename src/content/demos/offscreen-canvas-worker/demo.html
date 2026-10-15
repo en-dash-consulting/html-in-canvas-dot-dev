@@ -308,8 +308,8 @@
             Source Element
             <span class="edit-hint">(click to edit, then re-capture)</span>
           </div>
-          <canvas id="source-canvas" layoutsubtree>
-            <div id="source" contenteditable="true">
+          <canvas id="source-canvas" layoutsubtree content="drawable">
+            <div id="source" contenteditable="true" drawable>
               <div class="source-card">
                 <div class="source-card-icon">&#x1F3A8;</div>
                 <h3>HTML Content</h3>
@@ -395,7 +395,7 @@
        * posted to a worker. Chrome Canary doesn't implement it yet.
        *
        * Polyfill: the source element already lives inside a
-       * `<canvas layoutsubtree>` in the DOM (see #source-canvas in
+       * `<canvas layoutsubtree content="drawable">` in the DOM (see #source-canvas in
        * the HTML). On capture:
        *   1. Size the source canvas's bitmap to match the source
        *      element's natural layout dimensions.

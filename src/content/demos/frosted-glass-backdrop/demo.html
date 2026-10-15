@@ -629,9 +629,11 @@
     </p>
 
     <div class="scene" id="scene">
-      <canvas id="canvas" layoutsubtree>
+      <!-- layoutsubtree = Brave Stable; content="drawable" + per-child
+           `drawable` = Chrome Canary 157+. Both spellings are set. -->
+      <canvas id="canvas" layoutsubtree content="drawable">
         <!-- Background card grid -->
-        <div id="bg-layer">
+        <div id="bg-layer" drawable>
           <!-- Weather -->
           <div class="bg-card card-weather">
             <div class="sun-icon"></div>
@@ -699,7 +701,7 @@
         </div>
 
         <!-- Frost panel -->
-        <div id="frost-panel">
+        <div id="frost-panel" drawable>
           <div class="frost-inner" id="frost-content">
             <div class="frost-grip">
               <span></span><span></span><span></span>
