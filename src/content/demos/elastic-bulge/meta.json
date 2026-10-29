@@ -8,6 +8,7 @@
   "difficulty": "intermediate",
   "features": [
     "layoutsubtree",
+    "texElementSubImage2D",
     "texElementImage2D",
     "onpaint",
     "requestPaint"

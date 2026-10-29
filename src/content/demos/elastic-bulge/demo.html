@@ -77,7 +77,7 @@
     </style>
   </head>
   <body>
-    <!-- layoutsubtree = Brave Stable spelling; content="drawable" + drawable = Chrome Canary 157+ spelling. Both are set. -->
+    <!-- layoutsubtree = Brave Stable spelling; content="drawable" + drawable = Chrome 157+ spelling. Both are set. -->
     <canvas id="canvas" width="800" height="600" layoutsubtree content="drawable">
       <div id="content" drawable>
         <div class="frame">
@@ -103,7 +103,10 @@
       const gl = canvas.getContext("webgl2", { premultipliedAlpha: false });
       const content = root.getElementById("content");
 
-      if (!gl || !gl.texElementImage2D) {
+      // Chrome 155+ uploads with texElementSubImage2D into a texture
+      // you allocate yourself; Chrome 157 removed texElementImage2D.
+      const hasSubImage = !!gl && typeof gl.texElementSubImage2D === "function";
+      if (!gl || (!hasSubImage && !gl.texElementImage2D)) {
         console.warn("elastic-bulge: WebGL2 HTML-in-Canvas API not supported.");
       }
 
@@ -214,13 +217,22 @@
       });
 
       // ----- Render -----
+      // #content fills the canvas, so the texture matches the bitmap size.
+      let texW = 0, texH = 0;
+
       function render() {
-        // This if block is used to ensure older browser support before the 
-        // breaking  update in Chromium 150. For more detail, see:
-        // https://github.com/WICG/html-in-canvas/pull/128/changes
-        if (gl.texElementImage2D.length === 3) {
+        if (hasSubImage) {
+          if (texW !== canvas.width || texH !== canvas.height) {
+            texW = canvas.width;
+            texH = canvas.height;
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, texW, texH, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+          }
+          gl.texElementSubImage2D(gl.TEXTURE_2D, 0, 0, 0, content);
+        } else if (gl.texElementImage2D.length === 3) {
+          // Chromium 150–154. See https://github.com/WICG/html-in-canvas/pull/128/changes
           gl.texElementImage2D(gl.TEXTURE_2D, gl.RGBA8, content);
         } else {
+          // Chromium before 150.
           gl.texElementImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, content);
         }
         gl.uniform2f(mouseLoc, mouseX, mouseY);

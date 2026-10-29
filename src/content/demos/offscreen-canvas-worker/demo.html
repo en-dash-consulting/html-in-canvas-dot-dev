@@ -787,7 +787,8 @@
       };
 
       /* ── Cleanup ───────────────────────────────────── */
-      window.addEventListener("unload", () => {
+      // pagehide, not unload: Chrome blocks unload listeners by default.
+      window.addEventListener("pagehide", () => {
         worker.terminate();
         URL.revokeObjectURL(workerURL);
       });

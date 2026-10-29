@@ -1,0 +1,157 @@
+---
+/**
+ * How to get the HTML-in-Canvas API running in your browser.
+ *
+ * Chrome 157+ ships the API on by default, so the main path is "update
+ * Chrome". Older Chromium builds (147–156) and Brave still need the
+ * `canvas-draw-element` flag, so the flag steps stay as a fallback.
+ *
+ * Used by the landing-page fallback and the docs/browser-support page.
+ */
+import CopyFlagButton from './CopyFlagButton.astro';
+
+interface Props {
+  /** Heading level for the title. Defaults to h2. */
+  headingLevel?: 'h2' | 'h3';
+  /** Compact variant for tight layouts (e.g. landing hero fallback). */
+  compact?: boolean;
+}
+
+const { headingLevel = 'h2', compact = false } = Astro.props;
+const Heading = headingLevel;
+const SubHeading = headingLevel === 'h2' ? 'h3' : 'h4';
+---
+
+<section class:list={['flag-setup', compact && 'flag-setup--compact']}>
+  <Heading class="flag-setup-heading">Use Chrome 157 or later</Heading>
+  <p class="flag-setup-sub">
+    HTML-in-Canvas is on by default in <strong>Chrome 157+</strong>, so
+    there's nothing to turn on. Update Chrome from
+    <code>chrome://settings/help</code>, then reload this page.
+  </p>
+
+  <SubHeading class="flag-setup-subheading">
+    On Chromium 147–156 or Brave? Turn on the flag
+  </SubHeading>
+  <ol class="flag-setup-steps">
+    <li class="flag-setup-step">
+      <span class="flag-setup-step-label">Paste this URL into your address bar</span>
+      <div class="flag-setup-step-action">
+        <CopyFlagButton />
+      </div>
+      <p class="flag-setup-step-hint">
+        Web pages can't link to <code>chrome://</code> URLs, so you have to
+        paste it. In Brave, <code>brave://</code> works too.
+      </p>
+    </li>
+
+    <li class="flag-setup-step">
+      <span class="flag-setup-step-label">
+        Set <em>Enable the new drawElement API for Canvas</em> to <strong>Enabled</strong>
+      </span>
+    </li>
+
+    <li class="flag-setup-step">
+      <span class="flag-setup-step-label">Relaunch the browser</span>
+      <p class="flag-setup-step-hint">
+        Click <strong>Relaunch</strong> at the bottom of the flags page, then
+        reload this site.
+      </p>
+    </li>
+  </ol>
+</section>
+
+<style>
+  .flag-setup {
+    padding: 1.5rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+  }
+
+  .flag-setup--compact {
+    padding: 1rem 1.25rem;
+  }
+
+  .flag-setup-heading {
+    font-size: 1.25rem;
+    margin: 0 0 0.5rem;
+  }
+
+  .flag-setup--compact .flag-setup-heading {
+    font-size: 1.1rem;
+  }
+
+  .flag-setup-sub {
+    margin: 0 0 1.25rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+
+  .flag-setup-sub code {
+    font-size: 0.85em;
+    padding: 0.1em 0.3em;
+    background: var(--bg-primary);
+    border-radius: 3px;
+  }
+
+  .flag-setup-subheading {
+    font-size: 0.95rem;
+    margin: 0 0 0.75rem;
+    color: var(--text-primary);
+  }
+
+  .flag-setup-steps {
+    margin: 0;
+    padding: 0 0 0 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .flag-setup-step {
+    padding-left: 0.25rem;
+  }
+
+  .flag-setup-step::marker {
+    font-weight: 700;
+    color: var(--accent-teal-text);
+  }
+
+  .flag-setup-step-label {
+    display: block;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    line-height: 1.5;
+  }
+
+  .flag-setup-step-action {
+    margin-top: 0.5rem;
+  }
+
+  .flag-setup-step-hint {
+    margin: 0.35rem 0 0;
+    font-size: 0.825rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  .flag-setup-step-hint code,
+  .flag-setup-step-label code {
+    font-size: 0.85em;
+    padding: 0.1em 0.3em;
+    background: var(--bg-primary);
+    border-radius: 3px;
+  }
+
+  @media (max-width: 520px) {
+    .flag-setup {
+      padding: 1.25rem;
+    }
+
+    .flag-setup-steps {
+      padding-left: 1.1rem;
+    }
+  }
+</style>
