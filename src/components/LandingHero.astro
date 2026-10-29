@@ -225,10 +225,10 @@ const drawableAttrs: Record<string, string> = { drawable: '' };
       vec3 dTeal   = vec3(0.000, 0.898, 0.725);
 
       /* Light-mode palette: airy cream → lilac → mint */
-      vec3 lBase   = vec3(0.98, 0.97, 0.99);
-      vec3 lBlue   = vec3(0.80, 0.84, 0.99);
-      vec3 lPurple = vec3(0.88, 0.82, 1.00);
-      vec3 lTeal   = vec3(0.84, 0.97, 0.94);
+      vec3 lBase   = vec3(0.97, 0.96, 0.99);
+      vec3 lBlue   = vec3(0.78, 0.82, 0.99);
+      vec3 lPurple = vec3(0.86, 0.79, 1.00);
+      vec3 lTeal   = vec3(0.80, 0.96, 0.92);
 
       /* Spatial blobs placed at asymmetric anchors so the eye
          always has something to move toward. */
@@ -283,9 +283,11 @@ const drawableAttrs: Record<string, string> = { drawable: '' };
       float chromaAmt = 0.0020 + abs(uv.x - 0.5) * 0.0025;
 
       /* Soft drop-shadow by sampling the alpha at a lower, rightward
-         offset. */
+         offset. Black on dark; a light purple tint on light, where a
+         black shadow reads as a muddy outline. */
       float shadowA = texture2D(u_texture, tUv + vec2(0.003, 0.008)).a;
-      vec4 shadow = vec4(0.0, 0.0, 0.0, shadowA * 0.45);
+      vec3 shadowRgb = mix(vec3(0.42, 0.25, 0.94), vec3(0.0), u_theme);
+      vec4 shadow = vec4(shadowRgb, shadowA * mix(0.14, 0.45, u_theme));
 
       float r = texture2D(u_texture, tUv + vec2(chromaAmt, 0.0)).r;
       float g = texture2D(u_texture, tUv).g;
@@ -304,7 +306,11 @@ const drawableAttrs: Record<string, string> = { drawable: '' };
 
       vec3 glowColor = vec3(0.42, 0.25, 0.94); /* brand purple */
       vec3 composited = mix(shadow.rgb, main_.rgb, main_.a);
-      composited += glowColor * glow * 0.35 * (1.0 - main_.a);
+      /* Dark: additive bloom. Light: adding light to a near-white plate
+         only washes it out, so tint toward purple instead. */
+      vec3 glowDark  = composited + glowColor * glow * 0.35 * (1.0 - main_.a);
+      vec3 glowLight = mix(composited, glowColor, glow * 0.10 * (1.0 - main_.a));
+      composited = mix(glowLight, glowDark, u_theme);
 
       return vec4(
         composited,
@@ -386,8 +392,15 @@ const drawableAttrs: Record<string, string> = { drawable: '' };
 
       vec3 tint = vec3(0.94, 0.97, 1.06);
       h = mix(h, h * tint, dome * 0.18);
-      h += spec1 + spec2 + fresnel + ring + caustic;
-      h *= 1.0 + dome * 0.04;
+
+      /* Dark: bright additive highlights. Light: white highlights vanish
+         against the plate, so keep a little spec and draw the rim and
+         edge as a purple shade so the glass still has an outline. */
+      float lightMode = 1.0 - u_theme;
+      float hi = mix(0.15, 1.0, u_theme);
+      h += (spec1 + spec2 + caustic) * hi + (fresnel + ring) * u_theme;
+      h = mix(h, vec3(0.30, 0.18, 0.75), (ring * 1.4 + fresnel * 0.6) * lightMode);
+      h *= 1.0 + dome * 0.04 * u_theme;
 
       return mix(base, h, dome);
     }
@@ -1044,6 +1057,23 @@ const drawableAttrs: Record<string, string> = { drawable: '' };
       drop-shadow(0 0 40px rgba(0, 229, 185, 0.22));
   }
 
+  /* Light theme: the pastel/white gradient above disappears on the
+     light plate. Use the deep brand hues instead, with a softer glow. */
+  :global([data-theme='light']) .hero-source-h1 {
+    background: linear-gradient(
+      125deg,
+      #001769 0%,
+      #3a1fb8 24%,
+      #6c41f0 44%,
+      #c0275f 64%,
+      #5a32d6 80%,
+      #007a62 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    filter: drop-shadow(0 0 16px rgba(108, 65, 240, 0.22));
+  }
+
   .hero-source-accent {
     /* Accent section uses the same gradient; the span is primarily a
        semantic hook (its sibling structure mirrors the static h1). */
@@ -1253,7 +1283,10 @@ const drawableAttrs: Record<string, string> = { drawable: '' };
     padding-top: 5rem;
   }
 
-  :global([data-api-supported='false']) .hero-chips,
+  :global([data-api-supported='false']) .hero-chips {
+    display: flex;
+  }
+
   :global([data-api-supported='false']) .hero-setup {
     display: block;
   }
