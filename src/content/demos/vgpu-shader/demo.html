@@ -440,11 +440,11 @@
 
       const hasHtmlInCanvas = typeof drawElementInto === "function";
       if (!hasHtmlInCanvas) {
-        setHud("flag off", true);
-        setSnapStatus("needs flag");
+        setHud("API missing", true);
+        setSnapStatus("needs Chrome 157+");
         showFallback(
-          "This demo needs the <code>canvas-draw-element</code> flag in <strong>Chrome Canary</strong> or <strong>Brave Stable</strong> (Chromium 147+). " +
-            "See <code>chrome://flags/#canvas-draw-element</code>.",
+          "This demo needs <strong>Chrome 157</strong> or later. On Chromium 147–156 or Brave, " +
+            "turn on <code>chrome://flags/#canvas-draw-element</code>.",
         );
       }
 
@@ -588,7 +588,7 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
         if (!navigator.gpu) {
           setHud("no WebGPU", true);
           setSnapStatus("no WebGPU");
-          snapshotPlaceholder.textContent = "WebGPU is missing, so there is no vgpu pass to snapshot. Try Chrome Canary or a recent Chromium build.";
+          snapshotPlaceholder.textContent = "WebGPU is missing, so there is no vgpu pass to snapshot. Try Chrome 157 or later.";
           showFallback(
             "WebGPU is required for <code>vgpu</code>. The HTML card still paints via <code>drawElementImage</code>, but the foil shader did not start.",
           );

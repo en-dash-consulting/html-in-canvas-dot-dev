@@ -9,14 +9,14 @@
  * composites the captures as planes at depth — so the illustration
  * here is a miniature of exactly that pipeline.
  *
- * Flag ON: a `<canvas layoutsubtree>` hosts three small DOM "views"
+ * API available: a `<canvas layoutsubtree>` hosts three small DOM "views"
  * (the panels of a tiny Graview-style app). A 2D context draws each one
  * with `drawElementImage` under a leaning affine transform at one of
  * three depths — back plane blurred and dimmed, front plane sharp with
  * a shadow — with connectors stroked between them. The planes bob on
  * their own phases and parallax against the pointer.
  *
- * Flag OFF (and non-Chromium): the same three panels are rendered as
+ * API missing (and non-Chromium): the same three panels are rendered as
  * ordinary DOM with the same transforms applied by CSS — which is also
  * Graview's own shipping "DOM path", so the fallback is honest rather
  * than a screenshot. Both variants are decorative (`aria-hidden`); the
@@ -30,8 +30,8 @@ const GRAVIEW_DEV = 'https://graview.dev';
 const GRAVIEW_CLOUD = 'https://graview.cloud';
 
 // Both spellings of the canvas opt-in: `layoutsubtree` for Chromium
-// ≤156 (Brave Stable, older Canary) and `content="drawable"` for Chrome
-// Canary 157+, which renamed the attribute. Each build ignores the one
+// ≤156 (Brave Stable) and `content="drawable"` for Chrome 157+, which
+// renamed the attribute. Each build ignores the one
 // it doesn't know. Neither is in Astro's typed HTML attribute surface.
 const canvasAttrs: Record<string, string> = {
   layoutsubtree: '',
@@ -103,7 +103,7 @@ const canvasAttrs: Record<string, string> = {
 
     {/* ============ SCENE (decorative) ============ */}
     <div class="gv-stage" aria-hidden="true">
-      {/* Flag-on: capture canvas. The panels are layoutsubtree children
+      {/* API-on: capture canvas. The panels are layoutsubtree children
           — laid out by the browser, painted only through the canvas.
           pointer-events are off so the browser's hit-test never
           descends into the captured subtree. */}
@@ -118,7 +118,7 @@ const canvasAttrs: Record<string, string> = {
         Live · <code>drawElementImage</code> → planes at depth
       </span>
 
-      {/* Flag-off: the DOM path. Same panels, transforms applied by CSS. */}
+      {/* API-off: the DOM path. Same panels, transforms applied by CSS. */}
       <div class="gv-dom">
         <svg class="gv-dom-links" viewBox="0 0 520 360" preserveAspectRatio="none" aria-hidden="true">
           <path d="M345 81 C 240 81, 240 260, 133 260" />
@@ -129,7 +129,7 @@ const canvasAttrs: Record<string, string> = {
         <GraviewPanel kind="kind" class="gv-panel--dom" />
         <span class="gv-live-badge gv-live-badge--off">
           <span class="gv-live-dot gv-live-dot--off"></span>
-          DOM path · flip the flag for the captured version
+          DOM path · open in Chrome 157+ for the captured version
         </span>
       </div>
     </div>
@@ -138,7 +138,7 @@ const canvasAttrs: Record<string, string> = {
 
 <script>
   /**
-   * Flag-on pipeline (2D):
+   * API-on pipeline (2D):
    *   1. The canvas bitmap is sized 1:1 with its CSS box (layoutsubtree
    *      lays children out against the bitmap size — no DPR scaling,
    *      see CLAUDE.md / project memory).
@@ -177,7 +177,7 @@ const canvasAttrs: Record<string, string> = {
     const stage = document.querySelector<HTMLElement>('.gv-stage');
     const canvas = stage?.querySelector<LayoutsubtreeCanvas>('.gv-canvas');
     if (!stage || !canvas) return;
-    if (document.documentElement.dataset.flagSupported !== 'true') return;
+    if (document.documentElement.dataset.apiSupported !== 'true') return;
     if (canvas.dataset.gvInit === 'true') return;
     canvas.dataset.gvInit = 'true';
 
@@ -549,7 +549,7 @@ const canvasAttrs: Record<string, string> = {
   }
 
   .gv-canvas {
-    display: none; /* flag-on only */
+    display: none; /* API-on only */
     position: absolute;
     inset: 0;
     z-index: 1;
@@ -609,7 +609,7 @@ const canvasAttrs: Record<string, string> = {
     100% { box-shadow: 0 0 0 0 rgba(0, 229, 185, 0); }
   }
 
-  /* ===== DOM path (flag-off) ===== */
+  /* ===== DOM path (API-off) ===== */
   .gv-dom {
     position: absolute;
     inset: 0;
@@ -634,16 +634,16 @@ const canvasAttrs: Record<string, string> = {
     }
   }
 
-  /* ===== Flag gating ===== */
-  :global([data-flag-supported='true']) .gv-canvas {
+  /* ===== API gating ===== */
+  :global([data-api-supported='true']) .gv-canvas {
     display: block;
   }
 
-  :global([data-flag-supported='true']) .gv-dom {
+  :global([data-api-supported='true']) .gv-dom {
     display: none;
   }
 
-  :global([data-flag-supported='true']) .gv-live-badge--on {
+  :global([data-api-supported='true']) .gv-live-badge--on {
     display: inline-flex;
   }
 

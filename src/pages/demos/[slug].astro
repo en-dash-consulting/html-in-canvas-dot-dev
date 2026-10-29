@@ -136,7 +136,7 @@ const demoJsonLd: { '@context': string; '@graph': Record<string, unknown>[] } = 
       codeRepository: GITHUB_REPO,
       programmingLanguage: ['HTML', 'CSS', 'JavaScript'],
       runtimePlatform:
-        'Web browser with the Chromium canvas-draw-element flag enabled (e.g. Chrome Canary or Brave Stable ≥ Chromium 147)',
+        'Chrome 157 or later, or Chromium 147–156 / Brave with the canvas-draw-element flag enabled',
       license: 'https://opensource.org/licenses/MIT',
     },
     {
@@ -293,9 +293,9 @@ const ogImage = existsSync(join(process.cwd(), 'public', demoOgFile))
           </svg>
           <p class="fallback-title">API Unavailable</p>
           <p class="fallback-text">
-            This demo needs the <code>canvas-draw-element</code> flag
-            enabled in <strong>Chrome Canary</strong> or
-            <strong>Brave Stable</strong> (Chromium 147+).
+            This demo needs <strong>Chrome 157</strong> or later. On
+            Chromium 147–156 or Brave, turn on the
+            <code>canvas-draw-element</code> flag.
           </p>
           <a href="/docs/browser-support/" class="fallback-link">
             Setup instructions &rarr;

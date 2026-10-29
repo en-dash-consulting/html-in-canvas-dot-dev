@@ -25,7 +25,7 @@ test.describe('Graview showcase hero (home page)', () => {
     }
   });
 
-  test('flag-on: capture canvas paints the planes and the DOM path is hidden', async ({
+  test('API-on: capture canvas paints the planes and the DOM path is hidden', async ({
     page,
   }) => {
     const errors = collectConsoleErrors(page);

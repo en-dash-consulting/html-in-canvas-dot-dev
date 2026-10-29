@@ -25,19 +25,19 @@ The whole API in one taste:
 
 `layoutsubtree` opts the canvas's children into layout, `drawElementImage()` paints a child into the canvas, and the `paint` event tells you when to redraw.
 
-> **Naming note:** Chrome Canary 157+ spells the opt-in `<canvas content="drawable">` and requires a `drawable` attribute on each element you draw; Brave Stable (Chromium ≤156) still uses `layoutsubtree`. Each build ignores the attribute it doesn't know, so this site sets both. See [Browser Support](/docs/browser-support/).
+> **Naming note:** Chrome 157+ spells the opt-in `<canvas content="drawable">` and requires a `drawable` attribute on each element you draw; Brave Stable (Chromium ≤156) still uses `layoutsubtree`. Each build ignores the attribute it doesn't know, so this site sets both. See [Browser Support](/docs/browser-support/).
 
 **Where to go next:**
 
 - [API Reference](/docs/api-reference/) — full IDL, overloads, and behavior notes
-- [Browser Support](/docs/browser-support/) — enable `chrome://flags/#canvas-draw-element` in two minutes
+- [Browser Support](/docs/browser-support/) — on by default in Chrome 157+, flag steps for older builds
 - [Demo gallery](/demos/) — live examples running in your browser
 - How to [render HTML to canvas](/render-html-to-canvas/) — the native API vs `html2canvas`, with migration notes
 
 ## Background
 
 **Source:** https://github.com/WICG/html-in-canvas  
-**Status:** Living explainer, continuously updated. Dev trial behind `chrome://flags/#canvas-draw-element` in Chrome Canary, and also available in recent Brave Stable builds (≥ 1.89.132 / Chromium 147) at `brave://flags/#canvas-draw-element`.  
+**Status:** Living explainer, continuously updated. On by default in Chrome 157+. Chromium 147–156 and Brave Stable (≥ 1.89.132) have it behind `chrome://flags/#canvas-draw-element`.  
 **Authors:** Philip Rogers (pdr@chromium.org), Stephen Chenney (Igalia), Chris Harrelson, Philip Jagenstedt, Khushal Sagar, Vladimir Levin, Fernando Serboncini (all Chromium)
 
 ## Problem

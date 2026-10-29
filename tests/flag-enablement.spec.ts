@@ -10,7 +10,7 @@ test.describe('flag-enablement UX', () => {
   // rely on `navigator.clipboard.writeText` would otherwise reject.
   test.use({ permissions: ['clipboard-read', 'clipboard-write'] });
 
-  test('docs/browser-support renders the 3-step setup guide above the content', async ({
+  test('docs/browser-support renders the setup guide above the content', async ({
     page,
   }) => {
     await page.goto(BROWSER_SUPPORT_URL, { waitUntil: 'networkidle' });
@@ -18,12 +18,15 @@ test.describe('flag-enablement UX', () => {
     const quickstart = page.locator('.browser-support-quickstart');
     await expect(quickstart).toBeVisible();
 
-    // Section heading
+    // Primary path is Chrome 157+; the flag is the fallback.
     await expect(
-      quickstart.getByRole('heading', { name: /enable the flag/i }),
+      quickstart.getByRole('heading', { name: /chrome 157 or later/i }),
+    ).toBeVisible();
+    await expect(
+      quickstart.getByRole('heading', { name: /turn on the flag/i }),
     ).toBeVisible();
 
-    // Exactly three steps
+    // Exactly three flag steps
     const steps = quickstart.locator('.flag-setup-step');
     await expect(steps).toHaveCount(3);
 
@@ -124,3 +127,48 @@ test.describe('flag-enablement UX', () => {
 function escapeForRegex(literal: string): string {
   return literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
+
+test.describe('BrowserSupportBanner wording', () => {
+  const removeApi = () => {
+    const proto = (
+      globalThis as unknown as {
+        CanvasRenderingContext2D?: { prototype: Record<string, unknown> };
+      }
+    ).CanvasRenderingContext2D?.prototype;
+    if (proto) delete proto.drawElementImage;
+  };
+
+  test('Chromium before 157 is told to update or turn on the flag', async ({ page }) => {
+    await page.addInitScript(removeApi);
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'userAgentData', {
+        value: { brands: [{ brand: 'Chromium', version: '156' }] },
+      });
+    });
+    await page.goto('/demos/hello-world/', { waitUntil: 'domcontentloaded' });
+
+    const banner = page.locator('#browser-banner');
+    await expect(banner).toBeVisible();
+    await expect(banner.locator('[data-banner-msg="update"]')).toBeVisible();
+    await expect(banner.locator('[data-banner-msg="other"]')).toBeHidden();
+    await expect(banner.locator('.copy-flag')).toBeVisible();
+  });
+
+  test('non-Chromium browsers get no flag button', async ({ page }) => {
+    await page.addInitScript(removeApi);
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'userAgentData', { value: undefined });
+      Object.defineProperty(navigator, 'userAgent', {
+        value:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:140.0) Gecko/20100101 Firefox/140.0',
+      });
+    });
+    await page.goto('/demos/hello-world/', { waitUntil: 'domcontentloaded' });
+
+    const banner = page.locator('#browser-banner');
+    await expect(banner).toBeVisible();
+    await expect(banner.locator('[data-banner-msg="other"]')).toBeVisible();
+    await expect(banner.locator('[data-banner-msg="update"]')).toBeHidden();
+    await expect(banner.locator('.copy-flag')).toBeHidden();
+  });
+});

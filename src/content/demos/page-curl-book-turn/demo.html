@@ -80,7 +80,7 @@
          Staging canvases
          ------------------------------------------------------------
          Wrapped in a 1×1 visible container pinned to the corner of
-         the stage. Chrome's <canvas layoutsubtree> (Canary 157+: content="drawable") silently skips
+         the stage. Chrome's <canvas layoutsubtree> (Chrome 157+: content="drawable") silently skips
          paint records for elements at `left: -9999px`, which is
          what the site previously used here — the WebGL shader ended
          up sampling blank textures and the demo rendered black.

@@ -490,7 +490,7 @@
       });
 
       // ResizeObserver: keep the bitmap 1:1 with CSS pixels. Chrome's
-      // layoutsubtree (Canary 157+: content="drawable") uses canvas.width as the layout viewport for
+      // layoutsubtree (Chrome 157+: content="drawable") uses canvas.width as the layout viewport for
       // child elements — DPR scaling would break card layout.
       // requestPaint() so the browser's paint pipeline generates the
       // cached paint records that drawElementImage depends on.

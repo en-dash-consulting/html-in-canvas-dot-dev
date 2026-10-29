@@ -73,7 +73,7 @@ test.describe('visual punch-up: WebGL back plate + typography', () => {
 });
 
 test.describe('visual punch-up: primitives dogfooding moment', () => {
-  test('flag-on + normal motion: overlay canvases appear and clean up', async ({
+  test('API-on + normal motion: overlay canvases appear and clean up', async ({
     page,
   }) => {
     await page.goto(HOME_URL, { waitUntil: 'networkidle' });
@@ -140,7 +140,7 @@ test.describe('visual punch-up: primitives dogfooding moment', () => {
     }
   });
 
-  test('flag-off: no overlay canvases are created', async ({ page }) => {
+  test('API-off: no overlay canvases are created', async ({ page }) => {
     await page.addInitScript(() => {
       const proto = (
         globalThis as unknown as {

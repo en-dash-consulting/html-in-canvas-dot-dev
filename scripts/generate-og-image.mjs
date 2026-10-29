@@ -347,7 +347,7 @@ async function main() {
     titleLead: 'Spec reference,',
     titleAccent: 'browser support, FAQs',
     tagline:
-      'Everything you need to start building with the WICG HTML-in-Canvas proposal — API surface, browser flags, and open questions.',
+      'Everything you need to start building with the WICG HTML-in-Canvas proposal — API surface, browser support, and open questions.',
   };
 
   const demosLandingJob = {

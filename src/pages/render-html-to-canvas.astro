@@ -71,7 +71,7 @@ document.body.appendChild(canvas);
 const png = canvas.toDataURL('image/png');`;
 
 const nativeExample = `<!-- layoutsubtree: Chromium ≤156 (Brave Stable);
-     content="drawable" + drawable: Chrome Canary 157+. Set both. -->
+     content="drawable" + drawable: Chrome 157+. Set both. -->
 <canvas id="c" layoutsubtree content="drawable">
   <div id="content" drawable>Hello</div>
 </canvas>
@@ -82,10 +82,10 @@ const nativeExample = `<!-- layoutsubtree: Chromium ≤156 (Brave Stable);
   // changes — redraw there, once per frame at most.
   c.onpaint = () => {
     ctx.reset();
-    const t = ctx.drawElementImage(content, 0, 0);
-    // Sync the DOM position with the drawn position so hit
-    // testing and accessibility keep working.
-    content.style.transform = t.toString();
+    ctx.drawElementImage(content, 0, 0);
+    // Chrome 155+ keeps hit testing and accessibility in line with
+    // the drawn position. (Older builds returned a DOMMatrix that
+    // you applied to content.style.transform.)
   };
 
   // Size the canvas grid to device pixels to prevent blurriness.
@@ -180,9 +180,9 @@ c.requestPaint();`;
             <th scope="row">Browser support</th>
             <td>All modern browsers</td>
             <td>
-              Chromium dev trial — Chrome Canary and Brave Stable behind the
-              <code>canvas-draw-element</code> flag; no Firefox or Safari
-              implementation yet
+              On by default in Chrome 157+; behind the
+              <code>canvas-draw-element</code> flag in Chromium 147–156 and
+              Brave; no Firefox or Safari implementation yet
             </td>
           </tr>
           <tr>
@@ -261,7 +261,7 @@ c.requestPaint();`;
       >
       adds a small API surface to <code>&lt;canvas&gt;</code>: a
       <code>layoutsubtree</code> attribute that opts the canvas's children
-      into layout (Chrome Canary 157+ renamed it
+      into layout (Chrome 157+ renamed it
       <code>content="drawable"</code> and also wants <code>drawable</code>
       on each drawn child — set both until Brave catches up), a
       <code>drawElementImage()</code> context method that paints a child
@@ -287,15 +287,16 @@ c.requestPaint();`;
         source-rect variants — and applies the canvas's current transform.
       </li>
       <li>
-        It returns a <code>DOMMatrix</code>: apply it to
-        <code>element.style.transform</code> so the DOM position matches the
-        drawn position (CSS transforms on the source element are ignored for
-        drawing but still affect hit testing).
+        In Chrome 155+ it returns nothing, and the browser keeps hit testing
+        and accessibility in line with where you drew the element. Earlier
+        builds returned a <code>DOMMatrix</code> to apply to
+        <code>element.style.transform</code>. CSS transforms on the source
+        element are ignored for drawing.
       </li>
       <li>
         WebGL and WebGPU get equivalents —
-        <code>gl.texElementImage2D()</code> and
-        <code>queue.copyElementImageToTexture()</code> — so HTML can be a
+        <code>gl.texElementSubImage2D()</code> and
+        <code>queue.drawElementImageToTexture()</code> — so HTML can be a
         live texture. Workers are covered via
         <code>captureElementImage()</code> and transferable
         <code>ElementImage</code> snapshots.
@@ -309,10 +310,10 @@ c.requestPaint();`;
     <p>
       Full signatures and IDL are in the
       <a href="/docs/api-reference/">API reference</a>. The API is currently
-      a Chromium dev trial: enable
-      <code>chrome://flags/#canvas-draw-element</code> in Chrome Canary or
-      Brave Stable — the <a href="/docs/browser-support/">browser support
-      page</a> has the two-minute setup.
+      on by default in Chrome 157 and later. Older Chromium builds and Brave
+      need <code>chrome://flags/#canvas-draw-element</code>; the
+      <a href="/docs/browser-support/">browser support page</a> has the
+      steps.
     </p>
 
     <h2 id="migration">Migrating from html2canvas</h2>
@@ -348,8 +349,9 @@ c.requestPaint();`;
         (not tainted) by the spec.
       </li>
       <li>
-        <strong>Keep html2canvas as the fallback.</strong> Until the API
-        ships beyond the flag, feature-detect and branch:
+        <strong>Keep html2canvas as the fallback.</strong> Chrome 157+ has
+        the API, but Firefox, Safari, and older Chromium don't. Feature-detect
+        and branch:
         <code>'drawElementImage' in CanvasRenderingContext2D.prototype</code>.
       </li>
     </ul>
@@ -380,8 +382,8 @@ c.requestPaint();`;
       Next steps: browse the full gallery of interactive
       <a href="/demos/">HTML canvas examples</a>, read the
       <a href="/docs/overview/">spec overview</a> for the full design, or
-      follow the <a href="/docs/browser-support/">flag setup guide</a> to try
-      the demos in your own browser.
+      check <a href="/docs/browser-support/">browser support</a> to try the
+      demos in your own browser.
     </p>
   </article>
 </BaseLayout>

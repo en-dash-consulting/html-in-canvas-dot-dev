@@ -166,7 +166,7 @@ npm install</code></pre>
             Opt the <code>&lt;canvas&gt;</code> in so the browser lays out
             its child elements for painting. Set <em>both</em> spellings:
             Brave Stable understands <code>layoutsubtree</code>, Chrome
-            Canary 157+ understands <code>content="drawable"</code> and
+            Chrome 157+ understands <code>content="drawable"</code> and
             also needs <code>drawable</code> on each child you draw.
           </p>
           <pre><code>&lt;canvas id="canvas" layoutsubtree content="drawable"&gt;
@@ -254,10 +254,9 @@ const canvas = root.getElementById("canvas");`} /></pre>
         the metadata renders correctly on the detail page.
       </p>
       <p>
-        <strong>Note:</strong> The HTML-in-Canvas API requires the
-        <code>canvas-draw-element</code> flag enabled in either
-        <strong>Chrome Canary</strong> or
-        <strong>Brave Stable</strong> (Chromium 147+). Other browsers will
+        <strong>Note:</strong> Test in <strong>Chrome 157</strong> or
+        later, where the API is on by default. Chromium 147–156 and Brave
+        need the <code>canvas-draw-element</code> flag. Other browsers
         show the fallback overlay.
       </p>
     </section>

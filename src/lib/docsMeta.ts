@@ -19,7 +19,7 @@ export const DOC_DESCRIPTIONS: Record<string, string> = {
   'api-reference':
     'Complete drawElementImage() API reference: IDL for layoutsubtree, captureElementImage(), ElementImage, and paint events, with behavior notes.',
   'browser-support':
-    'How to enable chrome://flags/#canvas-draw-element: step-by-step flag setup for Chrome Canary and Brave, plus current HTML-in-Canvas browser support.',
+    'HTML-in-Canvas browser support: on by default in Chrome 157+, behind chrome://flags/#canvas-draw-element in Chromium 147–156 and Brave, not yet in Firefox or Safari.',
   'design-decisions':
     'Why HTML-in-Canvas works the way it does: the layoutsubtree opt-in, why CSS transforms on source elements are ignored, and other design rationale.',
   'examples-analysis':

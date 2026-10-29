@@ -21,8 +21,8 @@ The very short version is below.
 4. Edit `src/content/demos/my-demo-name/demo.html` — that's the demo
    itself, a single self-contained HTML file. Authoring conventions
    are documented inline in the template.
-5. Run the dev server in **Chrome Canary** or **Brave Stable**
-   (Chromium 147+) with the `canvas-draw-element` flag enabled:
+5. Run the dev server and open it in **Chrome 157+** (or Chromium
+   147–156 / **Brave Stable** with the `canvas-draw-element` flag on):
    ```bash
    npm run dev
    ```
@@ -75,10 +75,11 @@ A few more gotchas worth knowing about:
   "No cached paint record for element."
 - Set **both** opt-in spellings on every capture canvas:
   `<canvas layoutsubtree content="drawable">`, and put `drawable` on
-  every child you pass to `drawElementImage()`. Chrome Canary 157+
+  every child you pass to `drawElementImage()`. Chrome 157+
   only understands the `content`/`drawable` pair (and otherwise paints
   a silently blank canvas — the error is swallowed inside `onpaint`);
-  Brave Stable 153 only understands `layoutsubtree`.
+  Chromium 156 and earlier (including Brave Stable) only understand
+  `layoutsubtree`.
 - Direct children of `<canvas layoutsubtree>` cannot use
   `position: absolute` — Chrome forces them to `position: static`. Use
   `display: grid` on the canvas with `grid-area: stack` on the children
@@ -100,7 +101,7 @@ Open an issue with:
 
 - Which demo / page is affected
 - Browser + version (e.g. `chrome://version` or `brave://version`)
-- Whether the `canvas-draw-element` flag is enabled
+- On Chromium 156 or earlier: whether the `canvas-draw-element` flag is enabled
 - Console errors (DevTools → Console)
 - Steps to reproduce
 

@@ -77,7 +77,7 @@
     },
     {
       "q": "Does this work on a phone?",
-      "a": "The layout is phone-friendly. Slide a finger to warp the type. The HTML-in-Canvas API itself still needs Chrome Canary or Brave with the canvas-draw-element flag, so iOS Safari will show the setup note until the spec ships there."
+      "a": "The layout is phone-friendly. Slide a finger to warp the type. The HTML-in-Canvas API needs Chrome 157 or later, so iOS Safari shows the setup note until WebKit supports it."
     }
   ],
   "why": {

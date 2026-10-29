@@ -9,36 +9,39 @@ shows what becomes possible when the browser can paint live HTML into a
 canvas: real text editing, native i18n, accessible chart labels, video
 recording from HTML scenes, WebGL and WebGPU shader effects on DOM
 content (including a demo built on Vercel's vgpu library), and 3D
-scenes that use HTML elements as textures. The relevant Chromium feature
-ships behind `chrome://flags/#canvas-draw-element` in Chrome Canary, and
-is also available in recent Brave Stable builds (Chromium 147+) at
-`brave://flags/#canvas-draw-element`.
+scenes that use HTML elements as textures. The API is on by
+default in Chrome 157 and later. Chromium 147–156 and Brave Stable have
+it behind `chrome://flags/#canvas-draw-element` (`brave://flags/...` in
+Brave).
 
 ## Spec primitives
 
 - `<canvas layoutsubtree>` — opts the canvas's direct child elements
   into layout, hit testing, and accessibility while keeping their
-  rendering invisible until explicitly drawn. Chrome Canary 157+
+  rendering invisible until explicitly drawn. Chrome 157+
   renamed this to `<canvas content="drawable">` and also requires a
   `drawable` attribute on each drawn child; set both spellings.
-- `ctx.drawElementImage(element, x, y, ...)` — paints a direct child of
-  the canvas into the canvas. Returns a `DOMMatrix` that can be applied
-  back to the source element as a CSS transform to keep DOM hit testing
-  in sync with the painted pixels.
+- `ctx.drawElementImage(element, x, y, ...)` — paints a `drawable`
+  child of the canvas into the canvas. In Chrome 155+ it returns nothing
+  and the browser keeps hit testing in line with the drawn position;
+  earlier builds returned a `DOMMatrix` to apply as a CSS transform.
 - `canvas.onpaint` / `canvas.requestPaint()` — paint event lifecycle
   for canvas children. The browser's paint pipeline runs and generates
   the cached paint records that `drawElementImage` depends on.
 - `canvas.captureElementImage(element)` — produces a transferable
   `ElementImage` snapshot for use in `OffscreenCanvas` workers.
-- WebGL equivalent: `gl.texElementImage2D(...)`
-- WebGPU equivalent: `queue.copyElementImageToTexture(...)`
+- WebGL equivalent: `gl.texElementSubImage2D(...)` into a texture you
+  allocate first (`texElementImage2D` was removed in Chrome 157)
+- WebGPU equivalent: `queue.drawElementImageToTexture(...)`
+  (`copyElementImageToTexture` was removed in Chrome 157)
 
 ## Browser support
 
-This is a dev-trial Chromium feature. Other browsers have not announced
-implementations yet.
+Chrome ships it on by default from 157. Other browsers have not
+announced implementations yet.
 
-- Chrome Canary, behind `chrome://flags/#canvas-draw-element`
+- Chrome 157+: on by default
+- Chromium 147–156: behind `chrome://flags/#canvas-draw-element`
 - Brave Stable ≥ 1.89.132 (Chromium 147+), behind `brave://flags/#canvas-draw-element`
 - Firefox: not implemented
 - Safari/WebKit: not implemented

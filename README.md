@@ -15,11 +15,10 @@ into a canvas: real text editing, native i18n, accessible chart labels,
 video recording from HTML scenes, GPU shader effects on DOM content, and
 3D scenes that use HTML elements as textures.
 
-The relevant Chromium feature ships behind
-`chrome://flags/#canvas-draw-element` in **Chrome Canary**, and is also
-available in recent **Brave Stable** builds (≥ 1.89.132 / Chromium 147)
-at `brave://flags/#canvas-draw-element`. Firefox and Safari have not
-announced implementations yet.
+The API is on by default in **Chrome 157** and later. Chromium 147–156
+and **Brave Stable** (≥ 1.89.132) have it behind
+`chrome://flags/#canvas-draw-element` (`brave://flags/...` in Brave).
+Firefox and Safari have not announced implementations yet.
 
 ---
 
@@ -47,7 +46,7 @@ access to those pixels. Three primitives:
 
 (`layoutsubtree` is the Chromium ≤156 / Brave Stable spelling;
 `content="drawable"` + a `drawable` child attribute is what Chrome
-Canary 157+ expects. Each ignores the other, so the demos set both.)
+Chrome 157+ expects. Each ignores the other, so the demos set both.)
 
 ```js
 const ctx = canvas.getContext('2d');
@@ -71,8 +70,8 @@ npm install
 npm run dev
 ```
 
-Visit `http://localhost:4321` in **Chrome Canary** or **Brave Stable**
-(Chromium 147+) with the `canvas-draw-element` flag enabled. Setup
+Visit `http://localhost:4321` in **Chrome 157+**, or in Chromium 147–156 /
+**Brave Stable** with the `canvas-draw-element` flag enabled. Setup
 instructions:
 [/docs/browser-support/](https://html-in-canvas.dev/docs/browser-support/).
 
@@ -170,9 +169,8 @@ The shared helper tests both contexts:
 
 The full suite runs in a few seconds against Chrome Canary. See
 `tests/helpers/demo-smoke.ts` for the runner and `playwright.config.ts`
-for the Chrome Canary launch config (the bundled Chromium that ships
-with Playwright doesn't expose the spec, so we point at Canary
-directly).
+for the Chrome Canary launch config (Playwright's bundled Chromium is
+older than 157, so we point at Canary directly).
 
 ---
 

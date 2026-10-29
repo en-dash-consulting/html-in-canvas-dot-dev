@@ -2,8 +2,8 @@
 /**
  * One "view" panel of the miniature Graview-style app drawn by
  * `GraviewShowcase`. Rendered twice by the showcase — once as a
- * layoutsubtree child of the capture canvas (flag-on) and once as
- * plain DOM (flag-off) — so the markup lives here exactly once.
+ * layoutsubtree child of the capture canvas (API-on) and once as
+ * plain DOM (API-off) — so the markup lives here exactly once.
  *
  * Styles are owned by the parent (`.gv-panel*` selectors are declared
  * there as :global so they apply in both render paths).
@@ -13,7 +13,7 @@ interface Props {
   /** Extra class on the root — the parent uses `gv-panel--dom` for the
    *  CSS-transform path. */
   class?: string;
-  /** Render as a capturable canvas child: Chrome Canary 157+ requires
+  /** Render as a capturable canvas child: Chrome 157+ requires
    *  the `drawable` attribute on any element handed to
    *  `drawElementImage`; older builds ignore it. */
   drawable?: boolean;

@@ -7,7 +7,7 @@ order: 3
 
 ## Why `layoutsubtree` as an attribute?
 
-(Chrome Canary 157+ spells the same opt-in `content="drawable"`, with a `drawable` attribute on each drawable child; the rationale below is unchanged.)
+(Chrome 157+ spells the same opt-in `content="drawable"`, with a `drawable` attribute on each drawable child; the rationale below is unchanged.)
 
 The attribute serves as an explicit opt-in. Without it, canvas children are fallback content (for accessibility when canvas isn't supported). With it, children are promoted to first-class participants in layout and hit testing, but remain invisible until drawn.
 

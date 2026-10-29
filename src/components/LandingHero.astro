@@ -1,8 +1,8 @@
 ---
 /**
- * Landing-page hero — flag-aware immersive WebGL stage.
+ * Landing-page hero — immersive WebGL stage when the API is available.
  *
- * Flag ON: a full-width WebGL canvas renders the headline through
+ * API available: a full-width WebGL canvas renders the headline through
  * `drawElementImage` → WebGL texture upload, with a shader pipeline
  * producing (1) an animated gradient/noise back plate, (2) a 3D-tilting
  * plane for the headline that tracks the cursor, and (3) a draggable
@@ -10,24 +10,24 @@
  * rim. A second lens drifts slowly on auto-pilot until the user grabs
  * one, making the interactivity discoverable without a "drag me" label.
  *
- * Flag OFF (and non-Chromium): the static headline remains, plus a
- * preview animation + the shared `FlagSetupSteps` CTA so visitors can
- * enable the flag in ~30 seconds and come back for the live version.
+ * API missing (Chromium before 157, Firefox, Safari): the static
+ * headline remains, plus a preview animation and the shared
+ * `BrowserSetupSteps` block (update to Chrome 157+, or turn on the flag).
  *
  * The static <h1> stays in the DOM and the a11y tree in both modes —
- * on flag-on its text becomes `color: transparent` so the WebGL output
+ * when the API is available its text becomes `color: transparent` so the WebGL output
  * provides the visible pixels while screen readers still see a real
  * heading.
  */
-import FlagSetupSteps from './FlagSetupSteps.astro';
+import BrowserSetupSteps from './BrowserSetupSteps.astro';
 import GraviewLogo from './GraviewLogo.astro';
 
 const WICG_REPO = 'https://github.com/WICG/html-in-canvas';
 
 // Both spellings of the canvas opt-in: `layoutsubtree` for Chromium
-// ≤156 (Brave Stable) and `content="drawable"` for Chrome Canary 157+,
-// which renamed it (see CLAUDE.md). Neither is in Astro's typed HTML
-// attribute surface, and Canary 157 also wants `drawable` on the child
+// ≤156 (Brave Stable) and `content="drawable"` for Chrome 157+, which
+// renamed it (see CLAUDE.md). Neither is in Astro's typed HTML
+// attribute surface, and Chrome 157 also wants `drawable` on the child
 // handed to drawElementImage.
 const canvasAttrs: Record<string, string> = {
   layoutsubtree: '',
@@ -37,7 +37,7 @@ const drawableAttrs: Record<string, string> = { drawable: '' };
 ---
 
 <section class="hero" aria-label="Introduction">
-  {/* ============ STAGE (flag-on) ============ */}
+  {/* ============ STAGE (API-on) ============ */}
   <div class="hero-stage" aria-hidden="true">
     {/* Source canvas — a 2D render of the headline via drawElementImage.
         The layoutsubtree child is a duplicate of the real <h1> styled
@@ -62,17 +62,17 @@ const drawableAttrs: Record<string, string> = { drawable: '' };
   </div>
 
   {/* ============ CANONICAL SEMANTIC LAYER ============
-       Always in the a11y tree. On flag-on, its headline is colored
+       Always in the a11y tree. On API-on, its headline is colored
        transparent so the stage can paint its visible form without
-       double-rendering. On flag-off, it's the only render path. */}
+       double-rendering. On API-off, it's the only render path. */}
   <div class="hero-content">
     <p class="hero-eyebrow">WICG Specification</p>
 
-    {/* Flag-off only: honest-preview ribbon telling visitors what
-        they're looking at and what they'd see with the flag on. */}
+    {/* API-missing only: ribbon saying this is the fallback and how
+        to get the live version. */}
     <p class="hero-preview-ribbon" aria-hidden="true">
       <span class="hero-preview-dot"></span>
-      Preview mode — flip the flag for the live WebGL version
+      Preview mode — open in Chrome 157+ for the live WebGL version
     </p>
 
     <div class="hero-heading-wrap">
@@ -89,9 +89,9 @@ const drawableAttrs: Record<string, string> = { drawable: '' };
     </p>
 
     <ul class="hero-chips" aria-label="Requirements">
-      <li>Chrome Canary or Brave Stable</li>
-      <li>Flag is dev-only</li>
-      <li>No install</li>
+      <li>Chrome 157+</li>
+      <li>On by default</li>
+      <li>No library</li>
     </ul>
 
     <div class="hero-actions">
@@ -115,9 +115,9 @@ const drawableAttrs: Record<string, string> = { drawable: '' };
     </a>
   </div>
 
-  {/* Flag-off only: the enablement pitch directly inside the hero. */}
+  {/* API-missing only: setup steps directly inside the hero. */}
   <div class="hero-setup">
-    <FlagSetupSteps headingLevel="h2" compact />
+    <BrowserSetupSteps headingLevel="h2" compact />
   </div>
 </section>
 
@@ -409,7 +409,7 @@ const drawableAttrs: Record<string, string> = { drawable: '' };
   `;
 
   function initLandingHero() {
-    if (document.documentElement.dataset.flagSupported !== 'true') return;
+    if (document.documentElement.dataset.apiSupported !== 'true') return;
 
     const stage = document.querySelector<HTMLElement>('.hero-stage');
     const sourceCanvas = document.querySelector<LayoutsubtreeCanvas>(
@@ -764,8 +764,8 @@ const drawableAttrs: Record<string, string> = { drawable: '' };
     margin: 0 0 1rem;
   }
 
-  /* Flag-off "preview mode" ribbon. Shown above the headline only
-     when the flag isn't supported — honest about what the visitor is
+  /* API-off "preview mode" ribbon. Shown above the headline only
+     when the API isn't available — honest about what the visitor is
      seeing and why it's a static fallback instead of the WebGL
      stage. */
   .hero-preview-ribbon {
@@ -803,7 +803,7 @@ const drawableAttrs: Record<string, string> = { drawable: '' };
     }
   }
 
-  /* Gentle pulsing gradient glow behind the flag-off headline — just
+  /* Gentle pulsing gradient glow behind the API-off headline — just
      enough to hint "there's supposed to be something dynamic here"
      without pretending to be the live shader. */
   .hero-heading-wrap {
@@ -962,7 +962,7 @@ const drawableAttrs: Record<string, string> = { drawable: '' };
     color: var(--accent);
   }
 
-  /* ===== Setup block (flag-off) ===== */
+  /* ===== Setup block (API-off) ===== */
   .hero-setup {
     position: relative;
     z-index: 2;
@@ -977,7 +977,7 @@ const drawableAttrs: Record<string, string> = { drawable: '' };
     inset: 0;
     z-index: 1;
     overflow: hidden;
-    /* default hidden; shown by flag-supported selector below */
+    /* default hidden; shown by the data-api-supported selector below */
     display: none;
     pointer-events: none;
   }
@@ -1123,20 +1123,20 @@ const drawableAttrs: Record<string, string> = { drawable: '' };
   }
 
 
-  /* ===== Flag-state swap ===== */
+  /* ===== API-state swap ===== */
 
-  /* Default (flag-off): stage hidden; static heading visible; setup
+  /* Default (API-off): stage hidden; static heading visible; setup
      block visible. */
 
-  :global([data-flag-supported='true']) .hero-stage {
+  :global([data-api-supported='true']) .hero-stage {
     display: block;
   }
 
-  /* On flag-on, the WebGL canvas renders the visible headline; hide
+  /* On API-on, the WebGL canvas renders the visible headline; hide
      the static <h1>'s visible pixels while preserving its a11y
      presence via `color: transparent`. */
-  :global([data-flag-supported='true']) .hero-heading--static,
-  :global([data-flag-supported='true']) .hero-heading--static .hero-accent {
+  :global([data-api-supported='true']) .hero-heading--static,
+  :global([data-api-supported='true']) .hero-heading--static .hero-accent {
     color: transparent;
   }
 
@@ -1146,7 +1146,7 @@ const drawableAttrs: Record<string, string> = { drawable: '' };
      subtext + CTAs in the lower half. The WebGL canvas renders the
      massive headline at the same vertical anchor as the static h1
      so the two line up. */
-  :global([data-flag-supported='true']) .hero-content {
+  :global([data-api-supported='true']) .hero-content {
     /* Kept short enough that the "in production" section below starts
        inside the first viewport on a laptop. */
     min-height: 58vh;
@@ -1160,15 +1160,15 @@ const drawableAttrs: Record<string, string> = { drawable: '' };
     padding-bottom: 2.5rem;
   }
 
-  :global([data-flag-supported='true']) .hero-eyebrow {
-    /* On flag-on, the live badge ("Live · drawElementImage") inside
+  :global([data-api-supported='true']) .hero-eyebrow {
+    /* On API-on, the live badge ("Live · drawElementImage") inside
        the stage plays the same role as this eyebrow — keeping both
        is redundant and the eyebrow competes with the headline
        layout. Drop the eyebrow when the stage is active. */
     display: none;
   }
 
-  :global([data-flag-supported='true']) .hero-heading-wrap {
+  :global([data-api-supported='true']) .hero-heading-wrap {
     flex-grow: 1;
     display: flex;
     align-items: center;
@@ -1176,7 +1176,7 @@ const drawableAttrs: Record<string, string> = { drawable: '' };
     min-height: 0;
   }
 
-  :global([data-flag-supported='true']) .hero-heading {
+  :global([data-api-supported='true']) .hero-heading {
     /* The static h1 stays in the DOM for a11y but its visible pixels
        are gone (color:transparent). Giving it a modest block height
        here reserves room; the WebGL canvas does the visible
@@ -1185,9 +1185,9 @@ const drawableAttrs: Record<string, string> = { drawable: '' };
     margin: 0 0 1rem;
   }
 
-  :global([data-flag-supported='true']) .hero-sub,
-  :global([data-flag-supported='true']) .hero-actions,
-  :global([data-flag-supported='true']) .hero-prod-pill {
+  :global([data-api-supported='true']) .hero-sub,
+  :global([data-api-supported='true']) .hero-actions,
+  :global([data-api-supported='true']) .hero-prod-pill {
     /* Ensure these sit above the GL canvas (z-index: 2). */
     position: relative;
     z-index: 3;
@@ -1232,35 +1232,35 @@ const drawableAttrs: Record<string, string> = { drawable: '' };
   }
 
 
-  /* Hide flag-off-only content when the flag is on. */
-  :global([data-flag-supported='true']) .hero-setup,
-  :global([data-flag-supported='true']) .hero-chips,
-  :global([data-flag-supported='true']) .hero-preview-ribbon {
+  /* Hide API-off-only content when the API is available. */
+  :global([data-api-supported='true']) .hero-setup,
+  :global([data-api-supported='true']) .hero-chips,
+  :global([data-api-supported='true']) .hero-preview-ribbon {
     display: none;
   }
 
-  :global([data-flag-supported='true']) .hero-heading-wrap::before {
+  :global([data-api-supported='true']) .hero-heading-wrap::before {
     display: none;
   }
 
-  /* Show the preview ribbon on flag-off. */
-  :global([data-flag-supported='false']) .hero-preview-ribbon {
+  /* Show the preview ribbon on API-off. */
+  :global([data-api-supported='false']) .hero-preview-ribbon {
     display: inline-flex;
   }
 
-  /* On flag-off, a clean, airy layout without the stage. */
-  :global([data-flag-supported='false']) .hero-content {
+  /* On API-off, a clean, airy layout without the stage. */
+  :global([data-api-supported='false']) .hero-content {
     padding-top: 5rem;
   }
 
-  :global([data-flag-supported='false']) .hero-chips,
-  :global([data-flag-supported='false']) .hero-setup {
+  :global([data-api-supported='false']) .hero-chips,
+  :global([data-api-supported='false']) .hero-setup {
     display: block;
   }
 
   /* ===== Responsive ===== */
   @media (max-width: 768px) {
-    :global([data-flag-supported='true']) .hero-content {
+    :global([data-api-supported='true']) .hero-content {
       min-height: 54vh;
     }
 
