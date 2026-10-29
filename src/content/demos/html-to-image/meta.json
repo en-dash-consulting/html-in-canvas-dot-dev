@@ -1,6 +1,6 @@
 {
   "title": "HTML-to-Image Export",
-  "description": "Social card / OG image generator — edit rich HTML content and export as PNG or JPEG via canvas.toBlob(). A native replacement for html2canvas.",
+  "description": "Social card / OG image generator. Edit HTML content and export as PNG or JPEG via canvas.toBlob(). A native replacement for html2canvas.",
   "tags": ["export", "social-card", "og-image", "screenshot"],
   "author": "En Dash Consulting",
   "dateCreated": "2026-04-10",

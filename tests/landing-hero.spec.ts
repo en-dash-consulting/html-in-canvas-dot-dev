@@ -36,13 +36,13 @@ async function expectGlCanvasNonBlank(canvas: Locator): Promise<void> {
 
 const HOME_URL = '/';
 
-test.describe('landing hero (flag-on, WebGL stage)', () => {
-  test('pre-paint script sets data-flag-supported=true before the hero paints', async ({
+test.describe('landing hero (API-on, WebGL stage)', () => {
+  test('pre-paint script sets data-api-supported=true before the hero paints', async ({
     page,
   }) => {
     await page.goto(HOME_URL, { waitUntil: 'domcontentloaded' });
     const flagAttr = await page.evaluate(
-      () => document.documentElement.dataset.flagSupported,
+      () => document.documentElement.dataset.apiSupported,
     );
     expect(flagAttr).toBe('true');
   });
@@ -86,12 +86,12 @@ test.describe('landing hero (flag-on, WebGL stage)', () => {
     expect(errors, `Console errors: ${errors.join('\n')}`).toEqual([]);
   });
 
-  test('live badge is visible on flag-on', async ({ page }) => {
+  test('live badge is visible on API-on', async ({ page }) => {
     await page.goto(HOME_URL, { waitUntil: 'networkidle' });
     await expect(page.locator('.hero-live-badge')).toBeVisible();
   });
 
-  test('hides the flag-off affordances (chips + setup) when the flag is supported', async ({
+  test('hides the API-off affordances (chips + setup) when the API is available', async ({
     page,
   }) => {
     await page.goto(HOME_URL, { waitUntil: 'networkidle' });
@@ -113,7 +113,7 @@ test.describe('landing hero (flag-on, WebGL stage)', () => {
   });
 });
 
-test.describe('landing hero (flag-off, simulated non-Chromium)', () => {
+test.describe('landing hero (API-off, simulated non-Chromium)', () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
       const proto = (
@@ -128,22 +128,22 @@ test.describe('landing hero (flag-off, simulated non-Chromium)', () => {
     });
   });
 
-  test('pre-paint script sets data-flag-supported=false', async ({ page }) => {
+  test('pre-paint script sets data-api-supported=false', async ({ page }) => {
     await page.goto(HOME_URL, { waitUntil: 'domcontentloaded' });
     const flagAttr = await page.evaluate(
-      () => document.documentElement.dataset.flagSupported,
+      () => document.documentElement.dataset.apiSupported,
     );
     expect(flagAttr).toBe('false');
   });
 
-  test('shows chips, CTAs, and the FlagSetupSteps guide', async ({ page }) => {
+  test('shows chips, CTAs, and the BrowserSetupSteps guide', async ({ page }) => {
     await page.goto(HOME_URL, { waitUntil: 'networkidle' });
 
     const chips = page.locator('.hero-chips');
     await expect(chips).toBeVisible();
-    await expect(chips).toContainText(/chrome canary or brave stable/i);
-    await expect(chips).toContainText(/flag is dev-only/i);
-    await expect(chips).toContainText(/no install/i);
+    await expect(chips).toContainText(/chrome 157\+/i);
+    await expect(chips).toContainText(/on by default/i);
+    await expect(chips).toContainText(/no library/i);
 
     await expect(
       page.getByRole('link', { name: /explore html canvas examples/i }),
@@ -156,7 +156,7 @@ test.describe('landing hero (flag-off, simulated non-Chromium)', () => {
     await expect(page.locator('.hero-setup .copy-flag')).toBeVisible();
   });
 
-  test('hides the WebGL stage on flag-off', async ({ page }) => {
+  test('hides the WebGL stage on API-off', async ({ page }) => {
     await page.goto(HOME_URL, { waitUntil: 'networkidle' });
 
     await expect(page.locator('.hero-stage')).toBeHidden();
@@ -170,10 +170,10 @@ test.describe('landing hero (flag-off, simulated non-Chromium)', () => {
     const ribbon = page.locator('.hero-preview-ribbon');
     await expect(ribbon).toBeVisible();
     await expect(ribbon).toContainText(/preview mode/i);
-    await expect(ribbon).toContainText(/flip the flag/i);
+    await expect(ribbon).toContainText(/chrome 157\+/i);
   });
 
-  test('static heading renders at full opacity / colour on flag-off', async ({
+  test('static heading renders at full opacity / colour on API-off', async ({
     page,
   }) => {
     await page.goto(HOME_URL, { waitUntil: 'networkidle' });
@@ -185,14 +185,14 @@ test.describe('landing hero (flag-off, simulated non-Chromium)', () => {
       return c;
     });
 
-    // In flag-off mode, the heading should have its theme's
+    // In API-off mode, the heading should have its theme's
     // --text-primary, not transparent.
     expect(headingColor).not.toBeNull();
     expect(headingColor!.toLowerCase()).not.toContain('rgba(0, 0, 0, 0)');
   });
 });
 
-test.describe('landing hero (flag-on + prefers-reduced-motion)', () => {
+test.describe('landing hero (API-on + prefers-reduced-motion)', () => {
   test('renders one frame and stops the render loop', async ({ browser }) => {
     const context = await browser.newContext({ reducedMotion: 'reduce' });
     const page = await context.newPage();

@@ -338,13 +338,13 @@
   <body>
     <h1>Liquid Glass Distortion</h1>
     <p class="page-subtitle">
-      Move your mouse over the card — a liquid glass refraction shader warps the
+      Move your mouse over the card. A liquid glass refraction shader warps the
       live HTML content. Click through the distortion to interact.
     </p>
 
     <div class="scene" id="scene">
       <!-- 2D source canvas: HTML card rendered via drawElementImage.
-           layoutsubtree = Brave 153; content="drawable" + drawable = Chrome Canary 157. -->
+           layoutsubtree = Brave 153; content="drawable" + drawable = Chrome 157. -->
       <canvas id="source-canvas" width="840" height="1120" layoutsubtree content="drawable">
         <div class="card" id="card" drawable>
           <div class="card-glow card-glow-1"></div>
@@ -405,7 +405,7 @@
     <div class="pipeline-info">
       <p>
         <strong>1.</strong> HTML card lives inside a
-        <code>&lt;canvas layoutsubtree&gt;</code> — fully styled with CSS
+        <code>&lt;canvas layoutsubtree&gt;</code>, styled with CSS
       </p>
       <p>
         <strong>2.</strong>
@@ -421,8 +421,8 @@
         liquid glass distortion following the mouse in real-time
       </p>
       <p class="note">
-        Pointer events pass through the glass to the live HTML underneath. This
-        is impossible without HTML-in-Canvas.
+        Pointer events pass through the glass to the live HTML underneath, which
+        requires HTML-in-Canvas.
       </p>
     </div>
 

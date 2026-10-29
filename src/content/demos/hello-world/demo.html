@@ -236,7 +236,7 @@
       let lastFrame = performance.now();
 
       // ── Cross-version API compatibility ─────────────────────────
-      // Chrome Canary currently exposes both names; the spec uses
+      // Some Chromium builds expose both names; the spec uses
       // drawElementImage. Use whichever exists.
       const drawElementInto =
         ctx.drawElementImage?.bind(ctx) ?? ctx.drawElement?.bind(ctx);

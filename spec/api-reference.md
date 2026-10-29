@@ -5,6 +5,16 @@ order: 2
 
 # HTML-in-Canvas API Reference
 
+> **Chrome 155–157 changes.** Chrome 157 turns the API on by default and removes the old names. What changed:
+>
+> - `layoutsubtree` → `content="drawable"` on the canvas, plus a `drawable` attribute on each drawn element.
+> - `drawElementImage()` returns nothing in 2D contexts. The browser keeps hit testing and accessibility in line with the drawn position, so drop any `element.style.transform = matrix` code.
+> - WebGL: `texElementImage2D()` → `texElementSubImage2D(target, level, xoffset, yoffset, element)`, into a texture you allocate first.
+> - WebGPU: `copyElementImageToTexture()` → `drawElementImageToTexture()`.
+> - New: `canvas.updateElementGeometry()` sets hit-testing and accessibility bounds for WebGL/WebGPU canvases.
+>
+> The IDL below is the older shape. See Chrome's [HTML-in-Canvas updates](https://developer.chrome.com/blog/html-in-canvas-ot-changes) post for the current signatures and feature-detection code.
+
 ## IDL Definitions
 
 ### HTMLCanvasElement Extensions
@@ -21,7 +31,7 @@ partial interface HTMLCanvasElement {
 
 | Member | Type | Description |
 |--------|------|-------------|
-| `layoutSubtree` | `boolean` attribute | Opts canvas children into layout and hit testing. Reflected as HTML attribute `layoutsubtree`. Chrome Canary 157+ replaces this with `content` (`"fallback"` \| `"drawable"`, reflected as `content="drawable"`) plus a `drawable` attribute on each child to be drawn — set both spellings until Brave catches up. |
+| `layoutSubtree` | `boolean` attribute | Opts canvas children into layout and hit testing. Reflected as HTML attribute `layoutsubtree`. Chrome 157+ replaces this with `content` (`"fallback"` \| `"drawable"`, reflected as `content="drawable"`) plus a `drawable` attribute on each child to be drawn — set both spellings until Brave catches up. |
 | `onpaint` | `EventHandler` | Handler for the `paint` event, fired when child rendering changes. |
 | `requestPaint()` | method | Forces a `paint` event to fire in the next frame, even if no children changed. Analogous to `requestAnimationFrame()`. |
 | `captureElementImage(element)` | method | Captures a snapshot of a child element as a transferable `ElementImage` for worker use. |
@@ -74,11 +84,11 @@ interface mixin CanvasDrawElementImage {
 | `(element, sx, sy, sw, sh, dx, dy)` | Draw sub-rect (sx, sy, sw, sh) at (dx, dy) |
 | `(element, sx, sy, sw, sh, dx, dy, dw, dh)` | Draw sub-rect scaled into dest rect |
 
-**Return value:** `DOMMatrix` — the CSS transform to apply to `element.style.transform` for synchronization.
+**Return value:** `undefined` in Chrome 155+. Earlier builds returned a `DOMMatrix` to apply to `element.style.transform`.
 
 **Requirements:**
-- `layoutsubtree` must be set on the canvas (`content="drawable"` on Chrome Canary 157+)
-- `element` must be a direct child of the canvas (and carry the `drawable` attribute on Chrome Canary 157+)
+- `layoutsubtree` must be set on the canvas (`content="drawable"` on Chrome 157+)
+- `element` must be a direct child of the canvas (and carry the `drawable` attribute on Chrome 157+)
 - `element` must have generated boxes (not `display: none`)
 - CSS transforms on the element are ignored for drawing
 - Canvas CTM is applied
@@ -100,6 +110,13 @@ partial interface WebGLRenderingContext {
 
 Uploads the element's rendered content as a WebGL texture. Parameters match `texImage2D` but the source is an element instead of an image/canvas.
 
+Removed in Chrome 157. Use `texElementSubImage2D` instead:
+
+```js
+gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+gl.texElementSubImage2D(gl.TEXTURE_2D, 0, 0, 0, element);
+```
+
 **Usage pattern:**
 ```js
 gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -116,7 +133,7 @@ partial interface GPUQueue {
 };
 ```
 
-Copies element rendering to a WebGPU texture.
+Copies element rendering to a WebGPU texture. Renamed to `drawElementImageToTexture()` in Chrome 155; the old name is gone in Chrome 157.
 
 ### PaintEvent
 

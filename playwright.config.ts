@@ -2,9 +2,10 @@ import { defineConfig, devices } from '@playwright/test';
 import { existsSync } from 'node:fs';
 
 /**
- * Locate Chrome Canary. The HTML-in-Canvas API is only available in
- * Chrome Canary behind --enable-blink-features=CanvasDrawElement, so we
- * cannot use Playwright's bundled Chromium. macOS-first; extend as needed.
+ * Locate Chrome Canary. HTML-in-Canvas is on by default from Chrome 157;
+ * Playwright's bundled Chromium is older, so we point at Canary. The
+ * CanvasDrawElement switch is kept so a pre-157 CHROME_CANARY_PATH
+ * (e.g. Chrome Dev in CI) still exposes the API. macOS-first.
  */
 const CANARY_PATHS = [
   '/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary',

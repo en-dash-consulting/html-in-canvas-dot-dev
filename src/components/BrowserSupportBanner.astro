@@ -1,14 +1,18 @@
 ---
 /**
- * Browser support banner — warns visitors when the HTML-in-Canvas API
+ * Browser support banner — shown when the HTML-in-Canvas API
  * (`CanvasRenderingContext2D.prototype.drawElementImage`) is unavailable.
  *
  * Behaviour:
- *  - Hidden when the API is detected (feature detection).
+ *  - Hidden when the API is detected. Support is always decided by
+ *    feature detection; the browser version is only read to pick which
+ *    message to show.
+ *  - Chromium before 157: "update, or turn on the flag" + copy button.
+ *  - Chromium 157+ without the API (a fork that turned it off): flag
+ *    message + copy button.
+ *  - Everything else (Firefox, Safari): "needs Chrome 157+", no button.
  *  - On demo pages (`/demos/{slug}/`): always visible, dismiss button hidden.
  *  - On other pages: dismissible — state persisted to localStorage.
- *  - Inlines a copy-flag-URL button so visitors can act without clicking
- *    through; also links to /docs/browser-support/ for full setup notes.
  */
 import CopyFlagButton from './CopyFlagButton.astro';
 ---
@@ -40,12 +44,22 @@ import CopyFlagButton from './CopyFlagButton.astro';
     </svg>
 
     <p class="banner-message">
-      This site needs the HTML-in-Canvas flag —
-      <strong>Chrome Canary</strong> or
-      <strong>Brave Stable</strong> (Chromium&nbsp;147+).
+      <span data-banner-msg="update">
+        HTML-in-Canvas is on by default in <strong>Chrome&nbsp;157+</strong>.
+        Update your browser, or turn on the flag:
+      </span>
+      <span data-banner-msg="flag" hidden>
+        HTML-in-Canvas is turned off in this browser. Turn on the flag:
+      </span>
+      <span data-banner-msg="other" hidden>
+        HTML-in-Canvas needs <strong>Chrome&nbsp;157+</strong>. Firefox and
+        Safari don't support it yet.
+      </span>
     </p>
 
-    <CopyFlagButton size="sm" />
+    <span class="banner-copy" data-banner-copy>
+      <CopyFlagButton size="sm" />
+    </span>
 
     <a class="banner-link" href="/docs/browser-support/">Full&nbsp;guide&nbsp;&rarr;</a>
 
@@ -88,6 +102,26 @@ import CopyFlagButton from './CopyFlagButton.astro';
 
     // API available — no banner needed
     if (isSupported) return;
+
+    // Pick the message. Chromium major comes from UA Client Hints where
+    // available, else the UA string. Only affects wording, never gating.
+    const uaData = (navigator as Navigator & {
+      userAgentData?: { brands?: { brand: string; version: string }[] };
+    }).userAgentData;
+    const chromiumBrand = uaData?.brands?.find((b) => b.brand === 'Chromium');
+    const uaMatch = /Chrom(?:e|ium)\/(\d+)/.exec(navigator.userAgent);
+    const chromiumMajor = chromiumBrand
+      ? parseInt(chromiumBrand.version, 10)
+      : uaMatch
+        ? parseInt(uaMatch[1], 10)
+        : 0;
+    const variant =
+      chromiumMajor === 0 ? 'other' : chromiumMajor < 157 ? 'update' : 'flag';
+    banner.querySelectorAll<HTMLElement>('[data-banner-msg]').forEach((el) => {
+      el.hidden = el.dataset.bannerMsg !== variant;
+    });
+    const copy = banner.querySelector<HTMLElement>('[data-banner-copy]');
+    if (copy) copy.hidden = variant === 'other';
 
     const pathname = window.location.pathname;
     const isDemoPage =
@@ -153,6 +187,10 @@ import CopyFlagButton from './CopyFlagButton.astro';
     border-radius: 3px;
     color: var(--accent-orange-text);
     font-weight: 600;
+  }
+
+  .banner-copy {
+    flex-shrink: 0;
   }
 
   .banner-link {

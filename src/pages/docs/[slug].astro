@@ -5,7 +5,7 @@
  */
 import { getCollection, render } from 'astro:content';
 import DocsLayout from '../../layouts/DocsLayout.astro';
-import FlagSetupSteps from '../../components/FlagSetupSteps.astro';
+import BrowserSetupSteps from '../../components/BrowserSetupSteps.astro';
 
 export async function getStaticPaths() {
   const docs = await getCollection('docs');
@@ -19,7 +19,7 @@ const { doc } = Astro.props;
 const { Content } = await render(doc);
 
 // HowTo JSON-LD for the browser-support doc — its "How to try it"
-// section is a canonical four-step setup guide that maps cleanly onto
+// section is a short setup guide that maps cleanly onto
 // schema.org/HowTo and can surface as step-by-step rich results. Kept
 // in sync manually with the markdown (sync-spec-docs.mjs rewrites the
 // steps from the upstream README, so revisit here if they change).
@@ -29,34 +29,28 @@ const howToJsonLd =
     ? {
         '@context': 'https://schema.org',
         '@type': 'HowTo',
-        name: 'Enable HTML-in-Canvas in Chrome',
+        name: 'Use HTML-in-Canvas in Chrome',
         description:
-          'Turn on the Chromium canvas-draw-element flag so HTML-in-Canvas demos run locally.',
+          'HTML-in-Canvas is on by default in Chrome 157+. On Chromium 147–156 or Brave, turn on the canvas-draw-element flag.',
         totalTime: 'PT2M',
-        tool: [{ '@type': 'HowToTool', name: 'Chrome Canary' }],
+        tool: [{ '@type': 'HowToTool', name: 'Google Chrome 157 or later' }],
         step: [
           {
             '@type': 'HowToStep',
             position: 1,
-            name: 'Install Chrome Canary',
-            text: "Install Chrome Canary — HTML-in-Canvas ships in Chromium's unstable channel.",
-            url: 'https://www.google.com/chrome/canary/',
+            name: 'Update Chrome',
+            text: 'Update Chrome to version 157 or later from chrome://settings/help. The API is on by default.',
+            url: 'https://www.google.com/chrome/',
           },
           {
             '@type': 'HowToStep',
             position: 2,
-            name: 'Enable the flag',
-            text: 'Visit chrome://flags/#canvas-draw-element and enable the flag.',
+            name: 'Older Chromium or Brave: turn on the flag',
+            text: 'On Chromium 147–156 or Brave, visit chrome://flags/#canvas-draw-element, enable it, and relaunch.',
           },
           {
             '@type': 'HowToStep',
             position: 3,
-            name: 'Restart the browser',
-            text: 'Restart Chrome Canary so the flag takes effect.',
-          },
-          {
-            '@type': 'HowToStep',
-            position: 4,
             name: 'Load a demo',
             text: 'Load any demo from the demo gallery to confirm the API is available.',
             url: `${SITE_URL}/demos/`,
@@ -78,7 +72,7 @@ const howToJsonLd =
   )}
   {doc.id === 'browser-support' && (
     <div class="browser-support-quickstart">
-      <FlagSetupSteps headingLevel="h2" />
+      <BrowserSetupSteps headingLevel="h2" />
     </div>
   )}
   <Content />

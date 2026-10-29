@@ -71,7 +71,7 @@ document.body.appendChild(canvas);
 const png = canvas.toDataURL('image/png');`;
 
 const nativeExample = `<!-- layoutsubtree: Chromium ≤156 (Brave Stable);
-     content="drawable" + drawable: Chrome Canary 157+. Set both. -->
+     content="drawable" + drawable: Chrome 157+. Set both. -->
 <canvas id="c" layoutsubtree content="drawable">
   <div id="content" drawable>Hello</div>
 </canvas>
@@ -82,10 +82,10 @@ const nativeExample = `<!-- layoutsubtree: Chromium ≤156 (Brave Stable);
   // changes — redraw there, once per frame at most.
   c.onpaint = () => {
     ctx.reset();
-    const t = ctx.drawElementImage(content, 0, 0);
-    // Sync the DOM position with the drawn position so hit
-    // testing and accessibility keep working.
-    content.style.transform = t.toString();
+    ctx.drawElementImage(content, 0, 0);
+    // Chrome 155+ keeps hit testing and accessibility in line with
+    // the drawn position. (Older builds returned a DOMMatrix that
+    // you applied to content.style.transform.)
   };
 
   // Size the canvas grid to device pixels to prevent blurriness.
@@ -146,19 +146,19 @@ c.requestPaint();`;
           <tr>
             <th scope="row">Fidelity</th>
             <td>
-              Approximation — CSS is re-implemented in JS, so ligatures,
+              Approximate. CSS is re-implemented in JS, so ligatures,
               subpixel text, some filters, and newer CSS features render
               differently or not at all
             </td>
             <td>
-              The browser's own renderer paints the element — output matches
+              The browser's own renderer paints the element, so output matches
               what the page shows, fonts and layout included
             </td>
           </tr>
           <tr>
             <th scope="row">Performance</th>
             <td>
-              Clones the DOM and rasterizes in JavaScript — typically tens to
+              Clones the DOM and rasterizes in JavaScript, typically tens to
               hundreds of milliseconds per capture on real pages
             </td>
             <td>
@@ -170,7 +170,7 @@ c.requestPaint();`;
             <th scope="row">Live / interactive content</th>
             <td>One-shot static snapshot; re-capture for every change</td>
             <td>
-              Continuous — the <code>paint</code> event fires when a child's
+              Continuous. The <code>paint</code> event fires when a child's
               rendering changes, and hit testing plus the accessibility tree
               keep working via <code>layoutsubtree</code> /
               <code>content="drawable"</code>
@@ -180,21 +180,21 @@ c.requestPaint();`;
             <th scope="row">Browser support</th>
             <td>All modern browsers</td>
             <td>
-              Chromium dev trial — Chrome Canary and Brave Stable behind the
-              <code>canvas-draw-element</code> flag; no Firefox or Safari
-              implementation yet
+              On by default in Chrome 157+; behind the
+              <code>canvas-draw-element</code> flag in Chromium 147–156 and
+              Brave; no Firefox or Safari implementation yet
             </td>
           </tr>
           <tr>
             <th scope="row">Bundle size</th>
             <td>~45&nbsp;kB min+gzip shipped to every visitor</td>
-            <td>0&nbsp;kB — built into the browser</td>
+            <td>0&nbsp;kB (built into the browser)</td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <h2 id="html2canvas">The html2canvas approach — and its limits</h2>
+    <h2 id="html2canvas">The html2canvas approach and its limits</h2>
 
     <p>
       <a
@@ -202,18 +202,17 @@ c.requestPaint();`;
         target="_blank"
         rel="noopener noreferrer">html2canvas</a
       >
-      has been the standard answer for over a decade, and for good reason: it
-      works in every browser today, needs no flags, and captures (almost) any
-      element on the page with one call:
+      has been the standard answer for over a decade. It works in every
+      browser, needs no flags, and captures almost any element on the page
+      with one call:
     </p>
 
     <pre tabindex="0"><code set:html={html2canvasExample} /></pre>
 
     <p>
-      Under the hood it does something heroic: it walks the DOM, reads every
-      computed style, and redraws the whole tree onto a canvas using 2D
-      drawing commands — effectively a CSS renderer written in JavaScript.
-      That design is also the source of its limits:
+      It walks the DOM, reads every computed style, and redraws the tree onto
+      a canvas with 2D drawing commands. In effect it's a CSS renderer
+      written in JavaScript, and that is where its limits come from:
     </p>
 
     <ul>
@@ -226,7 +225,7 @@ c.requestPaint();`;
       </li>
       <li>
         <strong>Snapshots are static.</strong> Every change to the source
-        element means another full capture — too slow for animation,
+        element means another full capture, which is too slow for animation,
         interaction, or video.
       </li>
       <li>
@@ -235,20 +234,19 @@ c.requestPaint();`;
         milliseconds.
       </li>
       <li>
-        <strong>Cross-origin content is a constant fight.</strong>
+        <strong>Cross-origin content is hard.</strong>
         Cross-origin images taint the canvas or need a proxy;
         <code>iframe</code> content can't be captured at all.
       </li>
       <li>
         <strong>It's a dependency.</strong> Roughly 45&nbsp;kB of gzipped
-        JavaScript that must keep chasing the CSS spec forever.
+        JavaScript that has to keep up with new CSS.
       </li>
     </ul>
 
     <p>
-      None of this is a knock on the library — it solves a problem the web
-      platform simply had no API for. The HTML-in-Canvas proposal is that
-      missing API.
+      The library exists because the platform had no API for this. The
+      HTML-in-Canvas proposal adds one.
     </p>
 
     <h2 id="native">The native way: layoutsubtree + drawElementImage()</h2>
@@ -261,9 +259,9 @@ c.requestPaint();`;
       >
       adds a small API surface to <code>&lt;canvas&gt;</code>: a
       <code>layoutsubtree</code> attribute that opts the canvas's children
-      into layout (Chrome Canary 157+ renamed it
+      into layout (Chrome 157+ renamed it
       <code>content="drawable"</code> and also wants <code>drawable</code>
-      on each drawn child — set both until Brave catches up), a
+      on each drawn child, so set both until Brave catches up), a
       <code>drawElementImage()</code> context method that paints a child
       into the canvas, and a <code>paint</code> event that tells you when
       to redraw. A complete working example:
@@ -283,19 +281,20 @@ c.requestPaint();`;
       </li>
       <li>
         <code>drawElementImage()</code> mirrors the
-        <code>drawImage()</code> overloads — position, destination size, and
-        source-rect variants — and applies the canvas's current transform.
+        <code>drawImage()</code> overloads (position, destination size, and
+        source-rect variants) and applies the canvas's current transform.
       </li>
       <li>
-        It returns a <code>DOMMatrix</code>: apply it to
-        <code>element.style.transform</code> so the DOM position matches the
-        drawn position (CSS transforms on the source element are ignored for
-        drawing but still affect hit testing).
+        In Chrome 155+ it returns nothing, and the browser keeps hit testing
+        and accessibility in line with where you drew the element. Earlier
+        builds returned a <code>DOMMatrix</code> to apply to
+        <code>element.style.transform</code>. CSS transforms on the source
+        element are ignored for drawing.
       </li>
       <li>
-        WebGL and WebGPU get equivalents —
-        <code>gl.texElementImage2D()</code> and
-        <code>queue.copyElementImageToTexture()</code> — so HTML can be a
+        WebGL and WebGPU get equivalents,
+        <code>gl.texElementSubImage2D()</code> and
+        <code>queue.drawElementImageToTexture()</code>, so HTML can be a
         live texture. Workers are covered via
         <code>captureElementImage()</code> and transferable
         <code>ElementImage</code> snapshots.
@@ -308,11 +307,10 @@ c.requestPaint();`;
 
     <p>
       Full signatures and IDL are in the
-      <a href="/docs/api-reference/">API reference</a>. The API is currently
-      a Chromium dev trial: enable
-      <code>chrome://flags/#canvas-draw-element</code> in Chrome Canary or
-      Brave Stable — the <a href="/docs/browser-support/">browser support
-      page</a> has the two-minute setup.
+      <a href="/docs/api-reference/">API reference</a>. The API is on by default in Chrome 157 and later. Older Chromium builds and Brave
+      need <code>chrome://flags/#canvas-draw-element</code>; the
+      <a href="/docs/browser-support/">browser support page</a> has the
+      steps.
     </p>
 
     <h2 id="migration">Migrating from html2canvas</h2>
@@ -343,45 +341,46 @@ c.requestPaint();`;
       </li>
       <li>
         <strong>Drop the workarounds.</strong> Font-loading waits,
-        cross-origin image proxies, and CSS-support shims can go — the
+        cross-origin image proxies, and CSS-support shims can go. The
         browser renders its own layout, and cross-origin data is excluded
         (not tainted) by the spec.
       </li>
       <li>
-        <strong>Keep html2canvas as the fallback.</strong> Until the API
-        ships beyond the flag, feature-detect and branch:
+        <strong>Keep html2canvas as the fallback.</strong> Chrome 157+ has
+        the API, but Firefox, Safari, and older Chromium don't. Feature-detect
+        and branch:
         <code>'drawElementImage' in CanvasRenderingContext2D.prototype</code>.
       </li>
     </ul>
 
     <h2 id="demos">See it running</h2>
 
-    <p>Three live demos cover the common html2canvas use cases end to end:</p>
+    <p>Three demos cover the common html2canvas use cases:</p>
 
     <ul>
       <li>
-        <a href="/demos/hello-world/">Hello World</a> — the minimal
-        boilerplate: one styled <code>&lt;div&gt;</code> drawn into a canvas,
+        <a href="/demos/hello-world/">Hello World</a>: the minimal
+        boilerplate, one styled <code>&lt;div&gt;</code> drawn into a canvas,
         with annotated code.
       </li>
       <li>
-        <a href="/demos/html-to-image/">HTML-to-Image Export</a> — a social
-        card generator that exports rich HTML as PNG/JPEG, the direct
-        html2canvas replacement.
+        <a href="/demos/html-to-image/">HTML-to-Image Export</a>: a social
+        card generator that exports styled HTML as PNG/JPEG. This is the
+        direct html2canvas replacement.
       </li>
       <li>
-        <a href="/demos/html-video-recording/">HTML Video Recording</a> —
+        <a href="/demos/html-video-recording/">HTML Video Recording</a>:
         records animated HTML to WebM via <code>captureStream()</code> +
-        <code>MediaRecorder</code>, something DOM screenshotting can't do.
+        <code>MediaRecorder</code>, which DOM screenshotting can't do.
       </li>
     </ul>
 
     <p>
-      Next steps: browse the full gallery of interactive
+      Next: browse the gallery of
       <a href="/demos/">HTML canvas examples</a>, read the
       <a href="/docs/overview/">spec overview</a> for the full design, or
-      follow the <a href="/docs/browser-support/">flag setup guide</a> to try
-      the demos in your own browser.
+      check <a href="/docs/browser-support/">browser support</a> to try the
+      demos in your own browser.
     </p>
   </article>
 </BaseLayout>

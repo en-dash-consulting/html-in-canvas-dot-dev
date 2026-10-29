@@ -533,8 +533,8 @@
         Pick a <strong>Source</strong> (live form, article, or CSS-painted
         scene) and a <strong>Shader</strong> below.
         <code>drawElementImage()</code> captures the DOM every frame; a
-        fragment shader renders on top of it. The Controls source is fully
-        interactive — type, Tab, hover — <em>through</em> the shader.
+        fragment shader renders on top of it. In the Controls source you can
+        type, Tab, and hover <em>through</em> the shader.
       </p>
     </header>
 
@@ -542,7 +542,7 @@
       <!-- =============================================================
            COMPOSITE STAGE
            The staging canvas (with the scene as its layoutsubtree
-           child; Canary 157+ spells it content="drawable" + `drawable`
+           child; Chrome 157+ spells it content="drawable" + `drawable`
            on the child, so both are set) sits at the back. The WebGL shader canvas sits on
            top with pointer-events disabled, so clicks / focus / Tab
            fall through to the real DOM underneath.

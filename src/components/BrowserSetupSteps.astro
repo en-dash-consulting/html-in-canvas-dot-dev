@@ -1,10 +1,12 @@
 ---
 /**
- * Three-step quick-start guide for enabling the HTML-in-Canvas flag.
+ * How to get the HTML-in-Canvas API running in your browser.
  *
- * Shared between the landing-page flag-off fallback and the
- * docs/browser-support page so visitors see the same actionable path
- * wherever they first hit the flag prompt.
+ * Chrome 157+ ships the API on by default, so the main path is "update
+ * Chrome". Older Chromium builds (147–156) and Brave still need the
+ * `canvas-draw-element` flag, so the flag steps stay as a fallback.
+ *
+ * Used by the landing-page fallback and the docs/browser-support page.
  */
 import CopyFlagButton from './CopyFlagButton.astro';
 
@@ -17,15 +19,20 @@ interface Props {
 
 const { headingLevel = 'h2', compact = false } = Astro.props;
 const Heading = headingLevel;
+const SubHeading = headingLevel === 'h2' ? 'h3' : 'h4';
 ---
 
 <section class:list={['flag-setup', compact && 'flag-setup--compact']}>
-  <Heading class="flag-setup-heading">Enable the flag (30 seconds)</Heading>
+  <Heading class="flag-setup-heading">Use Chrome 157 or later</Heading>
   <p class="flag-setup-sub">
-    Works in <strong>Chrome Canary</strong> and <strong>Brave Stable</strong>
-    (Chromium 147+). No install if you already have one of these.
+    HTML-in-Canvas is on by default in <strong>Chrome 157+</strong>, so
+    there's nothing to turn on. Update Chrome from
+    <code>chrome://settings/help</code>, then reload this page.
   </p>
 
+  <SubHeading class="flag-setup-subheading">
+    On Chromium 147–156 or Brave? Turn on the flag
+  </SubHeading>
   <ol class="flag-setup-steps">
     <li class="flag-setup-step">
       <span class="flag-setup-step-label">Paste this URL into your address bar</span>
@@ -33,8 +40,8 @@ const Heading = headingLevel;
         <CopyFlagButton />
       </div>
       <p class="flag-setup-step-hint">
-        Chrome blocks direct links to <code>chrome://</code> pages for security,
-        so copy-paste is required. Brave users: <code>brave://</code> also works.
+        Web pages can't link to <code>chrome://</code> URLs, so you have to
+        paste it. In Brave, <code>brave://</code> works too.
       </p>
     </li>
 
@@ -47,7 +54,7 @@ const Heading = headingLevel;
     <li class="flag-setup-step">
       <span class="flag-setup-step-label">Relaunch the browser</span>
       <p class="flag-setup-step-hint">
-        Hit <strong>Relaunch</strong> at the bottom of the flags page, then
+        Click <strong>Relaunch</strong> at the bottom of the flags page, then
         reload this site.
       </p>
     </li>
@@ -80,6 +87,19 @@ const Heading = headingLevel;
     color: var(--text-secondary);
     font-size: 0.9rem;
     line-height: 1.55;
+  }
+
+  .flag-setup-sub code {
+    font-size: 0.85em;
+    padding: 0.1em 0.3em;
+    background: var(--bg-primary);
+    border-radius: 3px;
+  }
+
+  .flag-setup-subheading {
+    font-size: 0.95rem;
+    margin: 0 0 0.75rem;
+    color: var(--text-primary);
   }
 
   .flag-setup-steps {

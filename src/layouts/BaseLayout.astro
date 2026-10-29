@@ -100,6 +100,10 @@ const ogImageURL = new URL(ogImage, baseURL).href;
 // JSON-LD only included on the home page; demo pages emit their own
 // CreativeWork JSON-LD via a slot.
 const isHome = Astro.url.pathname === '/' || Astro.url.pathname === '';
+
+// Graview top banner on non-home pages. Off for now; flip to true to
+// bring it back. The home page keeps its GraviewShowcase section.
+const SHOW_GRAVIEW_BANNER = false;
 const websiteJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
@@ -211,11 +215,14 @@ const websiteJsonLd = {
       })();
     </script>
 
-    {/* Flag detection before first paint so CSS can pick the right
+    {/* API detection before first paint so CSS can pick the right
         hero variant without a flash. Runs synchronously in <head>,
         before body parsing, so the attribute is set when the browser
-        first evaluates CSS selectors for the page. Failure modes
-        (non-Chromium, flag off, older builds) all resolve to "false". */}
+        first evaluates CSS selectors for the page. This checks for the
+        API itself, not a browser version: Chrome 157+ has it on by
+        default, Chromium 147–156 and Brave have it behind the
+        canvas-draw-element flag, and everything else resolves to
+        "false". */}
     <script is:inline>
       (function() {
         try {
@@ -226,12 +233,12 @@ const websiteJsonLd = {
             'drawElement' in proto
           );
           document.documentElement.setAttribute(
-            'data-flag-supported',
+            'data-api-supported',
             supported ? 'true' : 'false'
           );
         } catch (e) {
           document.documentElement.setAttribute(
-            'data-flag-supported',
+            'data-api-supported',
             'false'
           );
         }
@@ -242,7 +249,7 @@ const websiteJsonLd = {
     <Nav />
     {/* Graview "in production" strip on every page but home — the
         home page carries the full GraviewShowcase hero instead. */}
-    {!isHome && <GraviewBanner />}
+    {SHOW_GRAVIEW_BANNER && !isHome && <GraviewBanner />}
     <BrowserSupportBanner />
     <main>
       <slot />

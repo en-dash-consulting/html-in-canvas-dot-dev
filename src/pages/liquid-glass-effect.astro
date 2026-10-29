@@ -15,7 +15,7 @@ import { join } from 'node:path';
 
 const TITLE = "Liquid Glass Effect in CSS and WebGL: Recreate Apple's Design";
 const DESCRIPTION =
-  "Recreate Apple's liquid glass effect on the web — CSS backdrop-filter vs a WebGL refraction shader over live HTML. Working code from two open-source demos.";
+  "Recreate Apple's liquid glass effect on the web: CSS backdrop-filter vs a WebGL refraction shader over live HTML. Working code from two open-source demos.";
 
 const SITE_URL = 'https://html-in-canvas.dev';
 const PAGE_URL = `${SITE_URL}/liquid-glass-effect/`;
@@ -93,7 +93,7 @@ const svgFilterExample = `<svg width="0" height="0" aria-hidden="true">
 
 const pipelineExample = `<!-- 2D source canvas: the HTML card is a real, live child.
      layoutsubtree: Chromium ≤156; content="drawable" + drawable:
-     Chrome Canary 157+. Set both. -->
+     Chrome 157+. Set both. -->
 <canvas id="source-canvas" layoutsubtree content="drawable">
   <div class="card" id="card" drawable>…fully styled, interactive HTML…</div>
 </canvas>
@@ -200,29 +200,29 @@ const frostedExample = `canvas.onpaint = () => {
 
     <p class="lge-lead">
       Liquid Glass is the translucent material Apple introduced across iOS,
-      iPadOS, and macOS in 2025: interface surfaces that behave like real
-      glass — they blur and refract what's behind them, catch specular light
-      at the edges, and subtly warp in motion. On the web you can approximate
-      it with <strong>CSS <code>backdrop-filter</code></strong> or actually
+      iPadOS, and macOS in 2025: interface surfaces that blur and refract what's
+      behind them, catch specular light at the edges, and warp slightly in
+      motion. On the web you can approximate
+      it with <strong>CSS <code>backdrop-filter</code></strong> or
       simulate it with a <strong>WebGL refraction shader</strong>. This page
       covers both, with working code from two live demos.
     </p>
 
     <h2 id="anatomy">What makes liquid glass "liquid"</h2>
 
-    <p>The effect is a stack of five optical ingredients:</p>
+    <p>The effect has five parts:</p>
 
     <ol>
-      <li><strong>Translucency + blur</strong> — the content behind shows through, softened.</li>
-      <li><strong>Refraction</strong> — the glass acts as a lens, displacing the backdrop rather than just blurring it.</li>
-      <li><strong>Chromatic aberration</strong> — red, green, and blue bend slightly differently at the lens edge, producing color fringing.</li>
-      <li><strong>Specular light</strong> — a directional highlight, a brighter fresnel edge, and a thin rim where the glass boundary catches light.</li>
-      <li><strong>Motion</strong> — organic ripples and warp that make the surface read as liquid instead of frosted plastic.</li>
+      <li><strong>Translucency + blur</strong>: the content behind shows through, softened.</li>
+      <li><strong>Refraction</strong>: the glass acts as a lens, displacing the backdrop rather than just blurring it.</li>
+      <li><strong>Chromatic aberration</strong>: red, green, and blue bend slightly differently at the lens edge, producing color fringing.</li>
+      <li><strong>Specular light</strong>: a directional highlight, a brighter fresnel edge, and a thin rim where the glass boundary catches light.</li>
+      <li><strong>Motion</strong>: ripples and warp that make the surface read as liquid instead of frosted plastic.</li>
     </ol>
 
     <p>
-      CSS gives you ingredient 1 cheaply and universally. Ingredients 2–5 are
-      per-pixel effects, which is shader territory.
+      CSS handles part 1 cheaply in every browser. Parts 2–5 are per-pixel
+      effects, which need a shader.
     </p>
 
     <h2 id="comparison">CSS vs WebGL at a glance</h2>
@@ -240,12 +240,12 @@ const frostedExample = `canvas.onpaint = () => {
           <tr>
             <th scope="row">Fidelity</th>
             <td>Frosted-glass look: blur, saturation, borrowed highlights via borders and inset shadows. No true refraction or aberration</td>
-            <td>Full simulation — lens displacement, chromatic fringing, specular, fresnel, animated ripples, all per pixel</td>
+            <td>Full simulation: lens displacement, chromatic fringing, specular, fresnel, animated ripples, all per pixel</td>
           </tr>
           <tr>
             <th scope="row">Browser support</th>
             <td>All modern browsers (with <code>-webkit-</code> prefix for older Safari)</td>
-            <td>WebGL is universal; feeding it <em>live HTML</em> as a texture needs the HTML-in-Canvas dev trial (Chromium flag)</td>
+            <td>WebGL is universal; feeding it <em>live HTML</em> as a texture needs HTML-in-Canvas (Chrome 157+, or a flag in older Chromium and Brave)</td>
           </tr>
           <tr>
             <th scope="row">Cost</th>
@@ -254,7 +254,7 @@ const frostedExample = `canvas.onpaint = () => {
           </tr>
           <tr>
             <th scope="row">Interactivity under the glass</th>
-            <td>Native — the backdrop is regular DOM</td>
+            <td>Native: the backdrop is regular DOM</td>
             <td>Preserved via <code>layoutsubtree</code> / <code>content="drawable"</code> + <code>drawElementImage()</code>: the HTML under the shader stays clickable</td>
           </tr>
         </tbody>
@@ -264,7 +264,7 @@ const frostedExample = `canvas.onpaint = () => {
     <h2 id="css">The CSS-only approach</h2>
 
     <p>
-      For most UI — nav bars, cards, control panels — the CSS version is the
+      For most UI (nav bars, cards, control panels) the CSS version is the
       right call. The core is a translucent background plus
       <code>backdrop-filter</code>, with the "glass edge" faked using a
       semi-opaque border and an inset top highlight:
@@ -273,13 +273,13 @@ const frostedExample = `canvas.onpaint = () => {
     <pre tabindex="0"><code set:html={cssExample} /></pre>
 
     <p>
-      That gets you frosted glass, not liquid glass — there's no lensing. You
+      That gets you frosted glass, not liquid glass: there's no lensing. You
       can push refraction into CSS with an SVG displacement filter:
     </p>
 
     <pre tabindex="0"><code set:html={svgFilterExample.replace(/</g, '&lt;')} /></pre>
 
-    <p>Honest limits of the CSS route:</p>
+    <p>Limits of the CSS route:</p>
 
     <ul>
       <li>
@@ -293,8 +293,8 @@ const frostedExample = `canvas.onpaint = () => {
         or eases in and out is not expressible.
       </li>
       <li>
-        <strong>No chromatic aberration or physically plausible specular</strong>
-        — the highlights are hand-placed gradients, not derived from lens
+        <strong>No chromatic aberration or physically plausible specular.</strong>
+        The highlights are hand-placed gradients, not derived from lens
         geometry.
       </li>
     </ul>
@@ -303,7 +303,7 @@ const frostedExample = `canvas.onpaint = () => {
 
     <p>
       The <a href="/demos/liquid-glass/">Liquid Glass Distortion demo</a> does
-      the real thing. Its pipeline has two canvases: a 2D canvas that holds a
+      the full effect. Its pipeline has two canvases: a 2D canvas that holds a
       live HTML profile card as a
       <a href="/docs/overview/"><code>layoutsubtree</code></a> /
       <code>content="drawable"</code> child and paints it with
@@ -314,9 +314,9 @@ const frostedExample = `canvas.onpaint = () => {
     <pre tabindex="0"><code set:html={pipelineExample.replace(/</g, '&lt;')} /></pre>
 
     <p>
-      All the optics live in the fragment shader. A <code>dome</code> term —
-      a smoothstep falloff around the mouse position — masks every effect to
-      a circular lens, so the same code fades everything in and out as the
+      All the optics live in the fragment shader. A <code>dome</code> term, a
+      smoothstep falloff around the mouse position, masks every effect to a
+      circular lens, so the same code fades everything in and out as the
       pointer moves. Refraction is an inward displacement scaled by the dome;
       liquidity comes from two drifting simplex-noise fields plus a ripple
       term; and chromatic aberration falls out of sampling the texture three
@@ -335,12 +335,11 @@ const frostedExample = `canvas.onpaint = () => {
 
     <pre tabindex="0"><code set:html={highlightExample} /></pre>
 
-    <h2 id="live-html">The differentiator: live HTML under the glass</h2>
+    <h2 id="live-html">Live HTML under the glass</h2>
 
     <p>
-      Any WebGL tutorial can distort a static image. What makes this
-      technique different is that the texture is <em>live DOM</em>. The
-      profile card under the shader is real HTML — its buttons work, its text
+      Most WebGL glass tutorials distort a static image. Here the texture is
+      <em>live DOM</em>. The profile card under the shader is real HTML — its buttons work, its text
       is selectable in the accessibility tree, and clicking "Follow" through
       the distortion updates the card, which fires the canvas's
       <code>paint</code> event, which re-captures the card via
@@ -350,22 +349,22 @@ const frostedExample = `canvas.onpaint = () => {
     </p>
 
     <p>
-      That loop — interact, repaint, re-texture — is the piece screenshot
-      libraries and prerendered textures can't do, and it's the core of the
+      Screenshot libraries and prerendered textures can't do this
+      interact, repaint, re-texture loop. It's the core of the
       <a href="/render-html-to-canvas/">native drawElementImage() approach to
-      rendering HTML to canvas</a>. The API is a Chromium dev trial: the
-      <a href="/docs/browser-support/">flag setup guide</a> takes about two
-      minutes.
+      rendering HTML to canvas</a>. The API is on by default in Chrome 157+;
+      older Chromium and Brave need a flag (see the
+      <a href="/docs/browser-support/">browser support guide</a>).
     </p>
 
     <h2 id="frosted">Frosted glass: going beyond backdrop-filter</h2>
 
     <p>
       The companion <a href="/demos/frosted-glass-backdrop/">Frosted Glass
-      Backdrop demo</a> attacks the blur half of the material.
+      Backdrop demo</a> handles the blur half of the material.
       <code>backdrop-filter</code> only offers a standard gaussian blur; the
       demo composites <em>between</em> HTML layers instead, so the kernel is
-      whatever you write — gaussian, directional (motion-blur style), or
+      whatever you write: gaussian, directional (motion-blur style), or
       tilt-shift with a focus band. Per paint, it draws the background HTML,
       extracts the region behind a draggable panel, blurs it with a two-pass
       separable gaussian in WebGL, composites tint and highlights, then draws
@@ -378,20 +377,19 @@ const frostedExample = `canvas.onpaint = () => {
 
     <ul>
       <li>
-        <a href="/demos/liquid-glass/">Liquid Glass Distortion</a> — the WebGL
+        <a href="/demos/liquid-glass/">Liquid Glass Distortion</a>: the WebGL
         refraction shader over a live HTML card. Move the mouse to bend the
         glass; click the buttons through it.
       </li>
       <li>
-        <a href="/demos/frosted-glass-backdrop/">Frosted Glass Backdrop</a> —
-        draggable frosted panel with gaussian, directional, and tilt-shift
+        <a href="/demos/frosted-glass-backdrop/">Frosted Glass Backdrop</a>:
+        a draggable frosted panel with gaussian, directional, and tilt-shift
         blur composited between HTML layers.
       </li>
     </ul>
 
     <p>
-      Both ship complete annotated source. For more techniques, browse the
-      full gallery of <a href="/demos/">HTML canvas examples</a> or start
+      Both include annotated source. For more, browse the gallery of <a href="/demos/">HTML canvas examples</a> or start
       with the <a href="/docs/overview/">spec overview</a>.
     </p>
   </article>

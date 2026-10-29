@@ -80,7 +80,7 @@
          Staging canvases
          ------------------------------------------------------------
          Wrapped in a 1×1 visible container pinned to the corner of
-         the stage. Chrome's <canvas layoutsubtree> (Canary 157+: content="drawable") silently skips
+         the stage. Chrome's <canvas layoutsubtree> (Chrome 157+: content="drawable") silently skips
          paint records for elements at `left: -9999px`, which is
          what the site previously used here — the WebGL shader ended
          up sampling blank textures and the demo rendered black.
@@ -418,17 +418,15 @@
           both.
         </p>
         <p class="body-text">
-          That wall is coming down. The HTML-in-Canvas specification introduces a
-          bridge between these two worlds: the ability to render live, styled DOM
-          elements directly into a canvas bitmap, at full frame rate, with no
-          rasterization hacks or library workarounds.
+          The HTML-in-Canvas specification removes that split. It renders live,
+          styled DOM elements directly into a canvas bitmap at full frame rate,
+          with no rasterization hacks or library workarounds.
         </p>
         <div class="divider"></div>
         <p class="body-text">
-          Imagine CSS transitions flowing through WebGL shaders. Interactive
-          forms embedded in 3D environments. Styled text that shatters into
-          particles. This is not a future possibility&hairsp;&mdash;&hairsp;it is
-          happening now.
+          CSS transitions can run through WebGL shaders. Interactive forms can
+          sit in 3D scenes. Styled text can shatter into particles. All of
+          this works now.
         </p>
         <span class="page-number">&mdash; 1 &mdash;</span>
         <div class="page-ornament">1</div>
@@ -451,10 +449,9 @@
           <span class="pullquote-attr">&mdash; Arthur C. Clarke</span>
         </div>
         <p class="body-text">
-          Consider what becomes possible when HTML elements&hairsp;&mdash;&hairsp;with
-          all their CSS styling, font rendering, and interactive
-          behaviors&hairsp;&mdash;&hairsp;can flow into a canvas context as
-          naturally as drawing a rectangle.
+          HTML elements, with their CSS styling, font rendering, and
+          interactive behavior, can now go into a canvas context as easily
+          as drawing a rectangle.
         </p>
         <div class="code-callout">
           <span class="code-keyword">const</span> ctx =
@@ -468,9 +465,9 @@
           <span class="code-comment">// your canvas.</span>
         </div>
         <p class="body-text">
-          No rasterization libraries. No html2canvas workarounds. No
-          cross-origin restrictions on your own content. Just the platform, doing
-          what it should have always done.
+          No rasterization libraries or html2canvas workarounds, and no
+          cross-origin restrictions on your own content. The browser does it
+          natively.
         </p>
         <span class="page-number">&mdash; 2 &mdash;</span>
         <div class="page-watermark">HC</div>
@@ -486,7 +483,7 @@
     <div class="pipeline-info">
       <p>
         <strong>1.</strong> Two HTML &ldquo;book pages&rdquo; live inside
-        <code>&lt;canvas layoutsubtree&gt;</code> elements &mdash; fully styled
+        <code>&lt;canvas layoutsubtree&gt;</code> elements, styled
         with CSS fonts and layout
       </p>
       <p>
@@ -501,13 +498,13 @@
       </p>
       <p>
         <strong>4.</strong> A
-        <span class="hl">cylindrical deformation</span> creates the curl
-        &mdash; the back face shows the next page&rsquo;s content, correctly
+        <span class="hl">cylindrical deformation</span> creates the curl.
+        The back face shows the next page&rsquo;s content, correctly
         mirrored
       </p>
       <p class="note">
-        Previously impossible: rendering styled HTML as a deformable 3D surface
-        required rasterizing the DOM manually with external libraries.
+        Before HTML-in-Canvas, rendering styled HTML as a deformable 3D surface
+        meant rasterizing the DOM manually with external libraries.
       </p>
     </div>
 

@@ -895,9 +895,8 @@
           <span class="hl">live-updating HTML</span> on 3D surfaces
         </p>
         <p class="note">
-          This pipeline is impossible without HTML-in-Canvas — previously you
-          needed html2canvas or dom-to-image, which are slow, lossy, and cannot
-          update at 60 fps.
+          Before HTML-in-Canvas you needed html2canvas or dom-to-image, which
+          are slow, lossy, and can't update at 60 fps.
         </p>
       </div>
     </div>
@@ -1346,7 +1345,7 @@
       /* ==============================================================
          Content surfaces with HTML-in-Canvas textures.
 
-         (layoutsubtree is the Brave Stable spelling; Chrome Canary 157+
+         (layoutsubtree is the Brave Stable spelling; Chrome 157+
          uses content="drawable" on the canvas plus `drawable` on each
          drawn child. The markup sets both.)
          The dance: each <canvas layoutsubtree> staging canvas hosts a

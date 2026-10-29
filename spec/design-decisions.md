@@ -7,17 +7,17 @@ order: 3
 
 ## Why `layoutsubtree` as an attribute?
 
-(Chrome Canary 157+ spells the same opt-in `content="drawable"`, with a `drawable` attribute on each drawable child; the rationale below is unchanged.)
+(Chrome 157+ spells the same opt-in `content="drawable"`, with a `drawable` attribute on each drawable child; the rationale below is unchanged.)
 
-The attribute serves as an explicit opt-in. Without it, canvas children are fallback content (for accessibility when canvas isn't supported). With it, children are promoted to first-class participants in layout and hit testing, but remain invisible until drawn.
+The attribute serves as an explicit opt-in. Without it, canvas children are fallback content (for accessibility when canvas isn't supported). With it, children take part in layout and hit testing, but stay invisible until drawn.
 
-This dual role is key: the same elements serve as both the visual content (when drawn) and the accessibility tree. They're not separate — they're one and the same.
+The same elements serve as both the visual content (when drawn) and the accessibility tree.
 
 ## Why CSS transforms on source elements are ignored
 
-When drawing an element, the canvas CTM controls positioning. If CSS transforms were also applied, you'd get double-positioning — the element's own CSS transform would compound with the canvas transform.
+When drawing an element, the canvas CTM controls positioning. If CSS transforms were also applied, you'd get double-positioning: the element's own CSS transform would compound with the canvas transform.
 
-Instead, CSS transforms are reserved for the synchronization step: after drawing, you set `element.style.transform` to the value returned by `drawElementImage()` so that the DOM position matches the drawn position. This separation keeps drawing and synchronization clean.
+Instead, CSS transforms are reserved for the synchronization step: after drawing, you set `element.style.transform` to the value returned by `drawElementImage()` so that the DOM position matches the drawn position.
 
 **Important consequence:** Changing an element's CSS transform does NOT trigger a `paint` event, because transforms don't affect the element's painted output (only its position).
 
@@ -29,7 +29,7 @@ Three options were considered for when the `paint` event fires:
 
 **Option B — After Paint with looping:** Even more expensive — more rendering steps run per loop iteration.
 
-**Option C — After Paint, no looping (chosen):** Runs once per frame. DOM changes during paint apply to the next frame. This mirrors the browser's own Paint step behavior. The key insight: by the time paint fires, the rendering update is locked in, except for the canvas content itself.
+**Option C — After Paint, no looping (chosen):** Runs once per frame. DOM changes during paint apply to the next frame. This mirrors the browser's own Paint step behavior. By the time paint fires, the rendering update is locked in, except for the canvas content itself.
 
 ## Why `drawElementImage` returns a DOMMatrix
 
@@ -52,7 +52,7 @@ Restricting to direct children keeps the API simple and the containment model cl
 
 ## Why `captureElementImage` instead of direct worker access?
 
-Workers can't access the DOM. Rather than creating a complex proxy mechanism, the design captures a snapshot as a transferable `ElementImage` object. This fits the existing `Transferable` pattern (like `ImageBitmap`) and keeps the worker API simple — workers just call `drawElementImage()` with an `ElementImage` instead of an `Element`.
+Workers can't access the DOM. Rather than creating a complex proxy mechanism, the design captures a snapshot as a transferable `ElementImage` object. This fits the existing `Transferable` pattern (like `ImageBitmap`) and keeps the worker API simple: workers call `drawElementImage()` with an `ElementImage` instead of an `Element`.
 
 The trade-off: you need main-thread code to capture and transfer, and the transform needs to be communicated back to the main thread for synchronization.
 
@@ -85,7 +85,7 @@ HTML-in-Canvas uses the browser's actual rendering engine, so it's complete, fas
 
 The design follows a principle of not exposing information that isn't already available to JavaScript. Cross-origin content, system themes, visited links, spell-check indicators, and autofill previews are all excluded from painting.
 
-The key insight: since `drawElementImage` makes pixels readable via `getImageData()`, anything drawn must be "same-origin-equivalent" safe. This is the same security model as tainted canvases, applied proactively.
+Since `drawElementImage` makes pixels readable via `getImageData()`, anything drawn must be "same-origin-equivalent" safe. This is the same security model as tainted canvases, applied proactively.
 
 Some new information IS exposed:
 - Form control rendering (already detectable via foreignObject)

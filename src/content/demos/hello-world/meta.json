@@ -1,6 +1,6 @@
 {
   "title": "Hello World",
-  "description": "The simplest HTML-in-Canvas demo — a styled div drawn into canvas with drawElementImage, showing the minimal boilerplate with annotated code.",
+  "description": "The simplest HTML-in-Canvas demo: a styled div drawn into canvas with drawElementImage, with the minimal boilerplate annotated.",
   "tags": ["basics", "beginner", "boilerplate"],
   "author": "En Dash Consulting",
   "dateCreated": "2026-04-10",
