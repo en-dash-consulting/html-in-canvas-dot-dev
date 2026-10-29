@@ -10,6 +10,7 @@ import BrowserSupportBanner from '../components/BrowserSupportBanner.astro';
 import GraviewBanner from '../components/GraviewBanner.astro';
 import Footer from '../components/Footer.astro';
 import '../styles/global.css';
+import { ORIGIN_TRIAL_TOKEN } from '../lib/originTrial';
 
 interface Props {
   title?: string;
@@ -123,6 +124,7 @@ const websiteJsonLd = {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="origin-trial" content={ORIGIN_TRIAL_TOKEN} />
 
     {/* Core SEO */}
     <title>{pageTitle}</title>

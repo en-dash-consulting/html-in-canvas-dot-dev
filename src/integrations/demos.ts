@@ -4,6 +4,7 @@ import { readdir, readFile, writeFile, cp, mkdir, unlink } from 'node:fs/promise
 import { createReadStream, existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ORIGIN_TRIAL_TOKEN } from '../lib/originTrial';
 
 // ---------------------------------------------------------------------------
 // Custom content loader: reads src/content/demos/{slug}/meta.json
@@ -156,13 +157,16 @@ export function demosIntegration(): AstroIntegration {
           // canonical). Inject noindex into the built copy so search
           // engines index only the wrapped page. Source files stay
           // untouched; a <meta> inside the shadow-DOM mount on the
-          // wrapped page is inert, so this can't affect it.
+          // wrapped page is inert, so this can't affect it. The origin
+          // trial token rides along since this page skips BaseLayout.
           const demoDest = join(dest, 'demo.html');
           if (existsSync(demoDest)) {
             const html = await readFile(demoDest, 'utf-8');
             const injected = html.replace(
               /<head(\s[^>]*)?>/i,
-              (match) => `${match}\n    <meta name="robots" content="noindex" />`,
+              (match) =>
+                `${match}\n    <meta http-equiv="origin-trial" content="${ORIGIN_TRIAL_TOKEN}" />` +
+                `\n    <meta name="robots" content="noindex" />`,
             );
             if (injected !== html) {
               await writeFile(demoDest, injected);
