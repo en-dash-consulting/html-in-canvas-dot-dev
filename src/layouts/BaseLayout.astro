@@ -100,6 +100,10 @@ const ogImageURL = new URL(ogImage, baseURL).href;
 // JSON-LD only included on the home page; demo pages emit their own
 // CreativeWork JSON-LD via a slot.
 const isHome = Astro.url.pathname === '/' || Astro.url.pathname === '';
+
+// Graview top banner on non-home pages. Off for now; flip to true to
+// bring it back. The home page keeps its GraviewShowcase section.
+const SHOW_GRAVIEW_BANNER = false;
 const websiteJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
@@ -242,7 +246,7 @@ const websiteJsonLd = {
     <Nav />
     {/* Graview "in production" strip on every page but home — the
         home page carries the full GraviewShowcase hero instead. */}
-    {!isHome && <GraviewBanner />}
+    {SHOW_GRAVIEW_BANNER && !isHome && <GraviewBanner />}
     <BrowserSupportBanner />
     <main>
       <slot />

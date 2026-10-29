@@ -64,8 +64,15 @@ test.describe('Graview showcase hero (home page)', () => {
   });
 });
 
+// The banner is switched off in BaseLayout (SHOW_GRAVIEW_BANNER = false).
+// Swap this block back to the visible/dismiss tests when it's turned on.
 test.describe('Graview top banner (other pages)', () => {
-  test('is visible, links out, and dismissal persists across navigation', async ({
+  test('is not rendered while switched off', async ({ page }) => {
+    await page.goto(OTHER_URL, { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('#gv-banner')).toHaveCount(0);
+  });
+
+  test.fixme('is visible, links out, and dismissal persists across navigation', async ({
     page,
   }) => {
     await page.goto(OTHER_URL, { waitUntil: 'domcontentloaded' });
