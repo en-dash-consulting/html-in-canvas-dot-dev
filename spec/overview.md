@@ -5,9 +5,9 @@ order: 1
 
 # HTML-in-Canvas Spec Overview
 
-**HTML-in-Canvas** is a proposed web API (a [WICG explainer](https://github.com/WICG/html-in-canvas)) for drawing real, live DOM elements directly into a `<canvas>` — rendered by the browser's own engine, accessible, and redrawable every frame. It replaces DOM-screenshotting workarounds like `html2canvas` with three native primitives.
+**HTML-in-Canvas** is a proposed web API (a [WICG explainer](https://github.com/WICG/html-in-canvas)) for drawing live DOM elements into a `<canvas>`, rendered by the browser's own engine, accessible, and redrawable every frame. It replaces DOM-screenshotting workarounds like `html2canvas` with three native primitives.
 
-The whole API in one taste:
+The whole API in one example:
 
 ```html
 <canvas id="c" layoutsubtree content="drawable">
@@ -54,7 +54,7 @@ There is no web API to render complex HTML layouts into a `<canvas>`. Canvas-bas
 1. **Styled, laid-out content in canvas** — chart labels, rich text boxes in creative tools, in-game menus
 2. **Accessibility** — drawn elements ARE the fallback content, so they always match
 3. **HTML + WebGL shaders** — apply general GPU effects to HTML elements
-4. **HTML in 3D** — render rich 2D content as textures in 3D scenes
+4. **HTML in 3D** — render 2D content as textures in 3D scenes
 5. **Media export** — export HTML content as images or video via canvas
 
 ## Solution: Three Primitives + One Helper

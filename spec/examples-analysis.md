@@ -9,7 +9,7 @@ All examples live at https://wicg.github.io/html-in-canvas/Examples/
 
 ## 1. Complex Text (complex-text.html)
 
-**What it demonstrates:** Rich, rotated text with emoji, RTL, vertical text, inline images, and SVG — all rendered into canvas via a single `drawElementImage` call.
+**What it demonstrates:** Rotated text with emoji, RTL, vertical text, inline images, and SVG, all rendered into canvas with a single `drawElementImage` call.
 
 **Key techniques:**
 - Canvas CTM rotation (`ctx.rotate`) — the drawn element follows the CTM
@@ -66,7 +66,7 @@ if (focusedPath)
   ctx.drawFocusIfNeeded(focusedPath, document.activeElement);
 ```
 
-**Insight:** This is the accessibility showcase. The labels ARE the fallback content — screen readers see `role="listitem"` elements with the actual text. Tab navigation works, and `drawFocusIfNeeded` provides proper focus indication. This is the key value prop over `ctx.fillText()`.
+**Insight:** This is the accessibility example. The labels ARE the fallback content — screen readers see `role="listitem"` elements with the actual text. Tab navigation works, and `drawFocusIfNeeded` provides proper focus indication. That is the main advantage over `ctx.fillText()`.
 
 ---
 
@@ -79,7 +79,7 @@ if (focusedPath)
 - The `paint` event fires when form state changes (cursor blink, selection, input)
 - Simple positioning at `canvas.width/25, canvas.height/25`
 
-**Insight:** This proves that `layoutsubtree` preserves full interactivity. The form elements aren't simulated — they're real DOM elements with real event handlers, just drawn into the canvas. Cursor blinking triggers paint events automatically.
+**Insight:** `layoutsubtree` keeps full interactivity. The form elements are real DOM elements with real event handlers, drawn into the canvas. Cursor blinking triggers paint events automatically.
 
 ---
 
@@ -109,13 +109,13 @@ canvas.onpaint = () => { main(); };
 canvas.requestPaint();
 ```
 
-**Insight:** The `inert` attribute is noteworthy — it disables hit testing for the HTML element since it's mapped onto a 3D surface where 2D hit testing doesn't make sense. For interactive 3D HTML, you'd need to do raycasting yourself and forward events.
+**Insight:** The `inert` attribute disables hit testing for the HTML element since it's mapped onto a 3D surface where 2D hit testing doesn't make sense. For interactive 3D HTML, you'd need to do raycasting yourself and forward events.
 
 ---
 
 ## 5. WebGPU Jelly Slider (webgpu-jelly-slider/)
 
-**What it demonstrates:** A range slider whose value is rendered as jelly-like 3D text on a ground plane, with physics simulation and ray marching — all using TypeGPU.
+**What it demonstrates:** A range slider whose value is rendered as jelly-like 3D text on a ground plane, with physics simulation and ray marching, built with TypeGPU.
 
 **Key techniques:**
 - `copyElementImageToTexture()` for WebGPU
@@ -137,7 +137,7 @@ canvas.requestPaint();
 };
 ```
 
-**Insight:** Most complex example. Shows how HTML-in-Canvas enables mixing standard HTML controls (a range input) with advanced GPU rendering. The slider is a real `<input type="range">` — it's accessible, keyboard-navigable, and its value drives the 3D scene. The percentage text displayed on the ground plane is an HTML `<div>` captured as a GPU texture.
+**Insight:** Most complex example. It mixes a standard HTML control (a range input) with GPU rendering. The slider is a real `<input type="range">`: it's accessible, keyboard-navigable, and its value drives the 3D scene. The percentage text displayed on the ground plane is an HTML `<div>` captured as a GPU texture.
 
 ---
 

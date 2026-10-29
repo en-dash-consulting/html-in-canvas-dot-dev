@@ -623,8 +623,8 @@
   <body>
     <h1>Frosted Glass Backdrop</h1>
     <p class="page-subtitle">
-      Drag the frosted panel over the cards. Switch between blur modes that go
-      beyond CSS backdrop-filter — directional blur, tilt-shift, and custom
+      Drag the frosted panel over the cards. Switch between blur modes that CSS
+      backdrop-filter can't do: directional blur, tilt-shift, and custom
       gaussian kernels with color tinting.
     </p>
 
@@ -764,7 +764,7 @@
     <div class="pipeline-info">
       <p>
         <strong>1.</strong> Background cards live inside a
-        <code>&lt;canvas layoutsubtree&gt;</code> — fully styled with CSS
+        <code>&lt;canvas layoutsubtree&gt;</code>, styled with CSS
       </p>
       <p>
         <strong>2.</strong>
@@ -782,8 +782,8 @@
       </p>
       <p class="note">
         CSS backdrop-filter can only do standard gaussian blur. This demo
-        applies directional blur, tilt-shift, and custom kernels — only possible
-        with HTML-in-Canvas compositing between layers.
+        applies directional blur, tilt-shift, and custom kernels by
+        compositing between layers with HTML-in-Canvas.
       </p>
     </div>
 

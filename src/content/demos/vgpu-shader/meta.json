@@ -61,7 +61,7 @@
   "faq": [
     {
       "q": "What is vgpu?",
-      "a": "vgpu is Vercel\u2019s TypeScript WebGPU library. The same small API runs in the browser, headless Node (Dawn), and CI \u2014 so one shader can be a live canvas, an OG image, and a pixel snapshot."
+      "a": "vgpu is Vercel\u2019s TypeScript WebGPU library. The same small API runs in the browser, headless Node (Dawn), and CI, so one shader can be a live canvas, an OG image, and a pixel snapshot."
     },
     {
       "q": "Can I use vgpu with HTML-in-Canvas?",
@@ -82,11 +82,11 @@
   ],
   "why": {
     "heading": "Why vgpu is cool",
-    "lede": "Most WebGPU libraries want to be an engine. vgpu wants to be a 25 KB function. You write one program, and it is a live canvas, a serverless PNG, and a CI snapshot. That is the trick this page is showing.",
+    "lede": "Most WebGPU libraries want to be an engine. vgpu wants to be a 25 KB function. One program runs as a live canvas, a serverless PNG, and a CI snapshot.",
     "points": [
       {
         "title": "Same shader, three runtimes",
-        "body": "The foil on the left is the browser. The still on the right is a target.read() of that same pass. Swap the import to vgpu/node and Dawn renders it on a server with no window. The mock adapter runs the same API in tests. One file. Browser, Node, CI."
+        "body": "The foil on the left is the browser. The still on the right is a target.read() of that same pass. Swap the import to vgpu/node and Dawn renders it on a server with no window. The mock adapter runs the same API in tests."
       },
       {
         "title": "A library, not a scene graph",

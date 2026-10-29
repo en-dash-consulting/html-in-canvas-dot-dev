@@ -23,9 +23,9 @@ export const DOC_DESCRIPTIONS: Record<string, string> = {
   'design-decisions':
     'Why HTML-in-Canvas works the way it does: the layoutsubtree opt-in, why CSS transforms on source elements are ignored, and other design rationale.',
   'examples-analysis':
-    'The official WICG HTML-in-Canvas examples analyzed: complex text, forms, video, transforms — the key techniques and patterns behind each one.',
+    'The official WICG HTML-in-Canvas examples analyzed: complex text, forms, video, and transforms, with the techniques behind each one.',
   'open-questions':
-    'Open issues on the WICG HTML-in-Canvas spec — interactivity, tainting, layout — summarized with links to each upstream GitHub discussion.',
+    'Open issues on the WICG HTML-in-Canvas spec (interactivity, tainting, layout), summarized with links to each upstream GitHub discussion.',
 };
 
 /**

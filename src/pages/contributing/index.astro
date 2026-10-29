@@ -17,7 +17,7 @@ const GITHUB_REPO = 'https://github.com/en-dash-consulting/html-in-canvas-dot-de
     <p class="lead">
       Every demo on this site lives in a single directory under
       <code>src/content/demos/</code>. Drop in a folder with two files and it
-      appears automatically — no routing or config changes required.
+      appears automatically. No routing or config changes needed.
     </p>
 
     {/* ------------------------------------------------------------------ */}
@@ -156,7 +156,7 @@ npm install</code></pre>
         as a standalone document at <code>/demos/&#123;slug&#125;/demo.html</code>,
         and mounted inside a shadow root on the wrapped
         <code>/demos/&#123;slug&#125;/</code> page. Your demo needs to work in
-        both contexts — the template handles this for you.
+        both contexts. The template handles this for you.
       </p>
 
       <div class="pattern-grid">
@@ -166,7 +166,7 @@ npm install</code></pre>
             Opt the <code>&lt;canvas&gt;</code> in so the browser lays out
             its child elements for painting. Set <em>both</em> spellings:
             Brave Stable understands <code>layoutsubtree</code>, Chrome
-            Chrome 157+ understands <code>content="drawable"</code> and
+            157+ understands <code>content="drawable"</code> and
             also needs <code>drawable</code> on each child you draw.
           </p>
           <pre><code>&lt;canvas id="canvas" layoutsubtree content="drawable"&gt;
@@ -234,7 +234,7 @@ const canvas = root.getElementById("canvas");`} /></pre>
 
       <p>
         You can add extra <code>.css</code>, <code>.js</code>, or other files
-        alongside <code>demo.html</code> — they'll show up in the Source
+        alongside <code>demo.html</code>. They show up in the Source
         Viewer automatically. The wrapper page also handles the demo stage
         size for you: aim for <code>min-height: min(78vh, 820px)</code> on
         <code>body, :host</code> so small demos fill the area while larger
@@ -287,13 +287,13 @@ git push origin my-branch
           (e.g. <code>gradient-text</code>, not <code>GradientText</code>).
         </li>
         <li>
-          Keep demos self-contained — no external CDN scripts or images from
-          third-party hosts.
+          Keep demos self-contained: no CDN scripts or images from third-party
+          hosts.
         </li>
         <li>
           The demo stage has a dark background (<code>#0a0a0a</code>) by
-          default; match it in your <code>demo.html</code> for a seamless
-          look.
+          default; match it in your <code>demo.html</code> so the edges don't
+          show.
         </li>
         <li>
           Text files (<code>.html</code>, <code>.css</code>, <code>.js</code>,

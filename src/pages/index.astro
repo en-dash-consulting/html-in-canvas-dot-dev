@@ -79,10 +79,10 @@ const faqJsonLd = {
 
   {/* ---------- API Primitives ---------- */}
   <section class="primitives" aria-labelledby="primitives-heading">
-    <h2 id="primitives-heading" class="section-heading">Three Primitives, One New Superpower</h2>
+    <h2 id="primitives-heading" class="section-heading">Three Primitives</h2>
     <p class="section-sub">
-      The spec introduces a minimal, composable API surface — each piece
-      solves a distinct problem.
+      The spec adds three small pieces of API. Each one solves a separate
+      problem.
     </p>
 
     <div class="primitives-grid">
@@ -91,8 +91,8 @@ const faqJsonLd = {
         <h3><code>layoutsubtree</code></h3>
         <p>
           Add this attribute to a <code>&lt;canvas&gt;</code> to opt its
-          children into layout and hit testing — they behave like normal DOM
-          elements but remain invisible until drawn. Chrome 157+
+          children into layout and hit testing. They behave like normal DOM
+          elements but stay invisible until drawn. Chrome 157+
           spells it <code>content="drawable"</code> and wants
           <code>drawable</code> on each drawn child, so set both.
         </p>
@@ -138,8 +138,8 @@ const faqJsonLd = {
         <span class="primitive-number">3</span>
         <h3><code>paint</code> event</h3>
         <p>
-          Fires whenever a child element's rendering changes — clear the
-          canvas and redraw in one efficient callback, once per frame.
+          Fires when a child element's rendering changes. Clear the canvas
+          and redraw in one callback, once per frame.
         </p>
         <pre><code set:html={`canvas.onpaint = (e) =&gt; {
   ctx.reset();
@@ -184,8 +184,8 @@ const faqJsonLd = {
         </div>
         <h3>Real CSS rendering</h3>
         <p>
-          Fonts, ligatures, RTL, subpixel rendering — the browser does
-          the hard work, not a polyfill.
+          Fonts, ligatures, RTL, and subpixel text are drawn by the
+          browser, not a polyfill.
         </p>
       </div>
       <div class="why-item">
@@ -204,8 +204,8 @@ const faqJsonLd = {
         </div>
         <h3>2D, WebGL &amp; WebGPU</h3>
         <p>
-          One API surface that works across all three canvas contexts —
-          render HTML as 3D textures, apply shaders, and more.
+          The same API works in all three canvas contexts, so HTML can be a
+          3D texture or go through a shader.
         </p>
       </div>
     </div>
@@ -221,9 +221,9 @@ const faqJsonLd = {
       </a>
     </div>
     <p class="section-sub demos-sub">
-      A sample of the gallery — browse all {demos.length} interactive
-      <a href="/demos/">HTML canvas examples</a>, complete and forkable,
-      across 2D, WebGL, and WebGPU contexts.
+      Browse all {demos.length}
+      <a href="/demos/">HTML canvas examples</a> across 2D, WebGL, and
+      WebGPU. Each one is complete and forkable.
     </p>
 
     {demos.length > 0 ? (
@@ -258,7 +258,7 @@ const faqJsonLd = {
         The HTML-in-Canvas API is on by default in
         <strong>Chrome 157</strong> and later. Chromium 147–156 and Brave
         have it behind the <code>canvas-draw-element</code> flag. Open a
-        demo and start building.
+        demo to try it.
       </p>
       <div class="gs-actions">
         <a href="/docs/browser-support/" class="btn btn-primary">Browser Setup Guide</a>

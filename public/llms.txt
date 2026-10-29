@@ -1,12 +1,11 @@
-# HTML-in-Canvas Demo Showcase
+# HTML-in-Canvas Demos
 
 > Interactive demos and documentation for the WICG HTML-in-Canvas
-> specification — render real, styled, accessible DOM elements
-> directly into a `<canvas>` via `drawElementImage()`.
+> specification, which draws real, styled, accessible DOM elements
+> into a `<canvas>` via `drawElementImage()`.
 
-This site is a community resource maintained by En Dash Consulting that
-shows what becomes possible when the browser can paint live HTML into a
-canvas: real text editing, native i18n, accessible chart labels, video
+This site is a community resource maintained by En Dash Consulting with
+demos of live HTML painted into a canvas: real text editing, native i18n, accessible chart labels, video
 recording from HTML scenes, WebGL and WebGPU shader effects on DOM
 content (including a demo built on Vercel's vgpu library), and 3D
 scenes that use HTML elements as textures. The API is on by
@@ -96,8 +95,8 @@ HTML file you can fork). The demo source is in
   library): `drawElementImage` paints a real DOM card into the canvas,
   those pixels upload to a GPU texture, and a WGSL foil effect warps
   them on hover while hit testing stays on the underlying DOM. The
-  still beside it is a `target.read()` of the same pass — the browser
-  stand-in for rendering the identical shader headlessly through
+  still beside it is a `target.read()` of the same pass, standing in
+  for rendering the identical shader headlessly through
   `vgpu/node` (Dawn) for OG images and CI snapshots
 - /demos/pixel-disintegration/ — `getImageData()` on rendered HTML
   drives a particle scatter / reassemble effect

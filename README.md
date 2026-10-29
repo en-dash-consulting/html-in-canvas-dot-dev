@@ -1,8 +1,8 @@
 # html-in-canvas.dev
 
 > Interactive demos and documentation for the WICG **HTML-in-Canvas**
-> specification — render real, styled, accessible DOM elements
-> directly into a `<canvas>` via `drawElementImage()`.
+> specification, which draws real, styled, accessible DOM elements
+> into a `<canvas>` via `drawElementImage()`.
 
 [**html-in-canvas.dev →**](https://html-in-canvas.dev) ·
 [Demo gallery](https://html-in-canvas.dev/demos/) ·
@@ -10,8 +10,7 @@
 [Contributing](https://html-in-canvas.dev/contributing/)
 
 A community resource maintained by [En Dash Consulting](https://endash.us)
-that shows what becomes possible when the browser can paint live HTML
-into a canvas: real text editing, native i18n, accessible chart labels,
+with demos of live HTML painted into a canvas: real text editing, native i18n, accessible chart labels,
 video recording from HTML scenes, GPU shader effects on DOM content, and
 3D scenes that use HTML elements as textures.
 
@@ -24,7 +23,7 @@ Firefox and Safari have not announced implementations yet.
 
 ## Why HTML-in-Canvas
 
-Canvas is great for pixels. The DOM is great for everything else —
+Canvas is good at pixels. The DOM handles everything else:
 text shaping, accessibility, internationalization, form controls,
 contenteditable, focus management, hit testing, screen readers. Until
 now, putting the two together meant either:
@@ -34,9 +33,9 @@ now, putting the two together meant either:
 - Shipping a 130 KB `html2canvas` clone that approximates CSS rendering
   in JavaScript (slow, incomplete, never quite right)
 
-The WICG HTML-in-Canvas proposal lets the browser do what it's already
-great at — render HTML and CSS — and gives canvas authors zero-cost
-access to those pixels. Three primitives:
+The WICG HTML-in-Canvas proposal lets the browser render HTML and CSS
+as it already does, and gives canvas authors direct access to those
+pixels. Three primitives:
 
 ```html
 <canvas layoutsubtree content="drawable">
@@ -45,7 +44,7 @@ access to those pixels. Three primitives:
 ```
 
 (`layoutsubtree` is the Chromium ≤156 / Brave Stable spelling;
-`content="drawable"` + a `drawable` child attribute is what Chrome
+`content="drawable"` + a `drawable` child attribute is what
 Chrome 157+ expects. Each ignores the other, so the demos set both.)
 
 ```js
@@ -123,9 +122,8 @@ Each `demo.html` is authored to work in **two contexts**:
 
 1. As a **standalone HTML page** at `/demos/{slug}/demo.html`. Anyone
    can visit it directly, fork it from the GitHub repo, or open it in
-   their own editor. This is what makes the site useful as a learning
-   resource — you can grab any demo and run it locally with zero build
-   tooling.
+   their own editor. You can grab any demo and run it locally with no
+   build tooling.
 2. **Mounted via shadow DOM** on the wrapped `/demos/{slug}/` page,
    alongside metadata, the source viewer, and page chrome.
 
@@ -139,7 +137,7 @@ The dual-context authoring is glued together by two small conventions:
   page hands the script its shadow root via a transient global.
 
 These conventions are documented in the `_template/demo.html`
-contributor template — just copy it.
+contributor template. Copy it to start.
 
 ### Pages
 
@@ -211,7 +209,7 @@ by the spec authors or by Chromium.
 ## Acknowledgements
 
 - The [WICG HTML-in-Canvas](https://github.com/WICG/html-in-canvas)
-  authors and contributors who proposed and shipped the spec —
+  authors and contributors who proposed and shipped the spec,
   especially Philip Rogers, Stephen Chenney (Igalia), Chris Harrelson,
   Philip Jagenstedt, Khushal Sagar, Vladimir Levin, and Fernando
   Serboncini

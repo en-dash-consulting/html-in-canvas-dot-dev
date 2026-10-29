@@ -46,7 +46,7 @@ Every demo file is served in two contexts:
 - **Mounted via shadow DOM** on the wrapped `/demos/{slug}/` page
 
 Both contexts use the same source file. The two conventions that make
-this work, both copied for free by the template:
+this work, both included in the template:
 
 1. CSS root rule uses a selector list, not just `body`:
    ```css
@@ -76,12 +76,12 @@ A few more gotchas worth knowing about:
 - Set **both** opt-in spellings on every capture canvas:
   `<canvas layoutsubtree content="drawable">`, and put `drawable` on
   every child you pass to `drawElementImage()`. Chrome 157+
-  only understands the `content`/`drawable` pair (and otherwise paints
-  a silently blank canvas — the error is swallowed inside `onpaint`);
+  only understands the `content`/`drawable` pair (otherwise it paints
+  a blank canvas, because the error is swallowed inside `onpaint`);
   Chromium 156 and earlier (including Brave Stable) only understand
   `layoutsubtree`.
 - Direct children of `<canvas layoutsubtree>` cannot use
-  `position: absolute` — Chrome forces them to `position: static`. Use
+  `position: absolute`: Chrome forces them to `position: static`. Use
   `display: grid` on the canvas with `grid-area: stack` on the children
   if you need to overlay them, plus CSS `transform` for offset within
   the cell.
