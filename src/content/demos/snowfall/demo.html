@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Snowfall</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Shippori+Mincho:wght@500;700&display=swap" />
+    <style>
+/* Layout: a flat gouache snowfield in the style of a Japanese book cover; a real, live form stands in it like a sign, and snow settles on its actual edges. Single look, by choice. */
+:root, :host {
+  --card: #F5F1E6;
+  --ink: #1B2A40;
+  --muted: #56627A;
+  --field: #E6E4DA;
+  --night: #1C2C4A;
+  --vermilion: #C9452C;
+  --bar: #14223D;
+  --bar-ink: #DCE9F2;
+  --mincho: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", Georgia, serif;
+  --font: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body, :host { margin: 0; background: var(--bar); color: var(--bar-ink); font: 15px/1.45 var(--font); -webkit-font-smoothing: antialiased; overflow: hidden; }
+.app { height: 100%; display: grid; grid-template-rows: 1fr auto; }
+.stage { position: relative; min-height: 0; overflow: hidden; background: #DDE7ED; }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* The poster layer lives inside the canvas, where children are laid out but not positioned, so everything sits in one grid cell */
+.card { display: grid; grid-template: 1fr / 1fr; color: var(--ink); pointer-events: none; }
+.card.float { position: absolute; inset: 0; z-index: 3; }
+.card > * { grid-area: 1 / 1; margin: 0; }
+.vert { justify-self: start; align-self: start; margin: calc(var(--H, 100vh) * .07) 0 0 7vw; writing-mode: vertical-rl; font: 500 clamp(20px, 2.6vw, 30px)/1.4 var(--mincho); letter-spacing: .18em; }
+.issue { justify-self: end; align-self: start; margin: calc(var(--H, 100vh) * .07) 6vw 0 0; font: 400 clamp(11px, 1vw, 13px)/1.6 var(--mono); letter-spacing: .14em; color: var(--ink); text-align: right; }
+.title {
+  justify-self: center; align-self: start; margin-top: calc(var(--H, 100vh) * .67 - .5em);
+  font: 700 clamp(60px, 12vw, 170px)/1 var(--mincho); letter-spacing: .06em; white-space: nowrap;
+  pointer-events: auto; outline: none; cursor: text; caret-color: var(--vermilion);
+}
+.title:focus-visible { text-decoration: underline; text-decoration-color: var(--vermilion); text-decoration-thickness: 2px; text-underline-offset: .12em; }
+.latin { justify-self: center; align-self: start; margin-top: calc(var(--H, 100vh) * .67 + clamp(36px, 6.6vw, 96px)); font: 500 clamp(12px, 1.2vw, 15px)/1 var(--mono); letter-spacing: .5em; color: var(--vermilion); white-space: nowrap; }
+.sub { justify-self: center; align-self: start; margin-top: calc(var(--H, 100vh) * .67 + clamp(56px, 8.6vw, 122px)); font: 400 clamp(11px, 1vw, 13px)/1 var(--mono); letter-spacing: .2em; color: var(--vermilion); white-space: nowrap; }
+.credit { justify-self: end; align-self: end; margin: 0 6vw calc(var(--H, 100vh) * .05) 0; writing-mode: vertical-rl; font: 500 clamp(12px, 1.1vw, 14px)/1.6 var(--mincho); letter-spacing: .2em; color: var(--ink); }
+
+.bar {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 24px;
+  padding-block: 12px 14px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--bar); color: var(--bar-ink);
+}
+.bar p { margin: 0; font-family: var(--mono); font-size: 12px; line-height: 18px; min-width: 0; max-width: 74ch; }
+.bar button {
+  font-family: var(--mono); font-size: 12px; line-height: 16px; font-weight: 500;
+  height: 36px; padding: 0 16px; border-radius: 999px; border: 0;
+  background: var(--bar-ink); color: var(--bar); cursor: pointer; flex: none;
+  transition: transform 150ms ease-out;
+}
+.bar button:active { transform: scale(.96); }
+.bar button:focus-visible { outline: 2px solid #8FB4FF; outline-offset: 2px; }
+.bar .end { display: flex; align-items: center; gap: 16px; flex: none; }
+.bar .made { color: var(--bar-ink); font-family: var(--mono); font-size: 12px; line-height: 18px; text-decoration: underline; text-underline-offset: 3px; }
+.bar .made:hover { color: #FFFFFF; }
+body, :host { margin: 0; }
+
+/* Mounted in a shadow root on html-in-canvas.dev, the host gives the demo its height. */
+:host { display: block; height: min(78vh, 820px); min-height: 520px; }
+:host(:fullscreen) { height: 100vh; }
+    </style>
+  </head>
+  <body>
+<div class="app">
+  <div class="stage" id="stage">
+    <div class="card poster" id="card">
+      <p class="vert" aria-hidden="true">冬のはじまり</p>
+      <p class="issue" aria-hidden="true">No. 02<br>Winter 2026<br>49°N 122°W</p>
+      <h1 class="title" id="title" contenteditable="plaintext-only" spellcheck="false" aria-label="はつゆき, first snow. Click to write your own word.">はつゆき</h1>
+      <p class="latin">First Snow</p>
+      <p class="sub">Baked Lab · Folio 02</p>
+      <p class="credit">The first snow of the year, as it lands</p>
+    </div>
+  </div>
+  <footer class="bar">
+    <p id="mode">Checking for HTML-in-Canvas…</p>
+    <div class="end">
+      <a class="made" href="https://baked.design/">Made by Baked</a>
+      <button id="sound" type="button" aria-pressed="false">Sound on</button>
+      <button id="blizzard" type="button" aria-pressed="false">Blizzard</button>
+    </div>
+  </footer>
+</div>
+
+    <script>
+(() => {
+  // Standalone this is the document; mounted on html-in-canvas.dev it is the demo's shadow root.
+  const root = window.__demoRoot ?? document;
+  // Fonts declared inside a shadow root don't load, so a mounted demo adds its font link to the page.
+  if (root !== document) for (const href of ["https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Shippori+Mincho:wght@500;700&display=swap"]) if (!document.querySelector(`link[href="${href}"]`)) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; document.head.appendChild(l); }
+  const stage = root.getElementById('stage');
+  const card = root.getElementById('card');
+  const title = root.getElementById('title');
+  const modeEl = root.getElementById('mode');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const proto = window.CanvasRenderingContext2D && CanvasRenderingContext2D.prototype;
+  const live = !!(proto && 'drawElementImage' in proto);
+
+  // ---------- Canvas: the whole world, with the live form drawn inside it ----------
+  const cv = document.createElement('canvas'); cv.id = 'page-canvas';
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
+  if (live) {
+    cv.setAttribute('content', 'drawable');
+    cv.setAttribute('layoutsubtree', '');
+    card.setAttribute('drawable', '');
+    stage.appendChild(cv);
+    cv.appendChild(card);
+  } else {
+    stage.insertBefore(cv, card);
+    card.classList.add('float');
+  }
+
+  const CELL = 3;            // snow grid resolution in CSS px
+  let W = 0, H = 0, dpr = 1, GW = 0, GH = 0;
+  let S, base, ui, rim;      // settled snow, ground, live-UI ledges, the card's top edge
+    let bg = document.createElement('canvas');
+  let box = { x: 0, y: 0, w: 0, h: 0 };
+  let groundY = [];
+  let pixelsOK = live;
+  let uiDirty = true;
+
+  function seeded(seed) { return () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }; }
+  const idx = (x, y) => y * GW + x;
+
+  // ---------- Background scene: painted once per size by a shader, then cached ----------
+  // Snow falls off the bottom of the poster; it only collects on the type.
+  function ground() { return H + 40; }
+  const INK = '#1B2A40', VERM = '#C9452C';
+  const BG_FS = `precision highp float;
+    uniform vec2 res; uniform float dpr;
+    float h21(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+    float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f);
+      return mix(mix(h21(i), h21(i + vec2(1, 0)), f.x), mix(h21(i + vec2(0, 1)), h21(i + vec2(1, 1)), f.x), f.y); }
+    float fbm(vec2 p){ float s = 0., a = .5; for (int i = 0; i < 6; i++) { s += a * noise(p); p = p * 2.02 + 7.3; a *= .5; } return s; }
+    float ridged(vec2 p){ float s = 0., a = .55; for (int i = 0; i < 5; i++) { s += a * (1. - abs(noise(p) * 2. - 1.)); p = p * 2.07 + 3.1; a *= .48; } return s; }
+    // one wash of ink over the paper: density, then colour
+    vec3 wash(vec3 base, vec3 ink, float a){ return mix(base, base * ink * 1.05, clamp(a, 0., 1.)); }
+    void main(){
+      vec2 px = gl_FragCoord.xy / dpr;
+      vec2 q = gl_FragCoord.xy / res;
+      float asp = res.x / res.y;
+      vec2 P = vec2(q.x * asp, q.y);
+      float grain = h21(floor(px * .9));
+      float fib = fbm(px * vec2(.9, .07)) * .6 + fbm(px * .25) * .4;
+
+      // paper, cool and a little uneven
+      vec3 paper = vec3(.905, .93, .935) * (.97 + .06 * fib);
+      vec3 col = paper;
+
+      // sky: a pale wash that deepens toward the top, with soft blooms where the water pooled
+      float sky = smoothstep(.42, 1.05, q.y) * .55 + (fbm(P * 1.6 + 2.) - .5) * .16;
+      col = wash(col, vec3(.70, .80, .87), sky);
+
+      // a low winter sun, printed in one flat pass of vermilion
+      vec2 sc = vec2(asp * .7, .64);
+      float sd = length(P - sc) - .105;
+      float sunA = smoothstep(.002, -.002, sd + (noise(px * .35) - .5) * .004) * (.78 + .22 * grain);
+      col = mix(col, vec3(.86, .39, .27), sunA * .82);
+
+      // far range: ridged peaks, ink pooling at the crest and thinning as it runs down
+      float hz = .5;
+      float rf = hz + .035 + .13 * pow(ridged(vec2(P.x * 1.3 + 4.2, 1.7)), 2.1);
+      float bleedF = (fbm(px * .08) - .5) * .006;
+      float inF = smoothstep(rf + .002 + bleedF, rf - .003 + bleedF, q.y);
+      float dF = inF * (.32 + .45 * exp(-(rf - q.y) * 22.)) * (.75 + .5 * fbm(P * 6.));
+      dF *= smoothstep(hz - .03, hz + .06, q.y);
+      col = wash(col, vec3(.40, .52, .64), dF);
+
+      // near range: lower and darker, with a dry-brush top edge
+      float rn = hz + .012 + .06 * pow(ridged(vec2(P.x * 2.1 + 9., 3.3)), 1.6);
+      float dry = step(.32, fbm(vec2(px.x * .5, px.y * 2.)));
+      float inN = smoothstep(rn + .002, rn - .002, q.y + (fbm(px * .12) - .5) * .004);
+      float dN = inN * (.6 + .4 * exp(-(rn - q.y) * 30.)) * mix(.75, 1., dry) * (.8 + .35 * fbm(P * 9. + 1.));
+      dN *= smoothstep(hz - .045, hz + .015, q.y);
+      col = wash(col, vec3(.22, .32, .45), dN);
+
+      // mist lying on the foot of the hills
+      float mist = exp(-abs(q.y - hz + .01) * 26.) * (.5 + .5 * fbm(P * vec2(3., 8.) + 4.));
+      col = mix(col, paper * 1.02, mist * .7);
+
+      // the snowfield: almost bare paper, with long blue shadows drifting across it
+      float field = smoothstep(hz - .01, hz - .04, q.y);
+      float drift = smoothstep(.5, .9, fbm(vec2(P.x * 1.1, q.y * 9.) + 2.)) * smoothstep(hz - .03, .05, q.y);
+      col = wash(col, vec3(.78, .86, .92), field * (drift * .55 + .12));
+      col = wash(col, vec3(.62, .74, .84), field * smoothstep(.22, 0., q.y) * .55);
+
+      // print grain, paper tooth and a soft edge to the sheet
+      col *= .965 + .07 * grain;
+      col -= (fib - .5) * .025;
+      vec2 e = abs(q - .5) * 2.;
+      col *= 1. - .08 * pow(max(e.x, e.y), 6.);
+      gl_FragColor = vec4(col, 1.);
+    }`;
+  let bgGL = null;
+  function paintBackground() {
+    bg.width = Math.round(W * dpr); bg.height = Math.round(H * dpr);
+    const b = bg.getContext('2d');
+    try {
+      if (!bgGL) {
+        const c = document.createElement('canvas'), gl = c.getContext('webgl', { preserveDrawingBuffer: true });
+        const sh = (t, src) => { const o = gl.createShader(t); gl.shaderSource(o, src); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; };
+        const pr = gl.createProgram();
+        gl.attachShader(pr, sh(gl.VERTEX_SHADER, 'attribute vec2 p; void main(){ gl_Position = vec4(p, 0., 1.); }'));
+        gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, BG_FS));
+        gl.linkProgram(pr); gl.useProgram(pr);
+        gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+        const loc = gl.getAttribLocation(pr, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+        bgGL = { c, gl, uRes: gl.getUniformLocation(pr, 'res'), uDpr: gl.getUniformLocation(pr, 'dpr') };
+      }
+      const { c, gl } = bgGL;
+      c.width = bg.width; c.height = bg.height;
+      gl.viewport(0, 0, c.width, c.height);
+      gl.uniform2f(bgGL.uRes, c.width, c.height); gl.uniform1f(bgGL.uDpr, dpr);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      b.drawImage(c, 0, 0);
+    } catch (err) {
+      console.warn('Painted background off:', err);
+      b.fillStyle = '#DDE7ED'; b.fillRect(0, 0, bg.width, bg.height);
+    }
+  }
+
+  // ---------- Things that move in the scene ----------
+  // reeds: two clusters of tapered brush strokes rising from the bottom corners
+  let reeds = [];
+  function makeReeds() {
+    const r = seeded(29);
+    reeds = [];
+    const cluster = (x0, x1, n, dir) => {
+      for (let i = 0; i < n; i++) {
+        const x = x0 + r() * (x1 - x0);
+        reeds.push({ x, gy: H + 6, h: H * (.2 + r() * .42), lean: dir * (.08 + r() * .2) + (r() - .5) * .08, ph: r() * 6.28, w: 1.2 + r() * 2.6, head: r() < .35, dry: r() });
+      }
+    };
+    cluster(-W * .02, W * .2, Math.round(10 + W / 120), 1);
+    cluster(W * .84, W * 1.02, Math.round(8 + W / 140), -1);
+  }
+  function drawReeds(now, wind) {
+    for (const rd of reeds) {
+      const sway = rd.lean + Math.sin(now / 1300 + rd.ph) * (.025 + storm * .05) + Math.min(.55, wind / 900);
+      const x0 = rd.x, y0 = rd.gy, x2 = rd.x + rd.h * sway, y2 = rd.gy - rd.h, x1 = rd.x + rd.h * sway * .25, y1 = rd.gy - rd.h * .55;
+      const L = [], Rr = [], N = 22;
+      for (let k = 0; k <= N; k++) {
+        const t = k / N, mt = 1 - t;
+        const x = mt * mt * x0 + 2 * mt * t * x1 + t * t * x2, y = mt * mt * y0 + 2 * mt * t * y1 + t * t * y2;
+        const dx = 2 * mt * (x1 - x0) + 2 * t * (x2 - x1), dy = 2 * mt * (y1 - y0) + 2 * t * (y2 - y1), l = Math.hypot(dx, dy) || 1;
+        const w = rd.w * Math.pow(mt, .7) * (.9 + .2 * Math.sin(t * 9 + rd.ph)) + .25;
+        L.push([x - dy / l * w, y + dx / l * w]); Rr.push([x + dy / l * w, y - dx / l * w]);
+      }
+      ctx.fillStyle = 'rgba(27,42,64,.9)';
+      ctx.beginPath(); ctx.moveTo(L[0][0], L[0][1]);
+      for (const p of L) ctx.lineTo(p[0], p[1]);
+      for (let k = Rr.length - 1; k >= 0; k--) ctx.lineTo(Rr[k][0], Rr[k][1]);
+      ctx.closePath(); ctx.fill();
+      // dry brush: a few pale streaks where the bristles ran out of ink
+      if (rd.w > 2) {
+        ctx.strokeStyle = 'rgba(221,231,237,.35)'; ctx.lineWidth = .6;
+        ctx.beginPath(); ctx.moveTo(x0 + .3, y0); ctx.quadraticCurveTo(x1 + .3, y1, x0 + (x2 - x0) * .7, y0 + (y2 - y0) * .7); ctx.stroke();
+      }
+      if (rd.head) {
+        ctx.fillStyle = 'rgba(27,42,64,.85)';
+        ctx.save(); ctx.translate(x2, y2); ctx.rotate(Math.atan2(y2 - y1, x2 - x1) + Math.PI / 2);
+        ctx.beginPath(); ctx.ellipse(0, 0, rd.w * 1.1, rd.w * 5, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+    }
+  }
+  // gust sheets: long soft bands of blown snow racing across the poster
+  const sheets = [];
+  function drawGusts(dt, now) {
+    if (storm < .05 && !sheets.length) return;
+    if (storm > .2 && Math.random() < dt * 3 * storm) sheets.push({ x: -W * .6, y: Math.random() * H, len: W * (.4 + Math.random() * .5), h: 20 + Math.random() * 90, sp: 1.2 + Math.random() * .8, a: .1 + Math.random() * .16 });
+    for (let i = sheets.length - 1; i >= 0; i--) {
+      const g = sheets[i];
+      g.x += (gustV * g.sp + 120) * dt;
+      if (g.x > W + 40) { sheets.splice(i, 1); continue; }
+      const grad = ctx.createLinearGradient(g.x, 0, g.x + g.len, 0);
+      const a = g.a * Math.max(storm, .2);
+      grad.addColorStop(0, 'rgba(255,255,255,0)'); grad.addColorStop(.5, `rgba(255,255,255,${a.toFixed(3)})`); grad.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.ellipse(g.x + g.len / 2, g.y + Math.sin(now / 400 + i) * 6, g.len / 2, g.h / 2, -.04, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  // one small figure in a vermilion coat, walking across the field with a long shadow
+  const walker = { u: .1, prints: [] };
+  function walkerPos(u) { return [W * (.12 + u * .76), H * (.527 + Math.sin(u * 2.4) * .004)]; }
+  function drawWalker(dt, now) {
+    if (!reduce) walker.u += dt / 160 * (1 - storm * .75);
+    if (walker.u > 1) { walker.u = 0; walker.prints = []; }
+    const [x, y] = walkerPos(walker.u), s = Math.max(.9, H / 760);
+    const step = Math.floor(walker.u * 300);
+    if (walker.prints.length && walker.prints[walker.prints.length - 1].k !== step && storm < .7) Sound.step(x / W);
+    if (!walker.prints.length || walker.prints[walker.prints.length - 1].k !== step) walker.prints.push({ k: step, x: x - 1.5 * s, y: y + 8.6 * s + (step % 2 ? .9 : -.9) * s });
+    if (walker.prints.length > 120) walker.prints.shift();
+    walker.prints.forEach((p, i) => { ctx.fillStyle = `rgba(80,110,140,${(.1 + .3 * i / walker.prints.length).toFixed(3)})`; ctx.beginPath(); ctx.ellipse(p.x, p.y, 1.1 * s, .5 * s, 0, 0, Math.PI * 2); ctx.fill(); });
+    const stride = Math.sin(now / 210);
+    ctx.fillStyle = 'rgba(80,110,140,.22)';
+    ctx.beginPath(); ctx.ellipse(x + 9 * s, y + 9 * s, 10 * s, 1.2 * s, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = INK; ctx.lineCap = 'round'; ctx.lineWidth = 1.1 * s;
+    ctx.beginPath(); ctx.moveTo(x - .6 * s, y + 3 * s); ctx.lineTo(x - .6 * s - stride * 1.4 * s, y + 8.6 * s); ctx.moveTo(x + .6 * s, y + 3 * s); ctx.lineTo(x + .6 * s + stride * 1.4 * s, y + 8.6 * s); ctx.stroke();
+    ctx.fillStyle = VERM;
+    ctx.beginPath(); ctx.moveTo(x - 1.6 * s, y - 3.4 * s); ctx.lineTo(x + 1.6 * s, y - 3.4 * s); ctx.lineTo(x + 2.6 * s, y + 4 * s); ctx.lineTo(x - 2.6 * s, y + 4 * s); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(x + .2 * s, y - 5 * s, 1.5 * s, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = INK; ctx.lineWidth = .7 * s;
+    ctx.beginPath(); ctx.moveTo(x + 2.4 * s, y - 1 * s); ctx.lineTo(x + 4.4 * s, y + 8.4 * s); ctx.stroke();
+  }
+
+  // ---------- Layout ----------
+  // Resizing: let the canvas stretch while the window moves, then rebuild once it settles,
+  // copying the last frame across so there is never a blank one.
+  let resizeT = 0;
+  function requestSize() { clearTimeout(resizeT); resizeT = setTimeout(size, W ? 160 : 0); }
+  const hold = document.createElement('canvas');
+  function size() {
+    const nW = stage.clientWidth, nH = stage.clientHeight, nd = Math.min(window.devicePixelRatio || 1, 2);
+    if (nW === W && nH === H && nd === dpr && S) return;
+    if (W) { hold.width = cv.width; hold.height = cv.height; hold.getContext('2d').drawImage(cv, 0, 0); }
+    dpr = nd; W = nW; H = nH;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    if (hold.width) ctx.drawImage(hold, 0, 0, cv.width, cv.height);
+    GW = Math.ceil(W / CELL); GH = Math.ceil(H / CELL);
+    S = new Uint8Array(GW * GH); base = new Uint8Array(GW * GH); ui = new Uint8Array(GW * GH); rim = new Uint8Array(GW * GH);
+    groundY = [];
+    for (let x = 0; x < GW; x++) {
+      const gy = Math.floor(ground(x * CELL + CELL / 2) / CELL);
+      groundY.push(gy);
+      for (let y = gy; y < GH; y++) base[idx(x, y)] = 1;
+    }
+    card.style.width = W + 'px'; card.style.height = H + 'px'; card.style.setProperty('--H', H + 'px');
+    const cw = W, ch = H;
+    box = { x: 0, y: 0, w: cw, h: ch };
+    paintBackground();
+    makeReeds();
+    if (!flakes.length) for (let i = 0; i < 560; i++) flakes.push(spawn({}, false));
+    dusted = false;
+    uiDirty = true;
+  }
+
+  // ---------- Read the live UI's real shape ----------
+  // Snow needs to know where the form's ledges are: the top rim of the card, the tops of the fields, the button and the letters.
+  function readLedges() {
+    ui.fill(0); rim.fill(0);
+    if (!live) { uiDirty = false; return; }
+    const gx0 = Math.round(box.x / CELL), gy0 = Math.round(box.y / CELL);
+    const cw = Math.ceil(box.w / CELL), ch = Math.ceil(box.h / CELL);
+    let mask = null, feat = null;
+    if (live && pixelsOK) {
+      try {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, cw + 2, ch + 2);
+        ctx.drawElementImage(card, 0, 0, cw, ch);
+        const d = ctx.getImageData(0, 0, cw, ch).data;
+        mask = new Uint8Array(cw * ch); feat = new Uint8Array(cw * ch);
+        for (let i = 0; i < cw * ch; i++) {
+          const r = d[i * 4], g = d[i * 4 + 1], b = d[i * 4 + 2], a = d[i * 4 + 3];
+          mask[i] = a > 140 ? 1 : 0;
+          feat[i] = a > 140 ? 1 : 0;
+        }
+      } catch (err) {
+        console.warn('Pixel read blocked, using element boxes instead:', err);
+        pixelsOK = false; mask = null;
+      }
+    }
+    if (!mask) {
+      // Fallback: ledges from the elements' boxes
+      mask = new Uint8Array(cw * ch); feat = new Uint8Array(cw * ch);
+      card.querySelectorAll('h1, p').forEach(el => {
+        const r = el.getBoundingClientRect(), c = card.getBoundingClientRect();
+        const x0 = Math.floor((r.left - c.left) / CELL), x1 = Math.ceil((r.right - c.left) / CELL);
+        const y0 = Math.floor((r.top - c.top) / CELL), y1 = Math.ceil((r.bottom - c.top) / CELL);
+        for (let y = Math.max(0, y0); y < Math.min(ch, y1); y++) for (let x = Math.max(0, x0); x < Math.min(cw, x1); x++) feat[y * cw + x] = 1;
+      });
+    }
+    for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) {
+      const gx = gx0 + x, gy = gy0 + y;
+      if (gx < 0 || gx >= GW || gy < 0 || gy >= GH) continue;
+      const m = mask[y * cw + x], above = y > 0 ? mask[(y - 1) * cw + x] : 0;
+      if (feat[y * cw + x]) ui[idx(gx, gy)] = 1;
+      else if (m && !above) { ui[idx(gx, gy)] = 1; rim[idx(gx, gy)] = 1; }
+    }
+    // Anything now buried inside a ledge (text changed) gets knocked loose
+    for (let i = 0; i < S.length; i++) if (S[i] && ui[i]) { S[i] = 0; puff((i % GW) * CELL, Math.floor(i / GW) * CELL, 1); }
+    uiDirty = false;
+  }
+
+  // ---------- Snow ----------
+  const solid = (i) => base[i] || ui[i];
+  const free = (i) => !S[i] && !solid(i);
+  let flip = false;
+  function settle() {
+    flip = !flip;
+    for (let y = GH - 2; y >= 0; y--) {
+      for (let k = 0; k < GW; k++) {
+        const x = flip ? k : GW - 1 - k;
+        const i = idx(x, y);
+        if (!S[i]) continue;
+        const below = i + GW;
+        if (free(below)) { S[i] = 0; S[below] = 1; continue; }
+        const dir = Math.random() < .5 ? -1 : 1;
+        const a = x + dir, b = x - dir;
+        if (a >= 0 && a < GW && free(below + dir) && free(i + dir) && Math.random() < .6) { S[i] = 0; S[below + dir] = 1; }
+        else if (b >= 0 && b < GW && free(below - dir) && free(i - dir) && Math.random() < .6) { S[i] = 0; S[below - dir] = 1; }
+      }
+    }
+  }
+  // Flakes in front of the sign drift past its top edge and land on what's printed on its face.
+  const faceSolid = (i) => base[i] || (ui[i] && !rim[i]);
+  function deposit(px, py, front) {
+    const gx = Math.floor(px / CELL), gy = Math.floor(py / CELL);
+    if (gx < 0 || gx >= GW || gy < 0 || gy >= GH) return false;
+    const i = idx(gx, gy);
+    const sol = front ? faceSolid : solid;
+    if (gy + 1 < GH && (sol(i + GW) || S[i + GW]) && !S[i] && !sol(i)) { S[i] = 1; return true; }
+    return sol(i) || S[i] ? true : false;
+  }
+
+  // falling flakes: far (behind the sign), mid (lands and builds up), near (in front, soft)
+  const flakes = [];
+  // storm eases between 0 (calm) and 1 (blizzard); the button sets where it is heading
+  let storm = 0, stormTarget = 0, gustV = 0;
+  function spawn(f, top) {
+    f.layer = Math.random() < .28 ? 0 : Math.random() < .8 ? 1 : 2;
+    f.x = Math.random() * W; f.y = top ? -10 - Math.random() * H * .2 : Math.random() * H;
+    f.r = [1.3, 2.3, 4.6][f.layer] * (.6 + Math.random() * .8); f.sq = Math.random() < .18;
+    f.vy = [18, 46, 64][f.layer] * (.8 + Math.random() * .4);
+    f.ph = Math.random() * 6.28; f.sw = 8 + Math.random() * 18; f.front = Math.random() < .55;
+    return f;
+  }
+
+  const puffs = [];
+  function puff(x, y, n) {
+    for (let k = 0; k < n; k++) puffs.push({ x, y, vx: (Math.random() - .5) * 120, vy: -Math.random() * 120, life: 1, land: Math.random() < .5 });
+    if (puffs.length > 1500) puffs.splice(0, puffs.length - 1500);
+  }
+  function clearRect(x0, y0, x1, y1, puffEvery) {
+    const gx0 = Math.max(0, Math.floor(x0 / CELL)), gx1 = Math.min(GW, Math.ceil(x1 / CELL));
+    const gy0 = Math.max(0, Math.floor(y0 / CELL)), gy1 = Math.min(GH, Math.ceil(y1 / CELL));
+    let c = 0;
+    for (let y = gy0; y < gy1; y++) for (let x = gx0; x < gx1; x++) {
+      const i = idx(x, y);
+      if (S[i] && !base[i]) { S[i] = 0; if (c++ % puffEvery === 0) puff(x * CELL, y * CELL, 1); }
+    }
+  }
+
+  // ---------- Sound: all made here, nothing downloaded. Off until asked for. ----------
+  // Wind that thickens into a howling blizzard, a glass wind chime (fūrin) that rings on the gusts, the walker's
+  // steps creaking in fresh snow, a soft swish when you brush snow off, and a wooden tap for each letter you type.
+  const Sound = (() => {
+    let ac = null, master, windG, windF, airG, airF, howlG, howlF, on = false, lastBrush = 0, nextChime = 1.2;
+    const PENTA = [0, 2, 5, 7, 9, 12, 14, 17];
+    function noiseBuf(seconds, brown) {
+      const b = ac.createBuffer(1, ac.sampleRate * seconds, ac.sampleRate), d = b.getChannelData(0);
+      let last = 0;
+      for (let i = 0; i < d.length; i++) { const w = Math.random() * 2 - 1; if (brown) { last = (last + .02 * w) / 1.02; d[i] = last * 3.5; } else d[i] = w; }
+      return b;
+    }
+    let WHITE, BROWN;
+    function loop(buf) { const s = ac.createBufferSource(); s.buffer = buf; s.loop = true; s.start(); return s; }
+    function env(g, t, peak, a, d) { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(.0001, t + a + d); }
+    function pan(x) { const p = ac.createStereoPanner ? ac.createStereoPanner() : null; if (p) { p.pan.value = Math.max(-1, Math.min(1, x * 2 - 1)) * .7; p.connect(master); return p; } return master; }
+    function start() {
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      const comp = ac.createDynamicsCompressor();
+      master = ac.createGain(); master.gain.value = 0;
+      master.connect(comp); comp.connect(ac.destination);
+      WHITE = noiseBuf(2, false); BROWN = noiseBuf(4, true);
+      // wind: a body of soft rumble, and an airy hiss on top that small speakers can carry
+      windF = ac.createBiquadFilter(); windF.type = 'lowpass'; windF.frequency.value = 900; windF.Q.value = .5;
+      windG = ac.createGain(); windG.gain.value = .5;
+      loop(BROWN).connect(windF); windF.connect(windG); windG.connect(master);
+      airF = ac.createBiquadFilter(); airF.type = 'bandpass'; airF.frequency.value = 1200; airF.Q.value = .5;
+      airG = ac.createGain(); airG.gain.value = .05;
+      loop(WHITE).connect(airF); airF.connect(airG); airG.connect(master);
+      // the howl: a narrow, wandering whistle that only the blizzard wakes
+      howlF = ac.createBiquadFilter(); howlF.type = 'bandpass'; howlF.frequency.value = 700; howlF.Q.value = 9;
+      howlG = ac.createGain(); howlG.gain.value = 0;
+      loop(WHITE).connect(howlF); howlF.connect(howlG); howlG.connect(master);
+    }
+    // fūrin: a small glass bell, a bright strike and a long shimmering tail
+    function chime(x, loud) {
+      const t = ac.currentTime, base = 1568 * Math.pow(2, PENTA[Math.floor(Math.random() * 5)] / 12);
+      [[1, .14, 2.4], [2.76, .06, 1.4], [5.4, .03, .7], [1.007, .08, 2.6]].forEach(([m, a, d]) => {
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.frequency.value = base * m; env(g, t, a * loud, .003, d);
+        o.connect(g); g.connect(pan(x)); o.start(t); o.stop(t + d + .1);
+      });
+    }
+    // a step in fresh snow: a short, soft creak
+    function step(x) {
+      if (!on) return;
+      const t = ac.currentTime, s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+      s.buffer = WHITE; f.type = 'bandpass'; f.frequency.value = 1100 + Math.random() * 600; f.Q.value = 1;
+      env(g, t, .16, .01, .1);
+      s.connect(f); f.connect(g); g.connect(pan(x)); s.start(t, Math.random() * 1.5, .15);
+    }
+    // brushing snow off the letters: a soft swish, brighter the faster you sweep
+    function brush(x, speed) {
+      if (!on) return;
+      const t = ac.currentTime;
+      if (t - lastBrush < .06) return;
+      lastBrush = t;
+      const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(), k = Math.min(1, speed / 40);
+      s.buffer = WHITE; f.type = 'bandpass'; f.frequency.value = 1400 + k * 2600; f.Q.value = .8;
+      env(g, t, .14 + k * .2, .02, .16);
+      s.connect(f); f.connect(g); g.connect(pan(x)); s.start(t, Math.random() * 1.5, .22);
+    }
+    // typing your own word: a small wooden tap, pitched to a scale
+    function key(k) {
+      if (!on) return;
+      const t = ac.currentTime, f = 520 * Math.pow(2, PENTA[(k.charCodeAt(0) || 0) % PENTA.length] / 12);
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'triangle'; o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * .96, t + .08);
+      env(g, t, .22, .002, .16); o.connect(g); g.connect(master); o.start(t); o.stop(t + .2);
+    }
+    function update(dt, storm, gust) {
+      if (!on) return;
+      const t = ac.currentTime, gu = Math.max(0, gust);
+      const swell = .7 + .3 * Math.sin(t * .23) * Math.sin(t * .61);
+      windG.gain.setTargetAtTime((.42 + storm * (.6 + .4 * gu)) * swell, t, .25);
+      windF.frequency.setTargetAtTime(700 + storm * (1100 + 800 * gu), t, .3);
+      airG.gain.setTargetAtTime((.05 + storm * (.12 + .1 * gu)) * swell, t, .25);
+      airF.frequency.setTargetAtTime(1100 + storm * (900 + 700 * gu), t, .3);
+      howlG.gain.setTargetAtTime(storm * storm * (.12 + .3 * gu), t, .3);
+      howlF.frequency.setTargetAtTime(560 + 260 * Math.sin(t * .6) + 380 * gu * storm, t, .4);
+      // the chime: now and then in the calm, often and louder on the gusts
+      nextChime -= dt * (1 + storm * gu * 6);
+      if (nextChime <= 0) { chime(.78, .6 + storm * .5); nextChime = 5 + Math.random() * 9; }
+    }
+    async function toggle() {
+      if (!ac) start();
+      on = !on;
+      if (on) { ac.resume(); master.gain.setTargetAtTime(.9, ac.currentTime, .3); }
+      else master.gain.setTargetAtTime(0, ac.currentTime, .15);
+      return on;
+    }
+    return { toggle, step, brush, key, update, get on() { return on; } };
+  })();
+  const soundBtn = root.getElementById('sound');
+  soundBtn.addEventListener('click', async () => {
+    const v = await Sound.toggle();
+    soundBtn.textContent = v ? 'Sound off' : 'Sound on';
+    soundBtn.setAttribute('aria-pressed', v ? 'true' : 'false');
+  });
+
+  // ---------- Input ----------
+  let px = -999, py = -999, lastMove = 0;
+  stage.addEventListener('pointermove', (e) => {
+    const r = stage.getBoundingClientRect();
+    const x = e.clientX - r.left, y = e.clientY - r.top;
+    const dx = x - px, speed = Math.hypot(x - px, y - py);
+    px = x; py = y; lastMove = performance.now();
+    if (speed > 2) {
+      const rad = 18; let brushed = 0;
+      const gx0 = Math.max(0, Math.floor((x - rad) / CELL)), gx1 = Math.min(GW, Math.ceil((x + rad) / CELL));
+      const gy0 = Math.max(0, Math.floor((y - rad) / CELL)), gy1 = Math.min(GH, Math.ceil((y + rad) / CELL));
+      for (let gy = gy0; gy < gy1; gy++) for (let gx = gx0; gx < gx1; gx++) {
+        const i = idx(gx, gy);
+        if (!S[i] || base[i]) continue;
+        if (Math.hypot(gx * CELL - x, gy * CELL - y) > rad) continue;
+        if (gy >= groundY[gx] - 1) continue;
+        S[i] = 0; brushed++;
+        if (Math.random() < .35) puffs.push({ x: gx * CELL, y: gy * CELL, vx: Math.max(-200, Math.min(200, dx * 6)) + (Math.random() - .5) * 60, vy: -40 - Math.random() * 80, life: 1, land: true });
+      }
+      if (brushed) Sound.brush(x / W, speed);
+    }
+  }, { passive: true });
+
+  // The title is live text: click it and type your own word, and the snow settles on the new letters
+  title.addEventListener('input', () => {
+    if (title.textContent.length > 8) title.textContent = title.textContent.slice(0, 8);
+    uiDirty = true;
+  });
+  title.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); title.blur(); } else if (e.key.length === 1) Sound.key(e.key); });
+  title.addEventListener('blur', () => { if (!title.textContent.trim()) title.textContent = 'はつゆき'; uiDirty = true; });
+  const bliz = root.getElementById('blizzard');
+  bliz.addEventListener('click', () => {
+    const on = stormTarget < .5;
+    stormTarget = on ? 1 : 0;
+    bliz.textContent = on ? 'Calm' : 'Blizzard';
+    bliz.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+
+  // ---------- Draw ----------
+  function drawSnowGrid() {
+    const shade = new Path2D(), snow = new Path2D();
+    const r = CELL * .78;
+    for (let y = 0; y < GH; y++) {
+      const row = y * GW;
+      for (let x = 0; x < GW; x++) {
+        if (!S[row + x]) continue;
+        const cx = x * CELL + CELL / 2, cy = y * CELL + CELL / 2;
+        // hidden under other snow: skip the shadow
+        if (!S[row + x + GW]) { shade.moveTo(cx + r, cy + 1.4); shade.arc(cx, cy + 1.4, r, 0, Math.PI * 2); }
+        snow.moveTo(cx + r, cy); snow.arc(cx, cy, r, 0, Math.PI * 2);
+      }
+    }
+    ctx.fillStyle = 'rgba(40,64,92,.42)'; ctx.fill(shade);
+    ctx.fillStyle = '#FFFFFF'; ctx.fill(snow);
+  }
+  function drawFlakes(layer) {
+    if (storm > .15) {
+      // in a blizzard each flake smears into a streak along its path
+      const k = .016 + storm * .03;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = layer === 2 ? `rgba(255,255,255,${(.45 * storm + .1).toFixed(3)})` : layer === 0 ? 'rgba(255,255,255,.75)' : 'rgba(255,255,255,.95)';
+      for (const f of flakes) {
+        if (f.layer !== layer) continue;
+        ctx.lineWidth = f.r * (layer === 2 ? 1.5 : 1.3);
+        ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(f.x - f.vxNow * k, f.y - f.vyNow * k); ctx.stroke();
+      }
+      if (storm > .6) return;
+    }
+    for (const f of flakes) {
+      if (f.layer !== layer) continue;
+      if (layer === 2) {
+        // close to the lens: big, soft and out of focus
+        const r = f.r * 1.8, g = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, r);
+        g.addColorStop(0, 'rgba(255,255,255,.75)'); g.addColorStop(.55, 'rgba(255,255,255,.35)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = g; ctx.fillRect(f.x - r, f.y - r, r * 2, r * 2);
+        continue;
+      }
+      ctx.fillStyle = layer === 0 ? 'rgba(255,255,255,.8)' : '#FFFFFF';
+      ctx.beginPath();
+      if (f.sq) { ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.ph); ctx.roundRect(-f.r, -f.r * .8, f.r * 2, f.r * 1.6, f.r * .45); ctx.restore(); }
+      else ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  let dusted = false;
+  function dust() {
+    for (let k = 0; k < GW * 6; k++) {
+      const x = Math.floor(Math.random() * GW);
+      const sol = Math.random() < .55 ? faceSolid : solid;
+      for (let y = 0; y < GH - 1; y++) {
+        const i = idx(x, y);
+        if (S[i] || sol(i)) break;
+        if (sol(i + GW) || S[i + GW]) { S[i] = 1; break; }
+      }
+    }
+    dusted = true;
+  }
+
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000, .05); last = now;
+    if (!W) return;
+    if (uiDirty) readLedges();
+    if (!dusted) dust();
+
+    // wind: a light drift when calm; in a blizzard a hard push from the left that comes in gusts
+    storm += (stormTarget - storm) * Math.min(1, dt * (stormTarget > storm ? .9 : .5));
+    const gust = .55 + .45 * Math.sin(now / 760) * Math.sin(now / 2300 + 1.3) + .25 * Math.sin(now / 310);
+    gustV = storm * (260 + 320 * Math.max(0, gust)) * (reduce ? .35 : 1);
+    const wind = Math.sin(now / 3200) * 14 + Math.sin(now / 900) * 4 + gustV;
+    Sound.update(dt, storm, gust);
+    // more snow as the storm builds, thinning out again as it passes
+    const want = Math.round(560 + storm * (reduce ? 500 : 2200));
+    while (flakes.length < want) { const f = spawn({}, false); if (storm > .3 && Math.random() < .6) { f.x = -20 - Math.random() * 60; } flakes.push(f); }
+    if (flakes.length > want + 40) flakes.length = want;
+    for (const f of flakes) {
+      f.ph += dt * 1.4;
+      f.vxNow = Math.sin(f.ph) * f.sw * 3.6 * (1 - storm * .7) + wind * (.45 + .35 * f.layer);
+      f.vyNow = f.vy * (1 + storm * 1.3) + Math.sin(f.ph * 2.3) * storm * 40;
+      f.y += f.vyNow * dt;
+      f.x += f.vxNow * dt;
+      if (f.x < -90) f.x += W + 120; if (f.x > W + 30) { f.x = -20 - Math.random() * 60; f.y = Math.random() * H; }
+      if (f.layer === 1 && deposit(f.x, f.y, f.front)) spawn(f, true);
+      else if (f.y > H + 10) spawn(f, true);
+    }
+    // the wind scours snow off the windward side of each letter and streams it away
+    if (storm > .2) {
+      const tries = Math.round(500 * storm);
+      for (let k = 0; k < tries; k++) {
+        const i = Math.floor(Math.random() * S.length);
+        if (!S[i] || i < GW || S[i - GW]) continue;
+        if (Math.random() > storm * .55) continue;
+        const nx = i + 1;
+        if ((i % GW) < GW - 1 && free(nx) && Math.random() < .5) { S[i] = 0; S[nx] = 1; }
+        else { S[i] = 0; puffs.push({ x: (i % GW) * CELL, y: Math.floor(i / GW) * CELL, vx: wind * .6, vy: -30 - Math.random() * 60, life: 1, land: false, blown: true }); }
+      }
+    }
+    for (let s = 0; s < (reduce ? 1 : 2); s++) settle();
+    // snow that reaches the bottom of the poster falls out of it
+    for (let x = 0, o = (GH - 1) * GW; x < GW; x++) S[o + x] = 0;
+    for (const p of puffs) {
+      if (p.blown) { p.vx += (wind * 1.1 - p.vx) * Math.min(1, dt * 2.5); p.vy += (40 * Math.sin(p.x * .02) - p.vy) * dt; p.life -= dt * .3; }
+      else { p.vy += 260 * dt; p.vx *= .98; }
+      p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt * .7;
+      if (p.land && p.vy > 0 && p.y > 0 && p.y < H && p.x > 0 && p.x < W) {
+        const gx = Math.floor(p.x / CELL), gy = Math.floor(p.y / CELL);
+        const i = idx(gx, gy);
+        if (gy + 1 < GH && (solid(i + GW) || S[i + GW]) && free(i)) { S[i] = 1; p.life = 0; }
+      }
+    }
+    for (let i = puffs.length - 1; i >= 0; i--) if (puffs[i].life <= 0 || puffs[i].y > H + 20 || puffs[i].x > W + 40) puffs.splice(i, 1);
+    if (puffs.length > 2500) puffs.splice(0, puffs.length - 2500);
+
+    // compose the world
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    ctx.drawImage(bg, 0, 0);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawWalker(dt, now);
+    if (storm > .01) {
+      ctx.fillStyle = `rgba(234,241,245,${(storm * (.42 + .28 * Math.max(0, gust))).toFixed(3)})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+    drawFlakes(0);
+
+    if (live) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.drawElementImage(card, box.x * dpr, box.y * dpr, box.w * dpr, box.h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    drawReeds(now, wind);
+    drawSnowGrid();
+    drawFlakes(1);
+    ctx.fillStyle = 'rgba(255,255,255,.9)';
+    ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineCap = 'round'; ctx.lineWidth = 1.6;
+    for (const p of puffs) {
+      ctx.globalAlpha = Math.max(0, p.life);
+      if (p.blown) { ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * .03, p.y - p.vy * .03); ctx.stroke(); }
+      else ctx.fillRect(p.x, p.y, 2.2, 2.2);
+    }
+    ctx.globalAlpha = 1;
+    drawFlakes(2);
+    drawGusts(dt, now);
+  }
+
+  function tick(now) {
+    if (live && typeof cv.requestPaint === 'function') { pending = now; cv.requestPaint(); }
+    else frame(now);
+    requestAnimationFrame(tick);
+  }
+  let pending = 0;
+  if (live) cv.addEventListener('paint', () => { try { frame(pending || performance.now()); } catch (err) { console.warn(err); } });
+
+  modeEl.textContent = live
+    ? 'Running on HTML-in-Canvas. The type is real HTML and the snow reads its pixels, so it settles on every letter. Brush it off with your cursor, or click the title and write your own word.'
+    : 'Your browser can\'t draw live HTML into the scene yet, so the snow falls past the letters. Open in desktop Chrome to see it settle on them.';
+
+  const ro = new ResizeObserver(requestSize);
+  ro.observe(stage);
+  size();
+  if (document.fonts) document.fonts.ready.then(() => { if (W) paintBackground(); });
+  requestAnimationFrame(tick);
+})();
+    </script>
+  </body>
+</html>

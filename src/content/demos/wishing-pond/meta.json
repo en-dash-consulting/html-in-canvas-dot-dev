@@ -1,0 +1,38 @@
+{
+  "title": "Wishing Pond",
+  "description": "A real web form at the bottom of a koi pond: type a wish, toss a coin and watch your words sink, while ripples, caustics and weather bend the live HTML. By Baked Design Studio.",
+  "tags": [
+    "webgl",
+    "shader",
+    "water",
+    "ripples",
+    "form",
+    "sound",
+    "interactive"
+  ],
+  "author": "Baked Design Studio",
+  "dateCreated": "2026-10-29",
+  "context": "webgl",
+  "difficulty": "advanced",
+  "features": [
+    "layoutsubtree",
+    "drawElementImage",
+    "onpaint",
+    "requestPaint"
+  ],
+  "browserSupport": {
+    "chrome": true,
+    "firefox": false,
+    "safari": false
+  },
+  "related": [
+    {
+      "label": "Wishing Pond, full screen on baked.design",
+      "href": "https://baked.design/lab/wishing-pond/"
+    },
+    {
+      "label": "How we built it, step by step",
+      "href": "https://baked.design/fun/html-in-canvas/"
+    }
+  ]
+}

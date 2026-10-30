@@ -1,0 +1,870 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Wishing Pond</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" />
+    <style>
+/* Layout: a koi pond fills the screen; a real, live form lies on the pond floor under the water. Single dark look, by choice. */
+:root, :host {
+  --floor: #123A34;
+  --floor-edge: #08201C;
+  --card: #FFFFFF;
+  --ink: #0F1F1C;
+  --muted: #5B6B67;
+  --field: #EEF2F0;
+  --pond: #0E3B36;
+  --gold: #E8B341;
+  --bar: #061512;
+  --bar-ink: #DCE8E4;
+  --font: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body, :host { background: var(--bar); color: var(--bar-ink); font: 15px/1.45 var(--font); -webkit-font-smoothing: antialiased; overflow: hidden; }
+.app { height: 100%; display: grid; grid-template-rows: 1fr auto; }
+.stage {
+  position: relative; min-height: 0; overflow: hidden;
+  background: radial-gradient(ellipse at 50% 45%, var(--floor), var(--floor-edge));
+  display: grid; place-items: center;
+}
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#gl, #fx { pointer-events: none; }
+.card.float { position: relative; z-index: 3; box-shadow: 0 20px 50px -20px rgb(0 0 0 / .6); }
+
+/* The live card on the pond floor */
+.card {
+  box-sizing: border-box;
+  width: min(340px, calc(100vw - 48px));
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 22px;
+  padding: 22px;
+  display: grid;
+  gap: 14px;
+}
+.card h1 { margin: 0; font-size: 24px; line-height: 30px; font-weight: 600; }
+.card p { margin: 0; font-size: 14px; line-height: 20px; color: var(--muted); }
+.card input {
+  font: inherit; font-size: 17px; line-height: 24px; color: var(--ink);
+  background: var(--field); border: 0; border-radius: 12px; padding: 12px 14px;
+  outline: none; width: 100%; box-sizing: border-box;
+}
+.card input::placeholder { color: var(--muted); }
+.card input:focus-visible { box-shadow: 0 0 0 2px var(--pond); }
+.card button {
+  font: inherit; font-weight: 600; font-size: 15px; line-height: 20px;
+  height: 48px; border: 0; border-radius: 12px; cursor: pointer;
+  background: var(--pond); color: #FFFFFF;
+  transition: transform 150ms ease-out;
+}
+.card button:active { transform: scale(.96); }
+.card button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.card .msg { min-height: 20px; color: var(--pond); font-weight: 500; }
+
+/* Bottom strip */
+.bar {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 24px;
+  padding-block: 12px 14px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--bar); color: var(--bar-ink);
+}
+.bar p { margin: 0; font-family: var(--mono); font-size: 12px; line-height: 18px; min-width: 0; max-width: 72ch; }
+.bar button {
+  font-family: var(--mono); font-size: 12px; line-height: 16px; font-weight: 500;
+  height: 36px; padding: 0 16px; border-radius: 999px; border: 0;
+  background: var(--bar-ink); color: var(--bar); cursor: pointer; flex: none;
+  transition: transform 150ms ease-out;
+}
+.bar .ctls { display: flex; align-items: center; gap: 12px; flex: none; }
+.bar button:active { transform: scale(.96); }
+.bar button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.bar .end { display: flex; align-items: center; gap: 16px; flex: none; }
+.bar .made { color: var(--bar-ink); font-family: var(--mono); font-size: 12px; line-height: 18px; text-decoration: underline; text-underline-offset: 3px; }
+.bar .made:hover { color: #FFFFFF; }
+body, :host { margin: 0; }
+
+/* Mounted in a shadow root on html-in-canvas.dev, the host gives the demo its height. */
+:host { display: block; height: min(78vh, 820px); min-height: 520px; }
+:host(:fullscreen) { height: 100vh; }
+    </style>
+  </head>
+  <body>
+<div class="app">
+  <div class="stage" id="stage">
+    <form class="card" id="card" novalidate autocomplete="off">
+      <h1>Wishing pond</h1>
+      <p>Type a wish and toss a coin in. Try words like rain, night or storm.</p>
+      <input id="wish" type="text" placeholder="I wish…" aria-label="Your wish">
+      <button type="submit">Toss a coin</button>
+      <p class="msg" id="msg" aria-live="polite"></p>
+    </form>
+  </div>
+  <footer class="bar">
+    <p id="mode">Checking for HTML-in-Canvas…</p>
+    <div class="ctls">
+      <a class="made" href="https://baked.design/">Made by Baked</a>
+      <button id="sound" type="button" aria-pressed="false">Sound on</button>
+      <button id="rain" type="button" aria-pressed="false">Rain</button>
+    </div>
+  </footer>
+</div>
+
+    <script>
+(() => {
+  // Standalone this is the document; mounted on html-in-canvas.dev it is the demo's shadow root.
+  const root = window.__demoRoot ?? document;
+  // Fonts declared inside a shadow root don't load, so a mounted demo adds its font link to the page.
+  if (root !== document) for (const href of ["https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"]) if (!document.querySelector(`link[href="${href}"]`)) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; document.head.appendChild(l); }
+  const stage = root.getElementById('stage');
+  const card = root.getElementById('card');
+  const modeEl = root.getElementById('mode');
+  const msg = root.getElementById('msg');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const amp = reduce ? .3 : 1;
+
+  let W = 0, H = 0, dpr = 1;
+  let onWish = () => {};
+
+  // ---------- Sound: everything is synthesised, nothing is downloaded. Starts only when you press Sound on. ----------
+  const Sound = (() => {
+    let ac = null, master, amb, ambF, rainG, cricketG, lastPlink = 0, on = false;
+    const PENTA = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21];
+    function noiseBuf(seconds, brown) {
+      const b = ac.createBuffer(1, ac.sampleRate * seconds, ac.sampleRate), d = b.getChannelData(0);
+      let last = 0;
+      for (let i = 0; i < d.length; i++) { const w = Math.random() * 2 - 1; if (brown) { last = (last + .02 * w) / 1.02; d[i] = last * 3.5; } else d[i] = w; }
+      return b;
+    }
+    function loop(buf) { const s = ac.createBufferSource(); s.buffer = buf; s.loop = true; s.start(); return s; }
+    function start() {
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      const comp = ac.createDynamicsCompressor();
+      master = ac.createGain(); master.gain.value = 0;
+      master.connect(comp); comp.connect(ac.destination);
+      // water lapping: brown noise through a slowly breathing low-pass
+      const brown = noiseBuf(4, true), white = noiseBuf(2, false);
+      ambF = ac.createBiquadFilter(); ambF.type = 'lowpass'; ambF.frequency.value = 420; ambF.Q.value = .7;
+      amb = ac.createGain(); amb.gain.value = .5;
+      loop(brown).connect(ambF); ambF.connect(amb); amb.connect(master);
+      const lfo = ac.createOscillator(), lfoG = ac.createGain();
+      lfo.frequency.value = .13; lfoG.gain.value = 160; lfo.connect(lfoG); lfoG.connect(ambF.frequency); lfo.start();
+      // rain: bright hiss, faded in by the weather
+      const rf = ac.createBiquadFilter(); rf.type = 'highpass'; rf.frequency.value = 1800;
+      rainG = ac.createGain(); rainG.gain.value = 0;
+      loop(white).connect(rf); rf.connect(rainG); rainG.connect(master);
+      cricketG = ac.createGain(); cricketG.gain.value = 0; cricketG.connect(master);
+    }
+    function env(g, t, peak, a, d) { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(.0001, t + a + d); }
+    function pan(x) { const p = ac.createStereoPanner ? ac.createStereoPanner() : null; if (p) { p.pan.value = Math.max(-1, Math.min(1, x * 2 - 1)) * .7; p.connect(master); return p; } return master; }
+    // a water drop: a sine that falls in pitch, the sound of a pebble
+    function plink(x, strength, note) {
+      if (!on) return;
+      const now = ac.currentTime;
+      if (now - lastPlink < .07 && note === undefined) return;
+      lastPlink = now;
+      const f = note !== undefined ? 523.25 * Math.pow(2, note / 12) : 500 + Math.random() * 900;
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(f * 1.5, now); o.frequency.exponentialRampToValueAtTime(f * .55, now + .16);
+      env(g, now, .14 * strength, .004, .26);
+      o.connect(g); g.connect(pan(x)); o.start(now); o.stop(now + .35);
+    }
+    function key(k, x) { plink(x, .7, PENTA[(k.charCodeAt(0) || 0) % PENTA.length]); }
+    // a coin: a bright ting in the air, then a plop and bubbles as it sinks
+    function coin(x) {
+      if (!on) return;
+      const t = ac.currentTime;
+      [2637, 3951, 5274].forEach((f, i) => {
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.frequency.value = f; env(g, t, [.09, .05, .03][i], .002, .5);
+        o.connect(g); g.connect(pan(x)); o.start(t); o.stop(t + .6);
+      });
+      const t2 = t + .38, o = ac.createOscillator(), g = ac.createGain();
+      o.frequency.setValueAtTime(360, t2); o.frequency.exponentialRampToValueAtTime(70, t2 + .14);
+      env(g, t2, .3, .005, .2); o.connect(g); g.connect(pan(x)); o.start(t2); o.stop(t2 + .3);
+      const nb = ac.createBufferSource(), nf = ac.createBiquadFilter(), ng = ac.createGain();
+      nb.buffer = noiseBuf(.3, false); nf.type = 'lowpass'; nf.frequency.value = 900;
+      env(ng, t2, .18, .003, .18); nb.connect(nf); nf.connect(ng); ng.connect(pan(x)); nb.start(t2);
+      for (let i = 0; i < 6; i++) {
+        const tb = t2 + .15 + i * .12 + Math.random() * .08, ob = ac.createOscillator(), gb = ac.createGain(), fb = 380 + Math.random() * 300;
+        ob.frequency.setValueAtTime(fb, tb); ob.frequency.exponentialRampToValueAtTime(fb * 2.2, tb + .06);
+        env(gb, tb, .05, .004, .07); ob.connect(gb); gb.connect(pan(x)); ob.start(tb); ob.stop(tb + .12);
+      }
+    }
+    // thunder: low rolling noise a moment after the flash
+    function thunder() {
+      if (!on) return;
+      const t = ac.currentTime + .35 + Math.random() * .7;
+      const nb = ac.createBufferSource(), nf = ac.createBiquadFilter(), g = ac.createGain();
+      nb.buffer = noiseBuf(3.5, true); nf.type = 'lowpass'; nf.frequency.setValueAtTime(420, t); nf.frequency.exponentialRampToValueAtTime(90, t + 3);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.9, t + .12); g.gain.exponentialRampToValueAtTime(.0001, t + 3.2);
+      nb.connect(nf); nf.connect(g); g.connect(master); nb.start(t);
+    }
+    // crickets at night: three quick high chirps
+    function chirp() {
+      const t = ac.currentTime;
+      for (let i = 0; i < 3; i++) {
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.frequency.value = 4300 + Math.random() * 200;
+        env(g, t + i * .055, .05, .004, .03); o.connect(g); g.connect(cricketG); o.start(t + i * .055); o.stop(t + i * .055 + .06);
+      }
+    }
+    function update(dt, w) {
+      if (!on) return;
+      const t = ac.currentTime;
+      rainG.gain.setTargetAtTime(w.rain === 2 ? .09 : w.rain === 1 ? .045 : 0, t, .6);
+      amb.gain.setTargetAtTime(.5 + w.storm * .4, t, .8);
+      cricketG.gain.setTargetAtTime(Math.max(0, w.night - .5) * 2 * (1 - w.storm), t, 1);
+      if (w.night > .55 && w.storm < .3 && Math.random() < dt * 1.4) chirp();
+      if (w.rain && Math.random() < dt * (w.rain === 2 ? 9 : 4)) plink(Math.random(), .35);
+    }
+    async function toggle() {
+      if (!ac) start();
+      on = !on;
+      if (on) { ac.resume(); master.gain.setTargetAtTime(.8, ac.currentTime, .4); }
+      else master.gain.setTargetAtTime(0, ac.currentTime, .15);
+      return on;
+    }
+    return { toggle, plink, key, coin, thunder, update, get on() { return on; } };
+  })();
+  const soundBtn = root.getElementById('sound');
+  soundBtn.addEventListener('click', async () => {
+    const v = await Sound.toggle();
+    soundBtn.textContent = v ? 'Sound off' : 'Sound on';
+    soundBtn.setAttribute('aria-pressed', v ? 'true' : 'false');
+  });
+  card.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = root.getElementById('wish').value.trim();
+    if (!v) { msg.textContent = 'Type a wish first.'; return; }
+    msg.textContent = 'Your wish sank to the bottom.';
+    onWish(v);
+    root.getElementById('wish').value = '';
+    weatherSeen.clear();
+  });
+
+  const proto = window.CanvasRenderingContext2D && CanvasRenderingContext2D.prototype;
+  // Without HTML-in-Canvas the pond still runs; the form just floats on top instead of sitting under the water.
+  const live = !!(proto && 'drawElementImage' in proto);
+
+  // ---------- Layer 1: pond floor + live card, via HTML-in-Canvas ----------
+  const c2 = document.createElement('canvas'); c2.id = 'page-canvas';
+  if (live) {
+    c2.setAttribute('content', 'drawable');
+    c2.setAttribute('layoutsubtree', '');
+    card.setAttribute('drawable', '');
+    stage.appendChild(c2);
+    c2.appendChild(card);
+  } else {
+    stage.insertBefore(c2, card);
+    card.classList.add('float');
+  }
+  const ctx = c2.getContext('2d');
+  let dirty = true, cardBox = { x: 0, y: 0, w: 0, h: 0 };
+  const floorCache = document.createElement('canvas');
+
+  function seeded(seed) { return () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }; }
+  function paintFloor() {
+    floorCache.width = c2.width; floorCache.height = c2.height;
+    const f = floorCache.getContext('2d');
+    const g = f.createRadialGradient(c2.width / 2, c2.height * .45, 0, c2.width / 2, c2.height * .45, Math.max(c2.width, c2.height) * .7);
+    g.addColorStop(0, '#1A4A42'); g.addColorStop(1, '#071C18');
+    f.fillStyle = g; f.fillRect(0, 0, c2.width, c2.height);
+    // Pebbles: soft dark and light stones scattered on the bed
+    const rnd = seeded(7);
+    const n = Math.round(c2.width * c2.height / (9000 * dpr * dpr));
+    for (let i = 0; i < n; i++) {
+      const x = rnd() * c2.width, y = rnd() * c2.height, r = (4 + rnd() * 16) * dpr;
+      f.fillStyle = rnd() < .5 ? 'rgba(4,18,15,.35)' : 'rgba(70,110,98,.18)';
+      f.beginPath(); f.ellipse(x, y, r, r * (.6 + rnd() * .4), rnd() * 3, 0, Math.PI * 2); f.fill();
+    }
+  }
+
+  c2.addEventListener('paint', () => {
+    try {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.drawImage(floorCache, 0, 0);
+      const cw = card.offsetWidth, ch = card.offsetHeight;
+      cardBox = { x: Math.round((W - cw) / 2), y: Math.round((H - ch) / 2), w: cw, h: ch };
+      ctx.drawElementImage(card, cardBox.x * dpr, cardBox.y * dpr, cw * dpr, ch * dpr);
+      dirty = true;
+    } catch (err) { console.warn('drawElementImage failed:', err); }
+  });
+
+  // ---------- Layer 2: koi + coins (plain 2D, updated every frame) ----------
+  const kc = document.createElement('canvas');
+  const kx = kc.getContext('2d');
+  const koi = [];
+  const coins = [];
+  function makeKoi(i) {
+    const rnd = seeded(31 + i * 97);
+    const k = {
+      x: rnd() * W, y: rnd() * H, a: rnd() * Math.PI * 2,
+      speed: 38 + rnd() * 18, len: 70 + rnd() * 30, turn: 0,
+      seed: rnd() * 10, white: i === 1, trail: [],
+    };
+    k.trail = Array.from({ length: 220 }, (_, j) => [k.x - Math.cos(k.a) * j * .6, k.y - Math.sin(k.a) * j * .6]);
+    return k;
+  }
+
+  // ---------- Layer 3: water (WebGL) ----------
+  const glc = document.createElement('canvas');
+  glc.id = 'gl';
+  stage.appendChild(glc);
+  const gl = glc.getContext('webgl', { antialias: false, premultipliedAlpha: false });
+  const fx = document.createElement('canvas');
+  fx.id = 'fx';
+  stage.appendChild(fx);
+  const fxc = fx.getContext('2d');
+
+  // ---------- World state ----------
+  const world = {
+    night: 0, nightTarget: 0, overrideUntil: 0,
+    rain: 0, storm: 0, stormTarget: 0, flash: 0,
+    typingUntil: 0, scatterUntil: 0, caret: { x: 0, y: 0 }, lastMove: 0,
+  };
+  const letters = [];
+  const wishSpots = [];
+  const flies = Array.from({ length: 28 }, (_, i) => ({ x: Math.random(), y: Math.random(), a: Math.random() * 6.28, ph: Math.random() * 6.28 }));
+
+  const VS = 'attribute vec2 p; varying vec2 uv; void main(){ uv = p * .5 + .5; gl_Position = vec4(p, 0., 1.); }';
+  const FS = `precision highp float;
+    varying vec2 uv;
+    uniform sampler2D floorTex, koiTex, hmap;
+    uniform vec2 texel;
+    uniform float t, aspect, night, storm, flash;
+    uniform vec4 pads[6];
+    uniform vec4 cardRect;
+    float caustic(vec2 p, float tm){
+      vec2 i = p; float c = 1.; float inten = .005;
+      for (int n = 0; n < 4; n++) {
+        float tt = tm * (1. - (3.5 / float(n + 1)));
+        i = p + vec2(cos(tt - i.x) + sin(tt + i.y), sin(tt - i.y) + cos(tt + i.x));
+        c += 1. / length(vec2(p.x / (sin(i.x + tt) / inten), p.y / (cos(i.y + tt) / inten)));
+      }
+      c /= 4.; c = 1.17 - pow(c, 1.4);
+      return pow(abs(c), 8.);
+    }
+    float pad(vec2 q, vec4 P){
+      vec2 d = q - P.xy;
+      float c = cos(P.w), s = sin(P.w);
+      d = vec2(c * d.x - s * d.y, s * d.x + c * d.y);
+      float r = length(d) - P.z;
+      float ang = atan(d.y, d.x);
+      float notch = step(abs(ang), .32) * step(length(d), P.z + .01);
+      return (1. - smoothstep(-.002, .002, r)) * (1. - notch);
+    }
+    void main(){
+      float hl = texture2D(hmap, uv - vec2(texel.x, 0.)).r;
+      float hr = texture2D(hmap, uv + vec2(texel.x, 0.)).r;
+      float hd = texture2D(hmap, uv - vec2(0., texel.y)).r;
+      float hu = texture2D(hmap, uv + vec2(0., texel.y)).r;
+      vec2 g = vec2(hr - hl, hu - hd);
+      vec2 off = g * .2;
+      vec2 ruv = uv + off;
+
+      vec3 col = vec3(
+        texture2D(floorTex, ruv + off * .2).r,
+        texture2D(floorTex, ruv).g,
+        texture2D(floorTex, ruv - off * .2).b);
+
+      float sh = texture2D(koiTex, ruv + vec2(-.006, .012)).a;
+      col *= 1. - sh * .38 * (1. - night * .7);
+      vec4 k = texture2D(koiTex, ruv + off * .4);
+      col = mix(col, k.rgb, k.a);
+      vec3 base = col;
+
+      vec2 cp = mod(vec2(ruv.x * aspect, ruv.y) * 6.2831 * 1.6, 6.2831) - 250.;
+      float cs = caustic(cp, t * .45 + 23.);
+      col += cs * .2 * vec3(.82, 1., .9) * (1. - night) * (1. - storm * .8);
+
+      // time of day: noon -> dusk -> moonlight
+      float dusk = smoothstep(0., .5, night) * smoothstep(1., .5, night);
+      vec3 tint = mix(vec3(.86, .97, .94), vec3(.16, .24, .42), night);
+      tint = mix(tint, vec3(1., .66, .48), dusk * .7);
+      tint *= 1. - storm * .3;
+      float vig = smoothstep(1.15, .25, length((uv - .5) * vec2(aspect, 1.)));
+      col *= tint * mix(.62, 1., vig);
+
+      // the form glows faintly underwater at night
+      vec2 cq = (ruv - cardRect.xy) / cardRect.zw;
+      vec2 cd = max(abs(cq - .5) - .5, 0.) * cardRect.zw * vec2(aspect, 1.);
+      float inside = step(length(cd), 0.0001);
+      float halo = exp(-length(cd) * 22.);
+      col += night * (inside * base * vec3(.42, .62, .6) + halo * .16 * vec3(.45, .95, .8));
+
+      vec2 q = vec2(uv.x * aspect, uv.y);
+      float pshadow = 0.;
+      float pm = 0.; vec3 padCol = vec3(0.);
+      for (int i = 0; i < 6; i++) {
+        pshadow = max(pshadow, pad(q + vec2(.012, -.018) + off * .5, pads[i]));
+        float m = pad(q + off * .15, pads[i]);
+        if (m > pm) {
+          vec2 d = q - pads[i].xy;
+          float rr = length(d) / pads[i].z;
+          float veins = .04 * sin(atan(d.y, d.x) * 14.);
+          padCol = mix(vec3(.30, .55, .27), vec3(.18, .40, .19), rr) + veins;
+          padCol += .12 * smoothstep(.85, 1., rr);
+          pm = m;
+        }
+      }
+      padCol *= mix(vec3(1.), vec3(.25, .32, .45), night);
+      padCol = mix(padCol, padCol * vec3(1.15, .85, .7), dusk * .6);
+      col *= 1. - pshadow * .45 * (1. - night * .6);
+      col = mix(col, padCol, pm);
+
+      vec3 n = normalize(vec3(-g * 10., 1.));
+      vec3 L = normalize(vec3(-.4, .55, 1.));
+      float spec = pow(max(dot(reflect(-L, n), vec3(0., 0., 1.)), 0.), 70.);
+      vec3 glint = mix(vec3(1.), vec3(.75, .85, 1.), night);
+      col += spec * .7 * (1. - pm) * glint * (1. - storm * .5);
+      col += flash * vec3(.75, .8, .95);
+      gl_FragColor = vec4(col, 1.);
+    }`;
+
+  let texFloor, texKoi, texH, U = {};
+  function fail(err) {
+    console.warn('Water off:', err);
+    glc.remove();
+    modeEl.textContent = 'HTML-in-Canvas is on, but WebGL failed, so the water is off.';
+  }
+  try {
+    if (!gl) throw new Error('no webgl');
+    const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
+    const prog = gl.createProgram();
+    gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS));
+    gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS));
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+    gl.useProgram(prog);
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(prog, 'p');
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    const mk = (unit) => {
+      const tx = gl.createTexture();
+      gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, tx);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      return tx;
+    };
+    texFloor = mk(0); texKoi = mk(1); texH = mk(2);
+    gl.uniform1i(gl.getUniformLocation(prog, 'floorTex'), 0);
+    gl.uniform1i(gl.getUniformLocation(prog, 'koiTex'), 1);
+    gl.uniform1i(gl.getUniformLocation(prog, 'hmap'), 2);
+    ['texel', 't', 'aspect', 'pads', 'night', 'storm', 'flash', 'cardRect'].forEach(n => U[n] = gl.getUniformLocation(prog, n === 'pads' ? 'pads[0]' : n));
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    modeEl.textContent = live
+      ? 'Running on HTML-in-Canvas. The form on the pond floor is real: type a wish, select the text, toss a coin. Drag through the water to make ripples.'
+      : 'Your browser can\'t put live HTML under water yet, so the form floats on top. In Chrome with HTML-in-Canvas it sinks into the pond.';
+  } catch (err) { fail(err); }
+
+  // ---------- Ripple sim ----------
+  let GW = 0, GH = 0, cur, prev, bytes;
+  function drop(cx, cy, radius, a) {
+    if (!cur) return;
+    const gx = cx / W * GW, gy = cy / H * GH, r = Math.ceil(radius);
+    for (let y = Math.max(1, Math.floor(gy - r)); y < Math.min(GH - 1, gy + r); y++)
+      for (let x = Math.max(1, Math.floor(gx - r)); x < Math.min(GW - 1, gx + r); x++) {
+        const d = Math.hypot(x - gx, y - gy) / radius;
+        if (d < 1) cur[y * GW + x] += a * (Math.cos(d * Math.PI) * .5 + .5);
+      }
+  }
+  function step() {
+    for (let y = 1; y < GH - 1; y++) {
+      const row = y * GW;
+      for (let x = 1; x < GW - 1; x++) {
+        const i = row + x;
+        prev[i] = ((cur[i - 1] + cur[i + 1] + cur[i - GW] + cur[i + GW]) * .5 - prev[i]) * .986;
+      }
+    }
+    const tmp = cur; cur = prev; prev = tmp;
+  }
+  function heightAt(x, y) {
+    if (!cur) return 0;
+    const gx = Math.max(1, Math.min(GW - 2, Math.round(x / W * GW)));
+    const gy = Math.max(1, Math.min(GH - 2, Math.round(y / H * GH)));
+    return { dx: cur[gy * GW + gx + 1] - cur[gy * GW + gx - 1], dy: cur[(gy + 1) * GW + gx] - cur[(gy - 1) * GW + gx] };
+  }
+
+  // ---------- Lily pads ----------
+  let pads = [];
+  function makePads() {
+    const rnd = seeded(5);
+    pads = [];
+    for (let i = 0; i < 6; i++) {
+      let x, y, tries = 0;
+      do { x = rnd() * W; y = rnd() * H; tries++; }
+      while (tries < 30 && Math.abs(x - W / 2) < 230 && Math.abs(y - H / 2) < 220);
+      pads.push({ x, y, r: 34 + rnd() * 34, rot: rnd() * 6.28, vx: (rnd() - .5) * 6, vy: (rnd() - .5) * 6, vr: (rnd() - .5) * .05 });
+    }
+  }
+
+  // ---------- Sizing ----------
+  function size() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = stage.clientWidth; H = stage.clientHeight;
+    c2.width = Math.round(W * dpr); c2.height = Math.round(H * dpr);
+    glc.width = c2.width; glc.height = c2.height;
+    kc.width = W; kc.height = H;
+    fx.width = Math.round(W * dpr); fx.height = Math.round(H * dpr);
+    GW = 220; GH = Math.max(40, Math.round(GW * H / Math.max(W, 1)));
+    cur = new Float32Array(GW * GH); prev = new Float32Array(GW * GH); bytes = new Uint8Array(GW * GH);
+    if (gl) gl.viewport(0, 0, glc.width, glc.height);
+    paintFloor();
+    if (!koi.length) for (let i = 0; i < 4; i++) koi.push(makeKoi(i));
+    makePads();
+    dirty = true;
+    if (live && c2.requestPaint) c2.requestPaint();
+    if (!live) {
+      ctx.drawImage(floorCache, 0, 0);
+      const sr = stage.getBoundingClientRect(), cr = card.getBoundingClientRect();
+      cardBox = { x: cr.left - sr.left, y: cr.top - sr.top, w: cr.width, h: cr.height };
+    }
+  }
+
+  // ---------- Input ----------
+  let px = -1e4, py = -1e4, lx = null, ly = null;
+  window.addEventListener('pointermove', (e) => {
+    const r = stage.getBoundingClientRect();
+    const x = e.clientX - r.left, y = e.clientY - r.top;
+    px = x; py = y; world.lastMove = performance.now();
+    if (x < 0 || y < 0 || x > W || y > H) { lx = null; return; }
+    if (lx != null) {
+      const sp = Math.min(Math.hypot(x - lx, y - ly), 50);
+      if (sp > 1) drop(x, y, 3.4, sp * .8 * amp);
+      if (sp > 16) Sound.plink(x / W, Math.min(1, sp / 50) * .6);
+    }
+    lx = x; ly = y;
+  }, { passive: true });
+  window.addEventListener('pointerdown', (e) => {
+    const r = stage.getBoundingClientRect();
+    drop(e.clientX - r.left, e.clientY - r.top, 6, 55 * amp);
+    if (!(e.target.closest && e.target.closest('button'))) Sound.plink((e.clientX - r.left) / W, 1);
+  });
+  const wishEl = root.getElementById('wish');
+  const measure = document.createElement('canvas').getContext('2d');
+  function caretAt(idx) {
+    const r = stage.getBoundingClientRect(), b = wishEl.getBoundingClientRect();
+    const cs = getComputedStyle(wishEl);
+    measure.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const w = measure.measureText(wishEl.value.slice(0, idx)).width;
+    return { x: b.left - r.left + parseFloat(cs.paddingLeft) + w - wishEl.scrollLeft, y: b.top - r.top + b.height / 2 };
+  }
+  window.addEventListener('keydown', (e) => {
+    if (document.activeElement !== wishEl) return;
+    const now = performance.now();
+    if (e.key === 'Backspace' || e.key === 'Delete') world.scatterUntil = now + 1400;
+    else world.typingUntil = now + 2600;
+    if (e.key.length === 1) Sound.key(e.key, (wishEl.getBoundingClientRect().left + 40) / W);
+    requestAnimationFrame(() => {
+      world.caret = caretAt(wishEl.selectionStart || 0);
+      drop(world.caret.x, world.caret.y, 4.2, 50 * amp);
+    });
+  });
+
+  // Words change the weather
+  const seen = new Set(), weatherSeen = seen;
+  wishEl.addEventListener('input', () => {
+    const v = wishEl.value.toLowerCase();
+    const has = (w) => new RegExp(`\\b${w}\\b`).test(v);
+    const once = (key, fn) => { if (!seen.has(key)) { seen.add(key); fn(); } };
+    const now = performance.now();
+    if (has('night') || has('moon') || has('dark') || has('star') || has('stars')) once('night', () => { world.nightTarget = 1; world.overrideUntil = now + 40000; });
+    if (has('day') || has('sun') || has('sunny') || has('sunrise') || has('morning') || has('light') || has('bright')) once('day', () => { world.nightTarget = 0; world.overrideUntil = now + 40000; });
+    if (has('dusk') || has('sunset') || has('evening')) once('dusk', () => { world.nightTarget = .5; world.overrideUntil = now + 40000; });
+    if (has('rain') || has('rainy') || has('raining')) once('rain', () => setRain(Math.max(world.rain, 1)));
+    if (has('storm') || has('stormy') || has('storms') || has('thunder') || has('lightning')) once('storm', () => setRain(2));
+    if (has('calm') || has('clear') || has('peace')) once('calm', () => setRain(0));
+    if (!v) seen.clear();
+  });
+
+  function landingSpot(width) {
+    for (let tries = 0; tries < 60; tries++) {
+      const x = 40 + Math.random() * Math.max(10, W - width - 80);
+      const y = 50 + Math.random() * Math.max(10, H - 100);
+      const pad = 26;
+      const hitsCard = x + width > cardBox.x - pad && x < cardBox.x + cardBox.w + pad && y > cardBox.y - pad && y < cardBox.y + cardBox.h + pad;
+      const hitsWish = wishSpots.some(sp => Math.abs(sp.y - y) < 34 && x < sp.x + sp.w + 20 && x + width > sp.x - 20);
+      if (!hitsCard && !hitsWish) return { x, y };
+    }
+    return { x: 40 + Math.random() * (W - width - 80), y: H - 60 };
+  }
+  onWish = (text) => {
+    Sound.coin(.5);
+    const now = performance.now();
+    const cs = getComputedStyle(wishEl);
+    measure.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const chars = [...text];
+    const full = measure.measureText(text).width * .8 + 30;
+    const spot = landingSpot(full);
+    wishSpots.push({ x: spot.x, y: spot.y, w: full });
+    if (wishSpots.length > 14) wishSpots.shift();
+    let acc = 0;
+    chars.forEach((ch, i) => {
+      const from = caretAt(i);
+      const cw = measure.measureText(ch).width;
+      letters.push({
+        ch, fx: from.x + cw / 2, fy: from.y,
+        tx: spot.x + 26 + acc * .8 + (Math.random() - .5) * 3, ty: spot.y + (Math.random() - .5) * 6,
+        rot: (Math.random() - .5) * .35, born: now + i * 45, dur: 1500 + Math.random() * 500, seed: Math.random() * 6,
+        font: measure.font,
+      });
+      acc += cw;
+    });
+    while (letters.length > 400) letters.shift();
+    // the coin goes in first, right where the wish will land
+    const c = caretAt(chars.length);
+    drop(c.x, c.y, 8, 120 * amp);
+    coins.push({ x: spot.x + 8, y: spot.y, born: now, rot: Math.random() * 3, fx: c.x, fy: c.y });
+    if (coins.length > 40) coins.shift();
+    setTimeout(() => drop(spot.x + 8, spot.y, 7, -70 * amp), 500);
+    world.typingUntil = 0;
+  };
+  function setRain(level) {
+    world.rain = level;
+    world.stormTarget = level === 2 ? 1 : 0;
+    rainBtn.textContent = level ? 'Stop rain' : 'Rain';
+    rainBtn.setAttribute('aria-pressed', level ? 'true' : 'false');
+  }
+  const rainBtn = root.getElementById('rain');
+  rainBtn.addEventListener('click', () => setRain(world.rain ? 0 : 1));
+
+  // ---------- Koi + coins drawing ----------
+  function updateKoi(k, dt) {
+    const margin = 80;
+    // wander
+    k.turn += (Math.sin(performance.now() / 1300 + k.seed * 3) * .9 - k.turn) * dt;
+    let steer = k.turn * .9;
+    // stay in the pond
+    const cx = W / 2 - k.x, cy = H / 2 - k.y;
+    if (k.x < margin || k.x > W - margin || k.y < margin || k.y > H - margin) {
+      const want = Math.atan2(cy, cx);
+      let d = want - k.a; d = Math.atan2(Math.sin(d), Math.cos(d));
+      steer += d * 2.2;
+    }
+    let boost = 1;
+    const nowK = performance.now();
+    const cd = Math.hypot(world.caret.x - k.x, world.caret.y - k.y);
+    if (nowK < world.scatterUntil && cd < 260) {
+      const away = Math.atan2(k.y - world.caret.y, k.x - world.caret.x);
+      let d = away - k.a; d = Math.atan2(Math.sin(d), Math.cos(d));
+      steer += d * 4; boost = 3;
+    } else if (nowK < world.typingUntil) {
+      // swim up to the caret and nibble
+      const to = Math.atan2(world.caret.y - k.y, world.caret.x - k.x);
+      let d = to - k.a; d = Math.atan2(Math.sin(d), Math.cos(d));
+      steer += d * (cd > 60 ? 2.6 : 1.2);
+      boost = cd > 90 ? 1.8 : .55;
+      if (cd < 30 && Math.random() < .06) drop(k.x, k.y, 2.6, 22 * amp);
+    }
+    // shy of a moving cursor
+    const pd = Math.hypot(px - k.x, py - k.y);
+    if (pd < 140 && nowK - world.lastMove < 700) {
+      const away = Math.atan2(k.y - py, k.x - px);
+      let d = away - k.a; d = Math.atan2(Math.sin(d), Math.cos(d));
+      steer += d * 3.5; boost = 2.6 - pd / 140;
+    }
+    k.a += steer * dt;
+    const sp = k.speed * boost;
+    k.x += Math.cos(k.a) * sp * dt;
+    k.y += Math.sin(k.a) * sp * dt;
+    k.trail.unshift([k.x, k.y]);
+    if (k.trail.length > 220) k.trail.length = 220;
+  }
+  function drawKoi(k, now) {
+    if (k.trail.length < 4) return;
+    const segs = 18;
+    const pts = [];
+    let acc = 0, j = 0;
+    const step = k.len / segs;
+    pts.push(k.trail[0]);
+    for (let i = 1; i < k.trail.length && pts.length <= segs; i++) {
+      acc += Math.hypot(k.trail[i][0] - k.trail[i - 1][0], k.trail[i][1] - k.trail[i - 1][1]);
+      if (acc >= step * (pts.length)) pts.push(k.trail[i]);
+    }
+    if (pts.length < 6) return;
+    const n = pts.length;
+    const orange = '#EE6A21', white = '#F2EEE6', red = '#D2401C';
+    // tail fin
+    const tA = pts[n - 1], tB = pts[n - 3];
+    const ta = Math.atan2(tA[1] - tB[1], tA[0] - tB[0]);
+    const sway = Math.sin(now / 160 + k.seed) * .45;
+    kx.fillStyle = k.white ? 'rgba(242,238,230,.85)' : 'rgba(238,106,33,.8)';
+    kx.beginPath();
+    kx.moveTo(tA[0], tA[1]);
+    kx.lineTo(tA[0] + Math.cos(ta + .5 + sway) * k.len * .28, tA[1] + Math.sin(ta + .5 + sway) * k.len * .28);
+    kx.lineTo(tA[0] + Math.cos(ta + sway) * k.len * .16, tA[1] + Math.sin(ta + sway) * k.len * .16);
+    kx.lineTo(tA[0] + Math.cos(ta - .5 + sway) * k.len * .28, tA[1] + Math.sin(ta - .5 + sway) * k.len * .28);
+    kx.closePath(); kx.fill();
+    // pectoral fins
+    const h0 = pts[0], h1 = pts[3];
+    const ha = Math.atan2(h0[1] - h1[1], h0[0] - h1[0]);
+    const fin = Math.sin(now / 220 + k.seed) * .3;
+    kx.fillStyle = 'rgba(242,238,230,.75)';
+    [1, -1].forEach(sd => {
+      const bx = pts[3][0], by = pts[3][1];
+      kx.beginPath();
+      kx.ellipse(bx + Math.cos(ha + sd * 1.6) * k.len * .1, by + Math.sin(ha + sd * 1.6) * k.len * .1,
+        k.len * .11, k.len * .05, ha + sd * (1.1 + fin), 0, Math.PI * 2);
+      kx.fill();
+    });
+    // body
+    for (let i = n - 1; i >= 0; i--) {
+      const tt = i / (n - 1);
+      const r = k.len * .115 * Math.sin(Math.PI * (tt * .85 + .12)) + 1.5;
+      const patch = Math.sin(i * 1.15 + k.seed * 2.3) > .25;
+      kx.fillStyle = k.white ? (patch ? red : white) : (patch ? white : orange);
+      kx.beginPath(); kx.arc(pts[i][0], pts[i][1], r, 0, Math.PI * 2); kx.fill();
+    }
+  }
+  const ease = (x) => 1 - Math.pow(1 - x, 3);
+  function mixHex(a, b, t) {
+    const pa = [1, 3, 5].map(i => parseInt(a.slice(i, i + 2), 16)), pb = [1, 3, 5].map(i => parseInt(b.slice(i, i + 2), 16));
+    return `rgb(${pa.map((v, i) => Math.round(v + (pb[i] - v) * t)).join(',')})`;
+  }
+  function drawCoins(now) {
+    for (const c of coins) {
+      const age = Math.min((now - c.born) / 700, 1), e = ease(age);
+      const x = c.fx + (c.x - c.fx) * e, y = c.fy + (c.y - c.fy) * e - Math.sin(age * Math.PI) * 40;
+      const s = 1.9 - .9 * e;
+      const flip = Math.abs(Math.cos(age * 9 + c.rot));
+      kx.globalAlpha = .5 + .5 * e;
+      kx.fillStyle = '#B98A2B';
+      kx.beginPath(); kx.ellipse(x, y, 9 * s, 7 * s * (age < 1 ? flip + .15 : 1), c.rot, 0, Math.PI * 2); kx.fill();
+      kx.fillStyle = '#E8B341';
+      kx.beginPath(); kx.ellipse(x - 1, y - 1, 7 * s, 5.4 * s * (age < 1 ? flip + .1 : 1), c.rot, 0, Math.PI * 2); kx.fill();
+    }
+    kx.globalAlpha = 1;
+  }
+  function drawLetters(now) {
+    kx.textAlign = 'center'; kx.textBaseline = 'middle';
+    for (const l of letters) {
+      const age = (now - l.born) / l.dur;
+      if (age < 0) continue;
+      const p = Math.min(age, 1), e = ease(p);
+      const wob = Math.sin(p * Math.PI * 2.2 + l.seed) * 14 * (1 - p);
+      const x = l.fx + (l.tx - l.fx) * e + wob;
+      const y = l.fy + (l.ty - l.fy) * e;
+      const sc = 1.15 - .35 * e;
+      kx.save();
+      kx.translate(x, y); kx.rotate(l.rot * e + Math.sin(p * 6 + l.seed) * .4 * (1 - p)); kx.scale(sc, sc);
+      kx.font = l.font;
+      // a soft shadow once it nears the bed
+      kx.globalAlpha = .35 * e;
+      kx.fillStyle = '#031210';
+      kx.fillText(l.ch, 2, 3);
+      kx.globalAlpha = 1 - .2 * e;
+      kx.fillStyle = mixHex('#0F1F1C', '#D9EAE3', Math.min(1, p * 2.2));
+      kx.fillText(l.ch, 0, 0);
+      kx.restore();
+    }
+    kx.globalAlpha = 1;
+  }
+  function drawFlies(now, dt) {
+    fxc.setTransform(1, 0, 0, 1, 0, 0);
+    fxc.clearRect(0, 0, fx.width, fx.height);
+    if (world.night < .05) return;
+    fxc.setTransform(dpr, 0, 0, dpr, 0, 0);
+    for (const f of flies) {
+      f.a += (Math.sin(now / 900 + f.ph * 3) * 1.5) * dt;
+      f.x += Math.cos(f.a) * .02 * dt; f.y += Math.sin(f.a) * .02 * dt;
+      if (f.x < 0) f.x += 1; if (f.x > 1) f.x -= 1; if (f.y < 0) f.y += 1; if (f.y > 1) f.y -= 1;
+      const glow = Math.pow(Math.max(0, Math.sin(now / 700 + f.ph)), 3) * world.night * (1 - world.storm);
+      if (glow < .02) continue;
+      const x = f.x * W, y = f.y * H;
+      const g = fxc.createRadialGradient(x, y, 0, x, y, 16);
+      g.addColorStop(0, `rgba(236,248,150,${glow})`);
+      g.addColorStop(.25, `rgba(210,240,110,${glow * .45})`);
+      g.addColorStop(1, 'rgba(210,240,110,0)');
+      fxc.fillStyle = g;
+      fxc.fillRect(x - 16, y - 16, 32, 32);
+    }
+  }
+
+  // ---------- Frame loop ----------
+  let last = performance.now();
+  const padData = new Float32Array(24);
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000, .05); last = now;
+    if (glc.isConnected && cur) {
+      try {
+        step(); step();
+        for (let i = 0; i < cur.length; i++) { const v = cur[i] * 1.5 + 128; bytes[i] = v < 0 ? 0 : v > 255 ? 255 : v; }
+
+        // weather + time of day
+        if (now > world.overrideUntil) {
+          const ph = (now / 1000 % 70) / 70; // noon, dusk, moon, dawn
+          world.nightTarget = ph < .3 ? 0 : ph < .45 ? (ph - .3) / .15 : ph < .85 ? 1 : 1 - (ph - .85) / .15;
+        }
+        world.night += (world.nightTarget - world.night) * Math.min(1, dt * .8);
+        world.storm += (world.stormTarget - world.storm) * Math.min(1, dt * 1.2);
+        const drops = world.rain === 2 ? 4 : world.rain === 1 ? 1 : 0;
+        for (let i = 0; i < drops; i++) drop(Math.random() * W, Math.random() * H, world.rain === 2 ? 3 : 2.4, (world.rain === 2 ? 45 : 28) * (.6 + Math.random() * .6) * amp);
+        if (world.rain === 2 && !reduce && Math.random() < .006) {
+          world.flash = 1;
+          Sound.thunder();
+          setTimeout(() => { world.flash = .7; }, 140);
+        }
+        world.flash *= .86;
+        Sound.update(dt, world);
+
+        // koi + coins + sunk wishes layer
+        kx.clearRect(0, 0, W, H);
+        drawLetters(now);
+        drawCoins(now);
+        for (const k of koi) { if (!reduce) updateKoi(k, dt); drawKoi(k, now); }
+
+        // pads drift and get pushed by ripples
+        pads.forEach((p, i) => {
+          const g = heightAt(p.x, p.y);
+          p.vx -= g.dx * .25; p.vy -= g.dy * .25;
+          p.vx *= .985; p.vy *= .985;
+          p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+          if (p.x < -p.r) p.x = W + p.r; if (p.x > W + p.r) p.x = -p.r;
+          if (p.y < -p.r) p.y = H + p.r; if (p.y > H + p.r) p.y = -p.r;
+          padData.set([p.x / H, 1 - p.y / H, p.r / H, p.rot], i * 4);
+        });
+
+        gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, texH);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, GW, GH, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, bytes);
+        gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, texKoi);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, kc);
+        if (dirty) {
+          gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, texFloor);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c2);
+          dirty = false;
+        }
+        gl.uniform2f(U.texel, 1 / GW, 1 / GH);
+        gl.uniform1f(U.t, now / 1000);
+        gl.uniform1f(U.aspect, W / H);
+        gl.uniform4fv(U.pads, padData);
+        gl.uniform1f(U.night, world.night);
+        gl.uniform1f(U.storm, world.storm);
+        gl.uniform1f(U.flash, world.flash);
+        gl.uniform4f(U.cardRect, cardBox.x / W, 1 - (cardBox.y + cardBox.h) / H, cardBox.w / W, cardBox.h / H);
+        drawFlies(now, dt);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      } catch (err) { fail(err); }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  new ResizeObserver(size).observe(stage);
+  size();
+  requestAnimationFrame(frame);
+  if (!reduce) setTimeout(() => drop(W * .5, H * .5 - 200, 7, 55), 600);
+})();
+    </script>
+  </body>
+</html>

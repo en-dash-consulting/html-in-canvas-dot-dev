@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Margin Dragon</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500&display=swap" />
+    <style>
+/* Layout: one leaf of a watercolour bestiary. A title block at the top, then a single column of real HTML text that re-wraps every frame around a dragon swimming through it. Single cold-press paper look, by choice. */
+:root, :host {
+  --paper: #F3EFE7;
+  --ink: #2C2A35;
+  --muted: #6F6A72;
+  --vermilion: #C8402E;
+  --bar: #F3EFE7;
+  --bar-ink: #6F6A72;
+  --serif: "EB Garamond", "Iowan Old Style", Garamond, Georgia, serif;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: light;
+}
+html, body { height: 100%; }
+body, :host { margin: 0; background: var(--bar); color: var(--ink); font-family: var(--serif); -webkit-font-smoothing: antialiased; overflow: hidden; }
+.app { height: 100%; display: grid; grid-template-rows: 1fr auto; }
+.stage { position: relative; min-height: 0; overflow: hidden; background: var(--paper); cursor: crosshair; touch-action: none; user-select: none; -webkit-user-select: none; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#gl, #fx, #dragon { pointer-events: none; }
+
+/* The leaf lives inside the canvas, where children are laid out but not positioned, so everything stacks in one grid cell and moves by transform */
+.world { box-sizing: border-box; background: var(--paper) url("art/paper.webp") center / cover no-repeat; overflow: hidden; display: grid; grid-template: 1fr / 1fr; }
+.stage > .world { position: absolute; inset: 0; }
+.world > * { grid-area: 1 / 1; justify-self: start; align-self: start; margin: 0; }
+.head { font: 500 clamp(30px, 3.4vw, 46px)/1.1 var(--serif); color: var(--ink); }
+.meta { font: 400 12px/18px var(--mono); letter-spacing: .14em; color: var(--muted); }
+.cap { display: grid; place-items: start center; box-sizing: border-box; color: var(--vermilion); font: 500 64px/1 var(--serif); opacity: .92; }
+#flow .run[hidden] { display: none; }
+#flow { display: grid; grid-template: 1fr / 1fr; width: 100%; height: 100%; }
+.run { grid-area: 1 / 1; display: block; justify-self: start; align-self: start; white-space: pre; font: 400 20px/32px var(--serif); color: var(--ink); will-change: transform; }
+
+.bar {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 24px;
+  padding-block: 12px 14px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--bar); color: var(--bar-ink);
+}
+.bar p { margin: 0; font: 400 12px/18px var(--mono); min-width: 0; max-width: 80ch; }
+.bar .made { color: var(--muted); font: 400 12px/18px var(--mono); text-decoration: underline; text-underline-offset: 3px; flex: none; }
+.bar .made:hover { color: var(--ink); }
+.bar .end { display: flex; align-items: center; gap: 16px; flex: none; }
+.bar button {
+  font: 500 12px/16px var(--mono); height: 36px; padding: 0 16px; border-radius: 999px; border: 0;
+  background: var(--ink); color: var(--paper); cursor: pointer; flex: none; transition: transform 150ms ease-out;
+}
+.bar button:active { transform: scale(.96); }
+.bar button:focus-visible { outline: 2px solid var(--vermilion); outline-offset: 2px; }
+
+/* Mounted in a shadow root on html-in-canvas.dev, the host gives the demo its height. */
+:host { display: block; height: min(78vh, 820px); min-height: 520px; }
+:host(:fullscreen) { height: 100vh; }
+    </style>
+  </head>
+  <body>
+<div class="app">
+  <div class="stage" id="stage">
+    <main class="world" id="world">
+      <h1 class="head" id="head">De Dracone</h1>
+      <p class="meta" id="meta">Liber Bestiarum · Folio XLVII</p>
+      <div class="cap" id="cap" aria-hidden="true">I</div>
+      <div id="flow" aria-hidden="true"></div>
+    </main>
+    <div class="sr" id="story">
+      <p>It was the ninth hour, and the lamp in the copying room had burned down to a thread. The scribe had been told twice to put out the light, and twice she had not. On the desk lay the bestiary, open at the leaf where a dragon had been painted coiled about a capital, and she had been staring at it so long that the ink seemed to move. Then it did move. The tail slid out of the letter. The head lifted from the vellum, and the dragon looked at the words around it the way a cat looks at birds.</p>
+      <p>It did not eat them. It pushed through them, and the lines parted to let it pass, closing again behind its tail like water behind a boat. Where it breathed, the page browned and curled. The scribe watched a whole sentence blacken and fall away, and found that she was not afraid, only sorry for the sentence.</p>
+      <p>Scribes have always known that a margin is not empty. It is where a book keeps its animals. They are drawn small so that no one will notice them, and drawn in red so that they will be noticed anyway. Most of them stay where they were put. A few, on long nights, when the lamp is low and the reader has not gone to bed, decide that the page is a field, and the words are only grass.</p>
+      <p>Move your hand and it will follow. Press, and it will breathe.</p>
+    </div>
+  </div>
+  <footer class="bar">
+    <p id="status">Opening the book…</p>
+    <div class="end">
+      <a class="made" href="https://baked.design/">Made by Baked</a>
+      <button id="sound" type="button" aria-pressed="false">Sound on</button>
+    </div>
+  </footer>
+</div>
+
+    <script>
+(() => {
+  // Standalone this is the document; mounted on html-in-canvas.dev it is the demo's shadow root.
+  const root = window.__demoRoot ?? document;
+  // Fonts declared inside a shadow root don't load, so a mounted demo adds its font link to the page.
+  if (root !== document) for (const href of ["https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500&display=swap"]) if (!document.querySelector(`link[href="${href}"]`)) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; document.head.appendChild(l); }
+  const stage = root.getElementById('stage');
+  const world = root.getElementById('world');
+  const flow = root.getElementById('flow');
+  const headEl = root.getElementById('head'), metaEl = root.getElementById('meta'), capEl = root.getElementById('cap');
+  const status = root.getElementById('status');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const proto = window.CanvasRenderingContext2D && CanvasRenderingContext2D.prototype;
+  const live = !!(proto && 'drawElementImage' in proto);
+  const INK = '#221A14', VERM = '#BF3B26', GOLD = '#B88A3A', PAPER = '#EFE7D6';
+  let W = 0, H = 0, dpr = 1;
+
+  // ================= ART =================
+  // Painted pieces: the dragon twice (jaws shut and open, the same painting otherwise), one wing, four flames.
+  const ART_SRC = {"closed": "art/closed.webp", "open": "art/open.webp", "wing": "art/wing.webp", "fire-1": "art/fire-1.webp", "fire-2": "art/fire-2.webp", "fire-3": "art/fire-3.webp", "fire-4": "art/fire-4.webp"};
+  const PROF = {"w": 1488, "h": 290, "step": 8, "c": [132.8, 134.0, 137.1, 141.7, 147.3, 153.3, 159.2, 164.9, 170.1, 174.9, 179.3, 183.3, 187.1, 190.6, 193.9, 197.0, 199.8, 202.4, 204.8, 207.0, 209.0, 210.8, 212.6, 214.1, 215.5, 216.9, 218.0, 219.1, 220.0, 220.8, 221.5, 222.0, 222.4, 222.7, 222.8, 222.9, 222.7, 222.5, 222.2, 221.8, 221.3, 220.8, 220.2, 219.6, 218.9, 218.1, 217.1, 216.1, 214.9, 213.5, 212.0, 210.4, 208.6, 206.6, 204.5, 202.2, 199.8, 197.3, 194.8, 192.4, 189.9, 187.5, 185.1, 182.8, 180.5, 178.4, 176.4, 174.5, 172.7, 171.0, 169.4, 167.8, 166.3, 164.7, 163.2, 161.7, 160.2, 158.8, 157.6, 156.5, 155.5, 154.6, 153.9, 153.3, 152.8, 152.4, 152.2, 152.1, 152.2, 152.5, 152.9, 153.6, 154.4, 155.4, 156.5, 157.8, 159.2, 160.7, 162.5, 164.4, 166.4, 168.6, 170.8, 173.1, 175.4, 177.7, 179.9, 181.9, 183.8, 185.6, 187.3, 189.1, 190.8, 192.7, 194.6, 196.6, 198.6, 200.6, 202.5, 204.1, 205.6, 206.8, 207.7, 208.3, 208.4, 208.0, 207.1, 205.7, 203.7, 201.1, 198.2, 194.9, 191.4, 187.8, 184.2, 180.6, 176.9, 173.3, 169.8, 166.3, 163.1, 160.1, 157.5, 155.1, 153.2, 151.5, 150.2, 149.2, 148.4, 148.0, 147.8, 147.8, 148.2, 148.8, 149.6, 150.5, 151.5, 152.4, 153.4, 154.3, 155.1, 155.9, 156.8, 157.8, 158.9, 160.1, 161.4, 162.8, 164.3, 166.1, 167.9, 169.9, 171.8, 173.4, 174.5, 174.5, 173.0, 169.3, 163.0, 153.7, 141.5, 126.9, 111.3, 96.2, 83.7, 75.5], "r": [0.4, 0.6, 1.2, 2.4, 4.7, 8.1, 11.8, 15.3, 18.1, 20.1, 21.0, 20.6, 19.3, 17.6, 15.6, 13.3, 10.7, 8.4, 6.9, 6.4, 6.5, 6.7, 7.0, 7.3, 7.6, 8.0, 8.6, 9.3, 10.3, 11.4, 12.5, 13.2, 13.5, 13.4, 13.1, 12.9, 12.9, 13.1, 13.5, 13.8, 14.3, 14.7, 15.2, 15.7, 16.3, 16.9, 17.5, 18.2, 19.1, 20.1, 21.4, 22.3, 22.6, 22.5, 22.4, 22.9, 24.0, 25.3, 26.1, 26.4, 26.7, 27.5, 28.6, 29.9, 31.2, 32.3, 32.8, 32.8, 32.6, 32.7, 33.2, 33.9, 34.2, 34.2, 34.2, 34.6, 35.3, 36.4, 37.1, 37.3, 37.0, 36.7, 36.8, 37.4, 38.4, 39.8, 41.4, 43.1, 44.2, 44.9, 45.4, 45.8, 46.1, 46.5, 47.4, 48.7, 49.7, 49.9, 49.6, 49.5, 49.9, 51.2, 53.2, 55.3, 56.5, 56.9, 56.7, 56.6, 56.6, 57.2, 58.7, 60.5, 61.2, 60.0, 57.8, 56.2, 55.9, 56.9, 57.6, 57.5, 56.8, 56.0, 55.7, 56.4, 58.8, 63.4, 68.4, 72.0, 75.2, 82.4, 97.0, 113.7, 122.8, 123.6, 120.8, 118.2, 117.8, 119.7, 121.6, 120.7, 117.2, 112.9, 108.5, 104.4, 100.4, 96.4, 92.4, 88.8, 86.5, 85.8, 86.1, 86.7, 87.2, 87.5, 87.4, 86.8, 85.8, 84.1, 82.0, 79.4, 76.9, 75.0, 73.6, 71.6, 68.3, 64.1, 59.8, 55.5, 51.2, 47.3, 45.0, 45.1, 45.9, 45.3, 42.9, 39.4, 35.3, 31.0, 26.8, 22.5, 18.1, 13.0, 7.4, 3.0, 0.8, 0.1]};
+  const SPR = {};
+  Object.entries(ART_SRC).forEach(([k, src]) => {
+    const im = new Image();
+    im.onload = () => {
+      SPR[k] = im;
+    };
+    im.src = src;
+  });
+
+  // ================= THE LEAF, INSIDE A CANVAS =================
+  const c2 = document.createElement('canvas'); c2.id = 'page-canvas';
+  const ctx2 = c2.getContext('2d');
+  let dirty = true;
+  if (live) {
+    c2.setAttribute('content', 'drawable');
+    c2.setAttribute('layoutsubtree', '');
+    world.setAttribute('drawable', '');
+    stage.appendChild(c2);
+    c2.appendChild(world);
+    c2.addEventListener('paint', () => {
+      try {
+        ctx2.setTransform(1, 0, 0, 1, 0, 0);
+        ctx2.clearRect(0, 0, c2.width, c2.height);
+        ctx2.drawElementImage(world, 0, 0, c2.width, c2.height);
+        dirty = true;
+      } catch (err) { console.warn('drawElementImage failed:', err); }
+    });
+  }
+
+  // page shader: paper, scorch, char, burn-through and heat haze on the live pixels
+  const glc = document.createElement('canvas'); glc.id = 'gl';
+  let gl = null, glOK = false, U = {}, texPage, texBurn, texHeat;
+  const FS = `precision highp float; varying vec2 uv;
+    uniform sampler2D pageTex, burnTex, heatTex; uniform float t, aspect; uniform vec2 res;
+    float h21(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+    float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f);
+      return mix(mix(h21(i), h21(i + vec2(1, 0)), f.x), mix(h21(i + vec2(0, 1)), h21(i + vec2(1, 1)), f.x), f.y); }
+    float fbm(vec2 p){ float s = 0., a = .5; for (int i = 0; i < 5; i++) { s += a * noise(p); p = p * 2.03 + 11.7; a *= .5; } return s; }
+    void main(){
+      vec2 asp = vec2(aspect, 1.);
+      float heat = texture2D(heatTex, uv).r, burn = texture2D(burnTex, uv).r;
+      vec2 hz = vec2(fbm(uv * asp * 14. + vec2(0., -t * 1.6)) - .5, fbm(uv * asp * 14. + vec2(7., -t * 2.)) - .5) * .03 * heat;
+      vec3 pg = vec3(texture2D(pageTex, uv + hz * 1.2).r, texture2D(pageTex, uv + hz).g, texture2D(pageTex, uv + hz * .8).b);
+      vec2 px = uv * res;
+      float fib = fbm(px * vec2(.9, .06)) * .5 + fbm(px * .35) * .5;
+      float fox = smoothstep(.62, .82, fbm(px * .004 + 3.1));
+      pg = pg * (.975 + .04 * fib);
+      float ink = smoothstep(.5, .15, dot(pg, vec3(.3, .59, .11)));
+      pg = mix(pg, pg * (.8 + .4 * noise(px * .7)), ink * .5);
+      
+      // the burn front, made ragged: a slow wobble plus fine tearing
+      float n = fbm(uv * asp * 9.), nf = fbm(uv * asp * 30. + 3.7), nt = noise(uv * asp * 110.);
+      float b = burn * 1.15 + ((n - .5) * .45 + (nf - .5) * .3 + (nt - .5) * .07) * smoothstep(.0, .14, burn);
+      float glw = texture2D(heatTex, uv).a;
+      // toasting: paper browns in a soft halo, darkest near the edge
+      vec3 col = mix(pg, pg * vec3(.8, .63, .45), smoothstep(.04, .34, b));
+      col = mix(col, pg * vec3(.42, .27, .15), smoothstep(.3, .5, b) * .85);
+      // the charred band
+      col = mix(col, vec3(.07, .05, .04) + nf * .03, smoothstep(.5, .57, b));
+      // the curled ash rim, lifted grey where it has cooled
+      float rim = smoothstep(.56, .6, b) * (1. - smoothstep(.62, .66, b));
+      vec3 ash = vec3(.5, .47, .44) * (.6 + .7 * noise(uv * res * .35)) ;
+      col = mix(col, ash, rim * (1. - glw) * .85);
+      // the ember line: broken, flickering, only while it is still hot
+      float brk = smoothstep(.4, .7, noise(uv * asp * 70. + vec2(t * .6, -t * .9)));
+      float fl = .7 + .3 * sin(t * 13. + nf * 40.);
+      col += rim * glw * (.35 + .65 * brk) * fl * vec3(1., .5, .12) * 2.6;
+      // a little light thrown onto the paper around a glowing edge
+      col += smoothstep(.25, .55, b) * (1. - smoothstep(.6, .7, b)) * glw * vec3(1., .42, .12) * .22;
+      // through the hole there is only dark, lit warm near the rim
+      float hole = smoothstep(.63, .69, b);
+      vec3 voidc = vec3(.025, .018, .015) + vec3(1., .33, .08) * glw * (1. - smoothstep(.69, .9, b)) * .35;
+      col = mix(col, voidc, hole);
+      // flames licking up from the glowing rim, and a thin smoke above them
+      float fla = 0., smk = 0.;
+      for (int k = 1; k <= 7; k++) {
+        float fk = float(k);
+        vec2 off = vec2((noise(vec2(uv.x * 40., uv.y * 14. - t * 3.5) + fk) - .5) * .012 * fk / aspect, fk * 6. / res.y);
+        vec2 q = uv - off;
+        float bq = texture2D(burnTex, q).r * 1.15, gq = texture2D(heatTex, q).a;
+        float e = smoothstep(.42, .55, bq) * (1. - smoothstep(.7, .85, bq)) * gq;
+        fla += e * (1. - fk / 8.);
+        vec2 q2 = uv - vec2(off.x * 2.5, fk * 16. / res.y);
+        float b2 = texture2D(burnTex, q2).r * 1.15, g2 = texture2D(heatTex, q2).a;
+        smk += smoothstep(.42, .55, b2) * (1. - smoothstep(.7, .85, b2)) * g2 * (1. - fk / 8.);
+      }
+      float tongue = smoothstep(.3, .75, fbm(vec2(uv.x * asp.x * 22., uv.y * 7. - t * 4.2)));
+      fla = clamp(fla * .55 * tongue, 0., 1.);
+      smk = clamp(smk * .2 * fbm(vec2(uv.x * asp.x * 6., uv.y * 4. - t * .9)), 0., .5) * (1. - hole);
+      col = mix(col, col * vec3(.82, .8, .8), smk);
+      vec3 fc = mix(vec3(.95, .25, .05), mix(vec3(1., .62, .15), vec3(1., .93, .6), smoothstep(.55, .95, fla)), smoothstep(.15, .6, fla));
+      col = mix(col, fc, smoothstep(.05, .35, fla) * .95);
+      col += heat * vec3(1., .5, .2) * .12;
+      gl_FragColor = vec4(col, 1.);
+    }`;
+  if (live) {
+    stage.appendChild(glc);
+    gl = glc.getContext('webgl', { antialias: false, premultipliedAlpha: false });
+    try {
+      if (!gl) throw new Error('no webgl');
+      const sh = (type, src) => { const o = gl.createShader(type); gl.shaderSource(o, src); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; };
+      const pr = gl.createProgram();
+      gl.attachShader(pr, sh(gl.VERTEX_SHADER, 'attribute vec2 p; varying vec2 uv; void main(){ uv = p * .5 + .5; gl_Position = vec4(p, 0., 1.); }'));
+      gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, FS));
+      gl.linkProgram(pr); if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(pr));
+      gl.useProgram(pr);
+      gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+      const loc = gl.getAttribLocation(pr, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+      const mk = (unit) => { const tx = gl.createTexture(); gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, tx);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); return tx; };
+      texPage = mk(0); texBurn = mk(1); texHeat = mk(2);
+      gl.uniform1i(gl.getUniformLocation(pr, 'pageTex'), 0); gl.uniform1i(gl.getUniformLocation(pr, 'burnTex'), 1); gl.uniform1i(gl.getUniformLocation(pr, 'heatTex'), 2);
+      ['t', 'aspect', 'res'].forEach(k => U[k] = gl.getUniformLocation(pr, k));
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+      glOK = true;
+    } catch (err) { console.warn('Page shader off:', err); glc.remove(); }
+  }
+  const fx = document.createElement('canvas'); fx.id = 'fx'; stage.appendChild(fx);
+  const fc = fx.getContext('2d');
+
+  // burn and heat fields
+  const CELL = 6;
+  let GW = 0, GH = 0, burn, heat, glow, bBytes, hBytes, lastFire = -1e9;
+  function stamp(x, y, rad, bAmt, hAmt) {
+    if (!burn) return;
+    const gx = x / CELL, gy = y / CELL, r = Math.max(1, rad / CELL);
+    for (let yy = Math.max(0, Math.floor(gy - r)); yy <= Math.min(GH - 1, Math.ceil(gy + r)); yy++)
+      for (let xx = Math.max(0, Math.floor(gx - r)); xx <= Math.min(GW - 1, Math.ceil(gx + r)); xx++) {
+        const d = Math.hypot(xx - gx, yy - gy) / r; if (d >= 1) continue;
+        const f = 1 - d * d, i = yy * GW + xx;
+        burn[i] = Math.min(1.25, burn[i] + bAmt * f); heat[i] = Math.min(1, heat[i] + hAmt * f); glow[i] = Math.min(1, glow[i] + hAmt * f * 1.4);
+      }
+  }
+
+  // ================= THE DRAGON: one watercolour, bent along a moving spine =================
+  // The painting is laid on a mesh that follows the spine, so its washes stay continuous however it curls. The head is the
+  // painting's front, kept rigid. It never turns over: heading back, it simply flies inverted, as at the top of a loop.
+  const NECK = 1080, MOUTH = [1392, 166], SHOULDER = 860, WING_PIVOT = [30, 605];
+  const N = 36;
+  const segs = Array.from({ length: N }, () => ({ x: 0, y: 0, a: 0 }));
+  const D = { x: 0, y: 0, a: 0, speed: 0, w: 0, breath: 0, wing: 0, beat: .4, mouth: [0, 0], open: 0, emit: 0 };
+  let U2 = 1, S = .5;               // S: painting pixels to page pixels
+  const spacing = () => NECK * S / (N - 1);
+  const angleTo = (from, to) => { const d = to - from; return Math.atan2(Math.sin(d), Math.cos(d)); };
+  const profAt = (arr, x) => { const i = Math.max(0, Math.min(arr.length - 1.001, x / PROF.step)), i0 = Math.floor(i), f = i - i0; return arr[i0] + (arr[i0 + 1] - arr[i0]) * f; };
+  const cenAt = (x) => profAt(PROF.c, Math.min(x, NECK));
+  const halfAt = (x) => profAt(PROF.r, x);
+  let pointer = { x: 0, y: 0, last: -1e9 };
+  function place(x, y) {
+    D.x = x; D.y = y; D.a = 0;
+    for (let i = 0; i < N; i++) { segs[i].x = x - i * spacing(); segs[i].y = y + Math.sin(i * .35) * 24 * U2; segs[i].a = 0; }
+  }
+  function steer(dt, now) {
+    const idle = now - pointer.last > 3500;
+    let tx, ty, cruise;
+    if (!idle) { tx = pointer.x; ty = pointer.y; cruise = 360; }
+    else {
+      // left alone, it swims on across the leaf and comes round again from the left margin
+      tx = D.x + 400; ty = H * .52 + Math.sin(now / 2600) * H * .26; cruise = 130;
+      if (D.x > W + 160 && Math.cos(D.a) > 0) { const dx = -160 - D.x; D.x += dx; for (const s of segs) s.x += dx; }
+    }
+    const dx = tx - D.x, dy = ty - D.y, dist = Math.hypot(dx, dy);
+    const want = Math.atan2(dy, dx);
+    const maxW = (idle ? 1.3 : 3) * (reduce ? .6 : 1);
+    D.w += (Math.max(-maxW, Math.min(maxW, angleTo(D.a, want) * 3)) - D.w) * Math.min(1, dt * 4);
+    D.a += D.w * dt;
+    const sp = Math.max(55 * U2, Math.min(cruise, dist * 2.2)) * (reduce ? .5 : 1);
+    D.speed += (sp - D.speed) * Math.min(1, dt * 3);
+    D.x += Math.cos(D.a) * D.speed * dt; D.y += Math.sin(D.a) * D.speed * dt;
+    // the neck leads; each joint follows the one ahead, with a limit on how sharply it can bend
+    segs[0].x = D.x; segs[0].y = D.y; segs[0].a = D.a;
+    const L = spacing(), swim = Math.sin(now / 300) * .03 * Math.min(1, D.speed / 120);
+    for (let i = 1; i < N; i++) {
+      const p = segs[i - 1], s = segs[i];
+      let a = Math.atan2(p.y - s.y, p.x - s.x);
+      const rel = angleTo(p.a, a), lim = .13;
+      if (rel > lim) a = p.a + lim; else if (rel < -lim) a = p.a - lim;
+      a += swim * Math.sin(i * .35 - now / 240);
+      s.a = a; s.x = p.x - Math.cos(a) * L; s.y = p.y - Math.sin(a) * L;
+    }
+    // the wings beat harder the faster it flies and glide when it slows
+    D.beat += ((.15 + Math.min(1, D.speed / 260) * .85) - D.beat) * Math.min(1, dt * 2);
+    const beats = Math.floor((D.wing - Math.PI / 2) / (Math.PI * 2));
+    D.wing += dt * (3.2 + 5.5 * D.beat) * (reduce ? .5 : 1);
+    if (Math.floor((D.wing - Math.PI / 2) / (Math.PI * 2)) !== beats) Sound.flap(Math.max(0, Math.min(1, D.x / W)), .25 + D.beat * .75);
+    D.open += ((D.breath > 0 ? 1 : 0) - D.open) * Math.min(1, dt * 12);
+  }
+  // where a point at arc length d behind the neck sits on the spine, and which way it faces
+  function poseAt(d) {
+    const L = spacing(), k = Math.max(0, Math.min(N - 1.001, d / L)), i = Math.floor(k), f = k - i;
+    const a = segs[i], b = segs[i + 1];
+    const ang = i === 0 && f < .5 ? a.a : Math.atan2(a.y - b.y, a.x - b.x);
+    return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f, a: ang };
+  }
+  // painting pixels to page pixels at a point on the spine
+  const spineM = (p) => new DOMMatrix().translate(p.x, p.y).rotate(p.a * 180 / Math.PI).scale(S);
+  const M = { near: null, far: null, head: null };
+  const thru = (m, x, y) => m ? m.transformPoint(new DOMPoint(x, y)) : null;
+
+  // a small WebGL painter: textured triangles, premultiplied, nothing overlaps inside one painting
+  const dgl = document.createElement('canvas'); dgl.id = 'dragon';
+  stage.insertBefore(dgl, fx);
+  const g2 = dgl.getContext('webgl', { premultipliedAlpha: true, antialias: true, alpha: true });
+  const TEX = {}; let dprog = null, dbuf = null, dloc = {};
+  if (g2) {
+    const sh = (t, src) => { const o = g2.createShader(t); g2.shaderSource(o, src); g2.compileShader(o); return o; };
+    dprog = g2.createProgram();
+    g2.attachShader(dprog, sh(g2.VERTEX_SHADER, 'attribute vec2 p; attribute vec2 t; uniform vec2 res; varying vec2 uv; void main(){ uv = t; gl_Position = vec4(p / res * vec2(2., -2.) + vec2(-1., 1.), 0., 1.); }'));
+    g2.attachShader(dprog, sh(g2.FRAGMENT_SHADER, 'precision mediump float; varying vec2 uv; uniform sampler2D tex; uniform vec4 tint; void main(){ gl_FragColor = texture2D(tex, uv) * tint; }'));
+    g2.linkProgram(dprog); g2.useProgram(dprog);
+    dbuf = g2.createBuffer(); g2.bindBuffer(g2.ARRAY_BUFFER, dbuf);
+    dloc = { p: g2.getAttribLocation(dprog, 'p'), t: g2.getAttribLocation(dprog, 't'), res: g2.getUniformLocation(dprog, 'res'), tint: g2.getUniformLocation(dprog, 'tint') };
+    g2.enableVertexAttribArray(dloc.p); g2.enableVertexAttribArray(dloc.t);
+    g2.vertexAttribPointer(dloc.p, 2, g2.FLOAT, false, 16, 0); g2.vertexAttribPointer(dloc.t, 2, g2.FLOAT, false, 16, 8);
+    g2.enable(g2.BLEND); g2.blendFunc(g2.ONE, g2.ONE_MINUS_SRC_ALPHA);
+    g2.pixelStorei(g2.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+  }
+  function texOf(name) {
+    if (TEX[name] || !SPR[name] || !g2) return TEX[name];
+    const t = g2.createTexture(); g2.bindTexture(g2.TEXTURE_2D, t);
+    g2.texImage2D(g2.TEXTURE_2D, 0, g2.RGBA, g2.RGBA, g2.UNSIGNED_BYTE, SPR[name]);
+    g2.texParameteri(g2.TEXTURE_2D, g2.TEXTURE_MIN_FILTER, g2.LINEAR); g2.texParameteri(g2.TEXTURE_2D, g2.TEXTURE_MAG_FILTER, g2.LINEAR);
+    g2.texParameteri(g2.TEXTURE_2D, g2.TEXTURE_WRAP_S, g2.CLAMP_TO_EDGE); g2.texParameteri(g2.TEXTURE_2D, g2.TEXTURE_WRAP_T, g2.CLAMP_TO_EDGE);
+    return TEX[name] = t;
+  }
+  function paint(name, verts, mode, tint) {
+    const t = texOf(name); if (!t) return;
+    g2.bindTexture(g2.TEXTURE_2D, t);
+    g2.uniform4fv(dloc.tint, tint || [1, 1, 1, 1]);
+    g2.bufferData(g2.ARRAY_BUFFER, verts, g2.STREAM_DRAW);
+    g2.drawArrays(mode, 0, verts.length / 4);
+  }
+  // a painting placed by one matrix: two triangles
+  function quad(name, m, w, h, tint) {
+    const c = [[0, 0, 0, 0], [w, 0, 1, 0], [0, h, 0, 1], [w, h, 1, 1]].map(([x, y, u, v]) => { const q = m.transformPoint(new DOMPoint(x, y)); return [q.x, q.y, u, v]; });
+    paint(name, new Float32Array(c.flat()), g2.TRIANGLE_STRIP, tint);
+  }
+  const STEP = 8;
+  let bodyV = null;
+  function drawDragon() {
+    if (!g2) return;
+    g2.viewport(0, 0, dgl.width, dgl.height);
+    g2.clearColor(0, 0, 0, 0); g2.clear(g2.COLOR_BUFFER_BIT);
+    g2.uniform2f(dloc.res, W, H);
+    const img = SPR.closed; if (!img || !SPR.wing) return;
+    const IW = img.width, IH = img.height;
+    // a side-on flap: the wing swings over the back, foreshortens, and sweeps below the belly on the downstroke
+    const ph = D.wing, amp = D.beat;
+    const fs = (.42 + .06 * Math.sin(ph)) * (1 - amp) + (.32 + .68 * Math.sin(ph)) * amp;
+    const rot = (.12 * Math.sin(ph + 1.2) * amp + .3) * 180 / Math.PI;
+    const wingM = (p, ws, f, r) => spineM(p).translate(0, -halfAt(SHOULDER) * .5).rotate(r).scale(-ws, ws * f).translate(-WING_PIVOT[0], -WING_PIVOT[1]);
+    const dSh = (NECK - SHOULDER) * S;
+    M.far = wingM(poseAt(dSh + 50 * S), .5, fs * .92, rot - 4);
+    quad('wing', M.far, SPR.wing.width, SPR.wing.height, [.62, .6, .7, .62]);
+    // the body: one strip of triangles, a column every few painting pixels, the head columns held rigid
+    const cols = Math.ceil(IW / STEP) + 1;
+    if (!bodyV || bodyV.length !== cols * 8) bodyV = new Float32Array(cols * 8);
+    const hp = { x: segs[0].x, y: segs[0].y, a: segs[0].a }, hc = Math.cos(hp.a), hs = Math.sin(hp.a), cN = cenAt(NECK);
+    let o = 0;
+    for (let j = 0; j < cols; j++) {
+      const x = Math.min(IW, j * STEP);
+      let px, py, ca, sa, cy;
+      if (x <= NECK) { const p = poseAt((NECK - x) * S); px = p.x; py = p.y; ca = Math.cos(p.a); sa = Math.sin(p.a); cy = cenAt(x); }
+      else { ca = hc; sa = hs; cy = cN; px = hp.x + ca * (x - NECK) * S; py = hp.y + sa * (x - NECK) * S; }
+      const t0 = -cy * S, t1 = (IH - cy) * S;
+      bodyV[o++] = px - sa * t0; bodyV[o++] = py + ca * t0; bodyV[o++] = x / IW; bodyV[o++] = 0;
+      bodyV[o++] = px - sa * t1; bodyV[o++] = py + ca * t1; bodyV[o++] = x / IW; bodyV[o++] = 1;
+    }
+    paint(D.open > .5 ? 'open' : 'closed', bodyV, g2.TRIANGLE_STRIP);
+    M.near = wingM(poseAt(dSh), .52, fs, rot);
+    quad('wing', M.near, SPR.wing.width, SPR.wing.height);
+    quad('wing', M.near, SPR.wing.width, SPR.wing.height, [.55, .55, .55, .55]);
+    M.head = spineM(hp).translate(0, -cN);
+    const q = M.head.transformPoint(new DOMPoint(MOUTH[0] - NECK, MOUTH[1]));
+    D.mouth = [q.x, q.y];
+  }
+
+  // ================= FIRE =================
+  const flames = [], sparks = [];
+  function breathe(dt) {
+    if (D.breath <= 0) return;
+    D.breath -= dt;
+    D.emit = (D.emit || 0) + dt * (reduce ? 30 : 110);
+    for (; D.emit >= 1; D.emit--) {
+      const a = D.a + (Math.random() - .5) * .16, sp = 520 + Math.random() * 180;
+      flames.push({ x: D.mouth[0], y: D.mouth[1], vx: Math.cos(a) * sp + Math.cos(D.a) * D.speed, vy: Math.sin(a) * sp + Math.sin(D.a) * D.speed, age: 0, life: .7 + Math.random() * .3, spr: 'fire-' + (1 + Math.floor(Math.random() * 4)), rot: (Math.random() - .5) * .4, s0: .85 + Math.random() * .4 });
+    }
+  }
+  function updateFire(dt) {
+    for (let i = flames.length - 1; i >= 0; i--) {
+      const fl = flames[i]; fl.age += dt;
+      if (fl.age > fl.life) { flames.splice(i, 1); continue; }
+      const k = Math.pow(.25, dt);
+      fl.vx *= k; fl.vy = fl.vy * k - 90 * dt; fl.x += fl.vx * dt; fl.y += fl.vy * dt;
+      const p = fl.age / fl.life;
+      if (p > .15) lastFire = performance.now(), stamp(fl.x, fl.y, (20 + p * 50) * U2, 3.2 * dt * (1 - p * .5), 3 * dt);
+    }
+    if (burn) for (let k = 0; k < 30; k++) {
+      const i = Math.floor(Math.random() * burn.length), b = burn[i];
+      if (b > .5 && b < .72 && Math.random() < .5) sparks.push({ x: (i % GW) * CELL + Math.random() * CELL, y: Math.floor(i / GW) * CELL, vx: (Math.random() - .5) * 30, vy: -30 - Math.random() * 70, age: 0, life: .8 + Math.random() * 1.2 });
+    }
+    for (let i = sparks.length - 1; i >= 0; i--) { const s = sparks[i]; s.age += dt; if (s.age > s.life) { sparks.splice(i, 1); continue; } s.vx += (Math.random() - .5) * 120 * dt; s.x += s.vx * dt; s.y += s.vy * dt; }
+    if (sparks.length > 400) sparks.splice(0, sparks.length - 400);
+  }
+  function drawFire() {
+    for (const fl of flames) {
+      const img = SPR[fl.spr]; if (!img) continue;
+      const p = fl.age / fl.life, k = (.1 + p * .6) * U2 * fl.s0 * dpr, ang = Math.atan2(fl.vy, fl.vx) + fl.rot;
+      fc.globalAlpha = Math.max(0, 1 - p * p) * .9;
+      const c = Math.cos(ang), sn = Math.sin(ang);
+      fc.setTransform(c * k, sn * k, -sn * k, c * k, fl.x * dpr, fl.y * dpr);
+      fc.drawImage(img, -img.width * .35, -img.height / 2);
+    }
+    fc.globalAlpha = 1;
+    fc.setTransform(dpr, 0, 0, dpr, 0, 0);
+    for (const s of sparks) { const a = 1 - s.age / s.life; fc.fillStyle = `rgba(255,${Math.round(140 + 80 * a)},60,${a.toFixed(3)})`; fc.fillRect(s.x, s.y, 2, 2); }
+  }
+
+  // ================= TEXT THAT FLOWS AROUND THE DRAGON =================
+  // The story is laid out line by line, every frame. Each line is split wherever the dragon (or its fire)
+  // crosses it, and each piece is a real HTML span, so the text stays selectable and readable by screen readers' twin below.
+  const story = [...root.querySelectorAll('#story p')].map(p => p.textContent.trim().split(/\s+/));
+  const meas = document.createElement('canvas').getContext('2d');
+  let FONT_PX = 20, LH = 32, col = { x0: 0, x1: 0, y0: 0, y1: 0 }, capBox = null;
+  const wcache = new Map();
+  let spaceW = 5;
+  function wordW(w) { let v = wcache.get(w); if (v === undefined) { v = meas.measureText(w).width; wcache.set(w, v); } return v; }
+  function setFont() { meas.font = `400 ${FONT_PX}px "EB Garamond", Garamond, Georgia, serif`; wcache.clear(); spaceW = meas.measureText(' ').width; }
+  // Like a page being re-set by hand every frame: each line takes the room the dragon leaves free and the text pours on
+  // into the next. Only the body and head carve out room (the wings pass over), and holes burnt in the page too.
+  // Words near the fire are pushed, tilted and scorched orange.
+  const WORDS = [];
+  function makeWords() {
+    story.forEach((para) => para.forEach((w) => {
+      const el = document.createElement('span'); el.className = 'run'; el.textContent = w; el.hidden = true; flow.appendChild(el);
+      WORDS.push({ el, w, tr: '', st: '' });
+    }));
+  }
+  function blockers() {
+    const out = [], pad = 10 * U2;
+    for (let x = 30; x < NECK; x += 24) { const p = poseAt((NECK - x) * S); out.push({ x: p.x, y: p.y, r: halfAt(x) * S * .7 + pad }); }
+    for (const [hx, hy, hr] of [[60, 150, 100], [200, 165, 90], [300, 175, 65], [390, 178, 45]]) { const q = thru(M.head, hx, hy); if (q) out.push({ x: q.x, y: q.y, r: hr * S + pad }); }
+    for (const fl of flames) { const p = fl.age / fl.life; out.push({ x: fl.x, y: fl.y, r: (8 + p * 30) * U2 }); }
+    return out;
+  }
+  function layout() {
+    if (!WORDS.length) { makeWords(); for (const o of WORDS) { o.el.style.fontSize = FONT_PX + 'px'; o.el.style.lineHeight = LH + 'px'; } }
+    const bl = blockers();
+    let wi = 0, pi = 0, fi = 0, y = col.y0;
+    const placed = new Uint8Array(WORDS.length);
+    while (pi < story.length && y + LH <= col.y1) {
+      let ranges = [[col.x0, col.x1]];
+      const cut = (a, b) => { const next = []; for (const [x0, x1] of ranges) { if (b <= x0 || a >= x1) next.push([x0, x1]); else { if (a > x0) next.push([x0, a]); if (b < x1) next.push([b, x1]); } } ranges = next; };
+      if (capBox && y < capBox.y1 && y + LH > capBox.y0) cut(capBox.x0, capBox.x1);
+      const top = y, bot = y + LH, mid = y + LH / 2;
+      for (const c of bl) {
+        const gap = Math.max(0, Math.abs(c.y - mid) - LH / 2);
+        if (gap >= c.r) continue;
+        const hw = Math.sqrt(c.r * c.r - gap * gap); cut(c.x - hw, c.x + hw);
+      }
+      if (burn) {
+        const r0 = Math.max(0, Math.floor(top / CELL)), r1 = Math.min(GH - 1, Math.floor(bot / CELL));
+        let start = -1;
+        for (let x = 0; x <= GW; x++) {
+          let hot = false;
+          if (x < GW) for (let r = r0; r <= r1; r++) if (burn[r * GW + x] > .5) { hot = true; break; }
+          if (hot && start < 0) start = x;
+          else if (!hot && start >= 0) { cut(start * CELL - 6, x * CELL + 6); start = -1; }
+        }
+      }
+      ranges = ranges.filter(([a, b]) => b - a >= 40);
+      let newPara = false;
+      for (const [a, b] of ranges) {
+        let x = a, first = true;
+        while (pi < story.length) {
+          const ww = wordW(story[pi][wi]), need = (first ? 0 : spaceW) + ww;
+          if (x + need > b) break;
+          const o = WORDS[fi]; o.x = x + (first ? 0 : spaceW); o.y = y; o.ww = ww; placed[fi] = 1;
+          x += need; first = false; wi++; fi++;
+          if (wi >= story[pi].length) { wi = 0; pi++; newPara = true; break; }
+        }
+        if (newPara) break;
+      }
+      y += LH;
+      if (newPara) y += LH * .45;
+    }
+    const R = 70 * U2;
+    for (let i = 0; i < WORDS.length; i++) {
+      const o = WORDS[i];
+      if (!placed[i]) { if (!o.el.hidden) o.el.hidden = true; continue; }
+      if (o.el.hidden) o.el.hidden = false;
+      // the fire's breath on the words: pushed away, tilted, scorched
+      let str = 0, dx = 0, dy = 0;
+      if (flames.length) {
+        const cx = o.x + o.ww / 2, cy = o.y + LH / 2;
+        for (const fl of flames) {
+          const ex = cx - fl.x, ey = cy - fl.y, d = Math.hypot(ex, ey);
+          if (d < R) { const k = 1 - d / R; if (k > str) { str = k; dx = ex / (d || 1); dy = ey / (d || 1); } }
+        }
+      }
+      let tr = `translate(${o.x.toFixed(1)}px, ${o.y}px)`, st = '';
+      if (str > .01) {
+        tr = `translate(${(o.x + dx * str * 30).toFixed(1)}px, ${(o.y + dy * str * 30).toFixed(1)}px) rotate(${(str * Math.sign(dx || 1) * 40).toFixed(1)}deg)`;
+        st = `rgb(${Math.round(44 + str * 190)},${Math.round(42 + str * 60)},${Math.round(53 - str * 40)})|${Math.max(.15, 1 - str * .8).toFixed(2)}`;
+      }
+      if (tr !== o.tr) { o.el.style.transform = tr; o.tr = tr; }
+      if (st !== o.st) { const [c, a] = st ? st.split('|') : ['', '']; o.el.style.color = c; o.el.style.opacity = a; o.st = st; }
+    }
+  }
+
+  // ================= SOUND =================
+  // All made here, nothing downloaded, off until asked for: the hush of a scriptorium, air past the dragon as it flies,
+  // a deep beat on every downstroke, a growl and a roar of fire when it breathes, and the page crackling as it burns.
+  const Sound = (() => {
+    let ac = null, master, WHITE, BROWN, airG, airF, hissG, burnG, roarG, roarF, on = false, crackle = 0;
+    function noiseBuf(seconds, brown) {
+      const b = ac.createBuffer(1, ac.sampleRate * seconds, ac.sampleRate), d = b.getChannelData(0);
+      let last = 0;
+      for (let i = 0; i < d.length; i++) { const w = Math.random() * 2 - 1; if (brown) { last = (last + .02 * w) / 1.02; d[i] = last * 3.5; } else d[i] = w; }
+      return b;
+    }
+    function loop(buf) { const s = ac.createBufferSource(); s.buffer = buf; s.loop = true; s.start(); return s; }
+    function env(g, t, peak, a, d) { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(.0001, t + a + d); }
+    function pan(x) { const p = ac.createStereoPanner ? ac.createStereoPanner() : null; if (p) { p.pan.value = Math.max(-1, Math.min(1, x * 2 - 1)) * .7; p.connect(master); return p; } return master; }
+    function bus(type, freq, q, src, gain) { const f = ac.createBiquadFilter(), g = ac.createGain(); f.type = type; f.frequency.value = freq; f.Q.value = q; g.gain.value = gain; loop(src).connect(f); f.connect(g); g.connect(master); return [g, f]; }
+    function start() {
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      const comp = ac.createDynamicsCompressor();
+      master = ac.createGain(); master.gain.value = 0;
+      master.connect(comp); comp.connect(ac.destination);
+      WHITE = noiseBuf(2, false); BROWN = noiseBuf(4, true);
+      bus('lowpass', 700, .5, BROWN, .22);                       // the room
+      [airG, airF] = bus('bandpass', 500, .6, BROWN, 0);         // air past the dragon
+      [hissG] = bus('highpass', 2600, .5, WHITE, 0);             // paper hissing as it burns
+      [burnG] = bus('lowpass', 1000, .6, BROWN, 0);              // the low breath of the fire
+      [roarG, roarF] = bus('lowpass', 600, 1.2, WHITE, 0);       // the roar
+    }
+    // a wingbeat: a deep, soft push of air
+    function flap(x, strength) {
+      if (!on) return;
+      const t = ac.currentTime, s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+      s.buffer = WHITE; f.type = 'lowpass'; f.frequency.setValueAtTime(1600, t); f.frequency.exponentialRampToValueAtTime(260, t + .3);
+      env(g, t, .32 * strength, .05, .32);
+      s.connect(f); f.connect(g); g.connect(pan(x)); s.start(t, Math.random() * 3, .45);
+      const o = ac.createOscillator(), og = ac.createGain();
+      o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(60, t + .2);
+      env(og, t, .22 * strength, .03, .22); o.connect(og); og.connect(pan(x)); o.start(t); o.stop(t + .3);
+    }
+    // the breath: a growl that opens into a roar of fire
+    function roar(x) {
+      if (!on) return;
+      const t = ac.currentTime;
+      const o = ac.createOscillator(), o2 = ac.createOscillator(), lf = ac.createBiquadFilter(), g = ac.createGain();
+      o.type = 'sawtooth'; o2.type = 'sawtooth';
+      o.frequency.setValueAtTime(82, t); o.frequency.exponentialRampToValueAtTime(58, t + .9);
+      o2.frequency.setValueAtTime(87, t); o2.frequency.exponentialRampToValueAtTime(61, t + .9);
+      lf.type = 'lowpass'; lf.frequency.setValueAtTime(500, t); lf.frequency.linearRampToValueAtTime(1500, t + .25); lf.frequency.exponentialRampToValueAtTime(380, t + 1);
+      env(g, t, .3, .06, .95);
+      o.connect(lf); o2.connect(lf); lf.connect(g); g.connect(pan(x)); o.start(t); o2.start(t); o.stop(t + 1.1); o2.stop(t + 1.1);
+      roarG.gain.cancelScheduledValues(t);
+      roarG.gain.setValueAtTime(roarG.gain.value, t); roarG.gain.linearRampToValueAtTime(.7, t + .12);
+      roarF.frequency.cancelScheduledValues(t);
+      roarF.frequency.setValueAtTime(500, t); roarF.frequency.exponentialRampToValueAtTime(2400, t + .3);
+    }
+    // a crackle: one tiny snap of burning paper
+    function snap() {
+      const t = ac.currentTime, s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+      s.buffer = WHITE; f.type = 'bandpass'; f.frequency.value = 1500 + Math.random() * 4000; f.Q.value = 2;
+      env(g, t, .12 + Math.random() * .22, .001, .015 + Math.random() * .03);
+      s.connect(f); f.connect(g); g.connect(pan(Math.random())); s.start(t, Math.random() * 1.8, .06);
+    }
+    function update(dt, speed, burning, breathing) {
+      if (!on) return;
+      const t = ac.currentTime, b = Math.min(1, burning / 900);
+      airG.gain.setTargetAtTime(Math.min(1, speed / 380) * .45, t, .2);
+      airF.frequency.setTargetAtTime(600 + speed * 2.2, t, .2);
+      hissG.gain.setTargetAtTime(b * .14, t, .3);
+      burnG.gain.setTargetAtTime(b * .8, t, .3);
+      if (!breathing && roarG.gain.value > .001) { roarG.gain.setTargetAtTime(0, t, .18); roarF.frequency.setTargetAtTime(700, t, .25); }
+      // a candle's odd snap in the quiet, many more when the page is alight
+      crackle += dt * (.8 + b * 26 + (breathing ? 14 : 0));
+      while (crackle >= 1) { crackle -= 1 + Math.random(); snap(); }
+    }
+    async function toggle() {
+      if (!ac) start();
+      on = !on;
+      if (on) { ac.resume(); master.gain.setTargetAtTime(.9, ac.currentTime, .3); }
+      else master.gain.setTargetAtTime(0, ac.currentTime, .15);
+      return on;
+    }
+    return { toggle, flap, roar, update };
+  })();
+  const soundBtn = root.getElementById('sound');
+  soundBtn.addEventListener('click', async () => {
+    const v = await Sound.toggle();
+    soundBtn.textContent = v ? 'Sound off' : 'Sound on';
+    soundBtn.setAttribute('aria-pressed', v ? 'true' : 'false');
+  });
+
+  // ================= INPUT =================
+  stage.addEventListener('pointermove', (e) => {
+    const r = stage.getBoundingClientRect();
+    pointer.x = e.clientX - r.left; pointer.y = e.clientY - r.top; pointer.last = performance.now();
+  }, { passive: true });
+  stage.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const r = stage.getBoundingClientRect();
+    pointer.x = e.clientX - r.left; pointer.y = e.clientY - r.top; pointer.last = performance.now();
+    if (D.breath <= 0) Sound.roar(Math.max(0, Math.min(1, D.x / W)));
+    D.breath = 1.1;
+  });
+
+  // ================= SIZE =================
+  let resizeT = 0;
+  function size() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = stage.clientWidth; H = stage.clientHeight;
+    world.style.width = W + 'px'; world.style.height = H + 'px';
+    for (const c of [c2, glc, fx, dgl]) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
+    GW = Math.ceil(W / CELL); GH = Math.ceil(H / CELL);
+    burn = new Float32Array(GW * GH); heat = new Float32Array(GW * GH); glow = new Float32Array(GW * GH); bBytes = new Uint8Array(GW * GH); hBytes = new Uint8Array(GW * GH * 2);
+    if (gl) gl.viewport(0, 0, glc.width, glc.height);
+    U2 = Math.max(.6, Math.min(1.15, Math.min(W, H * 1.4) / 1100)); S = .54 * U2;
+    FONT_PX = W < 600 ? 17 : 20; LH = Math.round(FONT_PX * 1.6);
+    flow.querySelectorAll('.run').forEach(el => { el.style.fontSize = FONT_PX + 'px'; el.style.lineHeight = LH + 'px'; });
+    setFont();
+    const cw = Math.min(720, W - 48);
+    col = { x0: Math.round((W - cw) / 2), x1: Math.round((W + cw) / 2), y0: 0, y1: H - 28 };
+    const top = Math.max(28, H * .07);
+    headEl.style.transform = `translate(${col.x0}px, ${top}px)`;
+    metaEl.style.transform = `translate(${col.x0}px, ${top - 22}px)`;
+    const headH = headEl.offsetHeight || 46;
+    col.y0 = Math.round(top + headH + 22);
+    const capS = LH * 3 - 8;
+    const capW = Math.round(capS * .42);
+    capEl.style.width = capW + 'px'; capEl.style.height = capS + 'px'; capEl.style.fontSize = Math.round(capS * 1.22) + 'px';
+    capEl.style.transform = `translate(${col.x0}px, ${col.y0 + 2}px)`;
+    capBox = { x0: col.x0 - 2, x1: col.x0 + capW + 12, y0: col.y0, y1: col.y0 + capS + 4 };
+    if (!segs[0].x) place(-120, H * .35);
+    dirty = true;
+    if (live && c2.requestPaint) c2.requestPaint();
+  }
+  new ResizeObserver(() => { clearTimeout(resizeT); resizeT = setTimeout(size, W ? 160 : 0); }).observe(stage);
+  // the first word of the story loses its first letter to the drop cap
+  story[0][0] = story[0][0].slice(1);
+
+  status.textContent = (live && glOK
+    ? 'Running on HTML-in-Canvas. The text is real HTML and re-flows around the dragon every frame; move to lead it, press to make it breathe fire on the live page.'
+    : 'The text is real HTML and re-flows around the dragon every frame. Move to lead it, press to breathe. In desktop Chrome with HTML-in-Canvas its fire also burns the page.')
+;
+
+  // ================= LOOP =================
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000, .05); last = now;
+    if (W) {
+      steer(dt, now);
+      breathe(dt);
+      updateFire(dt);
+      layout();
+      // heat rises and fades fast; the ember glow cools over a few seconds, creeping the burn outward while it lasts;
+      // holes stay while you play and the leaf mends once the fire has been out for a while
+      let burning = 0;
+      const cool = Math.exp(-dt * .45), mend = performance.now() - lastFire > 15000 ? dt * .12 : 0;
+      for (let y = 1; y < GH - 1; y++) for (let x = 1, row = y * GW; x < GW - 1; x++) {
+        const i = row + x;
+        heat[i] = heat[i] * .86 + heat[i + GW] * .11;
+        const g = glow[i];
+        if (g > .08) burning += g;
+        if (g > .04 && burn[i] > .45) {
+          const sp = dt * .22 * g * (.6 + Math.random() * .8);
+          burn[i - 1] = Math.min(1.25, burn[i - 1] + sp); burn[i + 1] = Math.min(1.25, burn[i + 1] + sp);
+          burn[i - GW] = Math.min(1.25, burn[i - GW] + sp); burn[i + GW] = Math.min(1.25, burn[i + GW] + sp);
+          glow[i - 1] = Math.max(glow[i - 1], g * .5); glow[i + 1] = Math.max(glow[i + 1], g * .5);
+        }
+        glow[i] = g * cool;
+        if (mend) { burn[i] = Math.max(0, burn[i] - mend); glow[i] *= .9; }
+      }
+      Sound.update(dt, D.speed, burning, D.breath > 0);
+      if (glOK) {
+        for (let i = 0; i < burn.length; i++) { bBytes[i] = Math.min(255, burn[i] * 204); hBytes[i * 2] = Math.min(255, heat[i] * 255); hBytes[i * 2 + 1] = Math.min(255, glow[i] * 255); }
+        gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, texBurn); gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, GW, GH, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, bBytes);
+        gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, texHeat); gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE_ALPHA, GW, GH, 0, gl.LUMINANCE_ALPHA, gl.UNSIGNED_BYTE, hBytes);
+        if (dirty) { gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, texPage); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c2); dirty = false; }
+        gl.uniform1f(U.t, now / 1000); gl.uniform1f(U.aspect, W / H); gl.uniform2f(U.res, W, H);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      }
+      fc.setTransform(1, 0, 0, 1, 0, 0); fc.clearRect(0, 0, fx.width, fx.height);
+      drawDragon(now);
+      drawFire();
+    }
+    requestAnimationFrame(frame);
+  }
+  const start = () => { size(); requestAnimationFrame(frame); };
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(start); else start();
+})();
+    </script>
+  </body>
+</html>

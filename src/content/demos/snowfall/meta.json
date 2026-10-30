@@ -1,0 +1,37 @@
+{
+  "title": "Snowfall",
+  "description": "A Japanese winter poster where snow settles on real, live HTML type, read from its pixels. Brush it off, write your own word, start a blizzard. By Baked Design Studio.",
+  "tags": [
+    "webgl",
+    "particles",
+    "typography",
+    "weather",
+    "sound",
+    "interactive"
+  ],
+  "author": "Baked Design Studio",
+  "dateCreated": "2026-10-29",
+  "context": "webgl",
+  "difficulty": "advanced",
+  "features": [
+    "layoutsubtree",
+    "drawElementImage",
+    "onpaint",
+    "requestPaint"
+  ],
+  "browserSupport": {
+    "chrome": true,
+    "firefox": false,
+    "safari": false
+  },
+  "related": [
+    {
+      "label": "Snowfall, full screen on baked.design",
+      "href": "https://baked.design/lab/snowfall/"
+    },
+    {
+      "label": "How we built it, step by step",
+      "href": "https://baked.design/fun/html-in-canvas/"
+    }
+  ]
+}
