@@ -51,6 +51,7 @@ announced implementations yet.
 - Demo gallery: https://html-in-canvas.dev/demos/
 - Spec docs: https://html-in-canvas.dev/docs/
 - Browser support / setup: https://html-in-canvas.dev/docs/browser-support/
+- Libraries & frameworks built on the API: https://html-in-canvas.dev/docs/libraries/
 - Contributing a demo: https://html-in-canvas.dev/contributing/
 - WICG spec repository: https://github.com/WICG/html-in-canvas
 - This site's source: https://github.com/en-dash-consulting/html-in-canvas-dot-dev

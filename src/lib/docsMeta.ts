@@ -26,6 +26,8 @@ export const DOC_DESCRIPTIONS: Record<string, string> = {
     'The official WICG HTML-in-Canvas examples analyzed: complex text, forms, video, and transforms, with the techniques behind each one.',
   'open-questions':
     'Open issues on the WICG HTML-in-Canvas spec (interactivity, tainting, layout), summarized with links to each upstream GitHub discussion.',
+  libraries:
+    'Libraries and frameworks built on HTML-in-Canvas: Three.js, Babylon.js, Babylon Lite, PixiJS, PlayCanvas, TypeGPU, Underglass and CanvasUI, with where to start.',
 };
 
 /**
