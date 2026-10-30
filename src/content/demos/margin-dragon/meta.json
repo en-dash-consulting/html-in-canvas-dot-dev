@@ -1,0 +1,38 @@
+{
+  "title": "Margin Dragon",
+  "description": "A watercolour dragon swims through a page of real HTML text that re-flows around it every frame, and its fire burns holes in the live page. By Baked Design Studio.",
+  "tags": [
+    "webgl",
+    "text-layout",
+    "shader",
+    "fire",
+    "illustration",
+    "sound",
+    "interactive"
+  ],
+  "author": "Baked Design Studio",
+  "dateCreated": "2026-10-29",
+  "context": "webgl",
+  "difficulty": "advanced",
+  "features": [
+    "layoutsubtree",
+    "drawElementImage",
+    "onpaint",
+    "requestPaint"
+  ],
+  "browserSupport": {
+    "chrome": true,
+    "firefox": false,
+    "safari": false
+  },
+  "related": [
+    {
+      "label": "Margin Dragon, full screen on baked.design",
+      "href": "https://baked.design/lab/margin-dragon/"
+    },
+    {
+      "label": "How we built it, step by step",
+      "href": "https://baked.design/fun/html-in-canvas/"
+    }
+  ]
+}
