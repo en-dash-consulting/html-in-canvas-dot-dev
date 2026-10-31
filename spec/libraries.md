@@ -18,7 +18,7 @@ The demos on this site call the raw API. These projects wrap it for a renderer o
 
 ## UI frameworks and components
 
-- **[Underglass](https://github.com/RaananW/underglass)**: React and Vue adapters (`@underglass/react`, `@underglass/vue`) that present an app's own UI through WebGPU. Layers move, fade and run WGSL effects while clicks, focus and typing still reach the original controls; without the API the app runs as ordinary DOM. Its experimental companion, **Strata** (`@underglass/ui`), is a 3D design language and component library: tokens, CSS and components for DOM, React, Vue and Astro, drawn through the GPU when Underglass is on. See the [live gallery](https://raananw.github.io/underglass/).
+- **[Underglass](https://github.com/RaananW/underglass)**: React and Vue adapters (`@underglass/react`, `@underglass/vue`) that present an app's own UI through WebGPU. Layers move, fade and run WGSL effects while clicks, focus and typing still reach the original controls; without the API the app runs as ordinary DOM. Its experimental companion, **Strata** (`@underglass/ui`), is a 3D design language and component library: tokens, CSS and components for DOM, React, Vue and Astro, drawn through the GPU when Underglass is on. See the [live gallery](https://underglass.dev/).
 - **[CanvasUI](https://canvasui.dev/)**: an open-source library of UI components built on HTML-in-Canvas.
 
 Built something on the API? Open a pull request that adds it here.
