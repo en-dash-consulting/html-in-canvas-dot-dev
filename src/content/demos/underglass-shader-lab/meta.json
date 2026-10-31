@@ -1,0 +1,37 @@
+{
+  "title": "Underglass Shader Lab",
+  "description": "A React app's own controls and artwork drawn through WebGPU with Underglass: a WGSL effect chain runs on the artwork while the real inputs, sliders and buttons keep native clicks, focus and typing.",
+  "tags": [
+    "webgpu",
+    "shader",
+    "wgsl",
+    "react",
+    "framework",
+    "interactive"
+  ],
+  "author": "Raanan Weber",
+  "dateCreated": "2026-10-30",
+  "context": "webgpu",
+  "difficulty": "intermediate",
+  "features": [
+    "layoutsubtree",
+    "drawElementImageToTexture",
+    "updateElementGeometry",
+    "requestPaint"
+  ],
+  "browserSupport": {
+    "chrome": true,
+    "firefox": false,
+    "safari": false
+  },
+  "related": [
+    {
+      "label": "Underglass on GitHub",
+      "href": "https://github.com/RaananW/underglass"
+    },
+    {
+      "label": "The full Underglass gallery",
+      "href": "https://raananw.github.io/underglass/"
+    }
+  ]
+}
