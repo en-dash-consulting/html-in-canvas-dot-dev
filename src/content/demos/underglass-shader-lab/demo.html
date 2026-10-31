@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Underglass Shader Lab</title>
+    <style>
+      /*
+       * Works standalone (body) and mounted in the wrapped page's shadow
+       * root (:host). Underglass renders the React tree inside #stage, so
+       * these rules reach it in both contexts.
+       */
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        height: 100%;
+      }
+
+      body,
+      :host {
+        display: block;
+        margin: 0;
+        min-height: 100%;
+        background: #0d0f1c;
+        color: #e8e6f5;
+        font: 14px/1.4 system-ui, sans-serif;
+      }
+
+      .demo {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+
+      .bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 12px;
+        padding-right: 44px; /* room for the wrapped page's fullscreen button */
+        margin-bottom: 12px;
+      }
+
+      #mode {
+        flex: 1 1 240px;
+        margin: 0;
+        color: #b9b5d6;
+      }
+
+      #mode strong {
+        color: #e8e6f5;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      button {
+        min-height: 32px;
+        padding: 4px 12px;
+        border: 1px solid #5a5490;
+        border-radius: 8px;
+        background: #25224a;
+        color: #f2f0ff;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: #322e62;
+      }
+
+      button:focus-visible,
+      input:focus-visible {
+        outline: 2px solid #9d8cff;
+        outline-offset: 2px;
+      }
+
+      #stage {
+        position: relative;
+        width: 100%;
+        height: 520px;
+      }
+
+      .note {
+        margin: 12px 0 0;
+        color: #9a96bb;
+        font-size: 13px;
+      }
+
+      /* ---------- The React tree (rendered by Underglass) ---------- */
+
+      .panel h2 {
+        margin: 0;
+        font-size: 17px;
+      }
+
+      .panel label {
+        color: #c9c5e6;
+      }
+
+      .panel input[type="text"] {
+        width: 100%;
+        min-height: 32px;
+        padding: 4px 8px;
+        border: 1px solid #4a4580;
+        border-radius: 6px;
+        background: #12112a;
+        color: #f2f0ff;
+      }
+
+      .chain {
+        display: grid;
+        gap: 6px;
+        margin: 0;
+        padding: 8px 10px 10px;
+        border: 1px solid #3a3670;
+        border-radius: 10px;
+      }
+
+      .chain legend {
+        padding: 0 4px;
+        color: #c9c5e6;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 122px 1fr 40px;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .row input[type="range"] {
+        width: 100%;
+        accent-color: #9d8cff;
+      }
+
+      .row .value {
+        color: #9a96bb;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .check {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .check input {
+        accent-color: #9d8cff;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .feedback {
+        min-height: 2.8em;
+        margin: 0;
+        color: #b9b5d6;
+        font-size: 13px;
+      }
+
+      .art svg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      .art .caption {
+        position: absolute;
+        left: 24px;
+        right: 24px;
+        bottom: 20px;
+        margin: 0;
+        color: #fff;
+        font: 700 clamp(22px, 4vw, 34px) / 1.1 Georgia, serif;
+        text-shadow: 0 2px 12px rgb(0 0 0 / 0.6);
+      }
+
+      .art .kicker {
+        position: absolute;
+        left: 24px;
+        top: 18px;
+        margin: 0;
+        color: rgb(255 255 255 / 0.75);
+        font-size: 12px;
+        letter-spacing: 0.12em;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="demo">
+      <div class="bar">
+        <p id="mode" role="status">Starting in ordinary DOM…</p>
+        <button id="toggle" type="button" hidden>Use ordinary DOM</button>
+      </div>
+      <div id="stage"></div>
+      <p class="note">
+        The controls are ordinary React elements with React state.
+        Underglass draws them and the artwork into one WebGPU canvas with
+        <code>drawElementImageToTexture</code> and places their hit-testing boxes
+        with <code>updateElementGeometry</code>, so clicks, focus and typing still
+        reach the real elements. The shader chain runs only on the artwork.
+      </p>
+    </main>
+
+    <!--
+      React 19, React DOM and @underglass/react, prebuilt into one classic
+      script that sets window.Underglass. vendor/README.md says how to
+      rebuild it; vendor/LICENSES.txt holds the licenses.
+    -->
+    <script src="vendor/underglass.js"></script>
+    <script>
+      const root = window.__demoRoot ?? document;
+      const $ = (id) => root.getElementById(id);
+      const {
+        createElement: h,
+        Fragment,
+        useEffect,
+        useRef,
+        useState,
+        createCanvasHosts,
+        defineEffect,
+        mountCanvasApp,
+        Surface,
+        useGPUHost,
+      } = window.Underglass;
+
+      const stage = $("stage");
+      const modeText = $("mode");
+      const toggle = $("toggle");
+      const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+
+      // ---------------------------------------------------------------
+      // The effect chain. Effects run only on a decorative layer (inert,
+      // aria-hidden, no controls); the panel with the real controls is
+      // never distorted. Every descriptor states that policy explicitly.
+      // ---------------------------------------------------------------
+      const policy = { bounds: "layer", interaction: "decorative", media: "identity", fallback: "static" };
+
+      // A custom WGSL colour function: hue drift, an aurora curtain and
+      // scanlines. Strength 0 is an exact identity.
+      const aurora = defineEffect({
+        name: "lab-aurora",
+        parameters: { strength: { min: 0, max: 1 }, speed: { min: 0, max: 4 }, scanlines: { min: 0, max: 1 }, glow: { min: 0, max: 1 } },
+        geometry: "color",
+        bounds: "layer",
+        capabilities: ["webgpu"],
+        wgsl: `
+          let uv = local / max(extent, vec2f(1.0));
+          let clock = seconds * parameters.y;
+          let turn = parameters.x * (uv.x * 2.4 + uv.y * 1.3 + clock * 0.9) * 3.14159;
+          let axis = vec3f(0.57735);
+          let cosine = cos(turn);
+          let rotated = color.rgb * cosine + cross(axis, color.rgb) * sin(turn) + axis * dot(axis, color.rgb) * (1.0 - cosine);
+          let band = 0.5 + 0.5 * sin(uv.x * 7.0 + clock * 1.7 + sin(uv.y * 5.0 - clock));
+          let curtain = vec3f(0.25, 1.0, 0.75) * band * parameters.w * smoothstep(0.15, 0.95, 1.0 - uv.y);
+          let scan = 1.0 - parameters.x * parameters.z * 0.4 * (0.5 + 0.5 * sin(local.y * 1.7 - clock * 8.0));
+          let lit = (mix(color.rgb, rotated, parameters.x) + curtain * parameters.x * 0.6) * scan;
+          return vec4f(lit, color.a);`,
+      });
+
+      // A chain holds at most three operations; sampling effects
+      // (ripple, chromatic) come before colour effects (custom, dissolve).
+      const MAX_OPERATIONS = 3;
+      const EFFECTS = [
+        { key: "ripple", label: "Ripple", min: 0, max: 12, step: 1, unit: "px" },
+        { key: "chromatic", label: "Chromatic", min: 0, max: 12, step: 1, unit: "px" },
+        { key: "aurora", label: "Aurora (WGSL)", min: 0, max: 1, step: 0.05, unit: "%" },
+        { key: "dissolve", label: "Dissolve", min: 0, max: 0.9, step: 0.05, unit: "%" },
+      ];
+      const START = {
+        on: { ripple: false, chromatic: true, aurora: true, dissolve: false },
+        value: { ripple: 6, chromatic: 4, aurora: 0.6, dissolve: 0.3 },
+      };
+
+      function chain(lab, seconds, playing) {
+        const time = () => ({ seconds, playing });
+        const ops = [];
+        if (lab.on.ripple) ops.push({ kind: "ripple", parameters: { amplitude: lab.value.ripple }, time: time(), ...policy });
+        if (lab.on.chromatic) ops.push({ kind: "chromatic", parameters: { displacement: lab.value.chromatic }, time: time(), ...policy });
+        // Keep the custom definition attached (at identity) while there is
+        // room: a definition compiles when GPU is admitted.
+        if (lab.on.aurora || ops.length + Number(lab.on.dissolve) < MAX_OPERATIONS) {
+          const strength = lab.on.aurora ? lab.value.aurora : 0;
+          ops.push({ kind: "custom", definition: aurora, parameters: { strength, speed: 1, scanlines: lab.on.aurora ? 0.35 : 0, glow: lab.on.aurora ? 0.7 : 0 }, time: time(), ...policy });
+        }
+        if (lab.on.dissolve) ops.push({ kind: "dissolve", parameters: { amount: lab.value.dissolve, speed: 1 }, time: time(), ...policy });
+        return ops;
+      }
+
+      // Applies `ops` to the art layer and keeps them applied: retries
+      // while the app is still mounting, drops the custom effect where the
+      // browser has no WebGPU, and re-attaches after a return to DOM so
+      // the next GPU admission compiles the chain again.
+      function useArtEffects(ops) {
+        const gpu = useGPUHost();
+        const wanted = useRef(ops);
+        wanted.current = ops;
+        const [error, setError] = useState(null);
+        useEffect(() => {
+          let alive = true;
+          let handle;
+          let timer;
+          const attach = (attempt = 0) => {
+            if (!alive) return;
+            const list = wanted.current;
+            try {
+              let next;
+              try {
+                next = gpu.setEffects("art", list);
+              } catch (cause) {
+                if (!/New custom definitions|requires WebGPU/.test(String(cause))) throw cause;
+                const plain = list.filter((op) => op.kind !== "custom");
+                next = plain.length ? gpu.setEffects("art", plain) : undefined;
+              }
+              if (!next) handle?.cancel();
+              handle = next;
+              setError(null);
+              next?.finished.then((result) => {
+                if (alive && result.status === "fallback" && handle === next) timer = setTimeout(attach, 0);
+              });
+            } catch (cause) {
+              if (attempt < 50 && /idle DOM or admitted GPU|mount has not completed/.test(String(cause))) {
+                timer = setTimeout(() => attach(attempt + 1), 100);
+                return;
+              }
+              setError(cause instanceof Error ? cause.message : String(cause));
+            }
+          };
+          attach();
+          return () => {
+            alive = false;
+            clearTimeout(timer);
+            handle?.dispose();
+          };
+        }, [gpu, ops]);
+        return error;
+      }
+
+      // ---------------------------------------------------------------
+      // The artwork: a seeded SVG skyline plus a live HTML caption.
+      // ---------------------------------------------------------------
+      function mulberry(seed) {
+        let state = seed * 0x9e3779b1;
+        return () => {
+          state |= 0;
+          state = (state + 0x6d2b79f5) | 0;
+          let t = Math.imul(state ^ (state >>> 15), 1 | state);
+          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+
+      function Skyline({ seed }) {
+        const random = mulberry(seed);
+        const hue = [252, 284, 214, 318, 196, 236, 268][seed % 7] + Math.floor(random() * 12);
+        const stars = Array.from({ length: 60 }, () => ({ x: random() * 640, y: random() * 240, r: random() * 1.6 + 0.4, o: random() * 0.6 + 0.3 }));
+        const towers = Array.from({ length: 16 }, (_, i) => ({ x: i * 41 - 6 + random() * 10, w: 30 + random() * 18, h: 60 + random() * 150 }));
+        const moon = { x: 120 + random() * 400, y: 90 + random() * 50 };
+        return h(
+          "svg",
+          { viewBox: "0 0 640 400", preserveAspectRatio: "xMidYMid slice", "aria-hidden": "true" },
+          h(
+            "defs",
+            null,
+            h(
+              "linearGradient",
+              { id: "lab-sky-gradient", x1: 0, x2: 0, y1: 0, y2: 1 },
+              h("stop", { offset: 0, stopColor: `hsl(${hue} 70% 14%)` }),
+              h("stop", { offset: 0.55, stopColor: `hsl(${(hue + 40) % 360} 65% 32%)` }),
+              h("stop", { offset: 1, stopColor: `hsl(${(hue + 80) % 360} 80% 62%)` }),
+            ),
+            h(
+              "radialGradient",
+              { id: "lab-moon-gradient" },
+              h("stop", { offset: 0, stopColor: "#fffbe8" }),
+              h("stop", { offset: 0.7, stopColor: "#ffe1a8" }),
+              h("stop", { offset: 1, stopColor: "#ffb98a" }),
+            ),
+          ),
+          h("rect", { width: 640, height: 400, fill: "url(#lab-sky-gradient)" }),
+          stars.map((s, i) => h("circle", { key: i, cx: s.x, cy: s.y, r: s.r, fill: "#fff", opacity: s.o })),
+          [130, 100, 74].map((r, i) =>
+            h("circle", { key: r, cx: moon.x, cy: moon.y, r, fill: "none", stroke: `hsl(${(hue + 160 + i * 30) % 360} 90% 70%)`, strokeWidth: i === 1 ? 2 : 1, opacity: 0.35 - i * 0.06 }),
+          ),
+          h("circle", { cx: moon.x, cy: moon.y, r: 54, fill: "url(#lab-moon-gradient)" }),
+          towers.map((t, i) => h("rect", { key: i, x: t.x, y: 400 - t.h, width: t.w, height: t.h, fill: `hsl(${(hue + 230) % 360} 40% ${10 + (i % 3) * 4}%)` })),
+          towers.map((t, i) =>
+            Array.from({ length: Math.floor(t.h / 22) }, (_, row) =>
+              Array.from({ length: Math.floor(t.w / 12) }, (_, col) =>
+                (row * 7 + col * 3 + i) % 4 === 0
+                  ? h("rect", { key: `${i}-${row}-${col}`, x: t.x + 5 + col * 12, y: 400 - t.h + 10 + row * 22, width: 5, height: 8, fill: `hsl(${(hue + 40) % 360} 100% 75%)`, opacity: 0.85 })
+                  : null,
+              ),
+            ),
+          ),
+        );
+      }
+
+      // ---------------------------------------------------------------
+      // The app: one interactive layer (the panel) and one decorative
+      // layer (the art). Both are Surfaces: ordinary React elements that
+      // Underglass places as GPU layers.
+      // ---------------------------------------------------------------
+      function layoutFor(width) {
+        const pad = 16;
+        if (width >= 720) {
+          const height = 520;
+          return {
+            height,
+            panel: { x: 0, y: 0, width: 300, height },
+            art: { x: 300 + pad, y: 0, width: width - 300 - pad, height },
+          };
+        }
+        const panelHeight = 390;
+        const artHeight = Math.round(Math.min(320, width * 0.75));
+        return {
+          height: panelHeight + pad + artHeight,
+          panel: { x: 0, y: 0, width, height: panelHeight },
+          art: { x: 0, y: panelHeight + pad, width, height: artHeight },
+        };
+      }
+
+      function App() {
+        const [width, setWidth] = useState(() => stage.clientWidth || 960);
+        const [lab, setLab] = useState(START);
+        const [caption, setCaption] = useState("Aurora over a quiet city");
+        const [seed, setSeed] = useState(7);
+        const [playing, setPlaying] = useState(!reducedMotion.matches);
+        const [ops, setOps] = useState(() => chain(START, 0, !reducedMotion.matches));
+        const epoch = useRef(performance.now());
+        const error = useArtEffects(ops);
+
+        // The stage follows its container; the layout follows the stage.
+        useEffect(() => {
+          const observer = new ResizeObserver(() => setWidth(Math.max(280, stage.clientWidth)));
+          observer.observe(stage);
+          return () => observer.disconnect();
+        }, []);
+        const layout = layoutFor(width);
+        useEffect(() => {
+          stage.style.height = `${layout.height}px`;
+        }, [layout.height]);
+
+        // Every change continues the shader clock instead of restarting it.
+        const apply = (next, nextPlaying = playing) => {
+          setLab(next);
+          setOps(chain(next, ((performance.now() - epoch.current) / 1000) % 1000, nextPlaying && !reducedMotion.matches));
+        };
+        const active = EFFECTS.filter((e) => lab.on[e.key]).length;
+        const summary = EFFECTS.filter((e) => lab.on[e.key])
+          .map((e) => `${e.label.split(" ")[0]} ${e.unit === "%" ? Math.round(lab.value[e.key] * 100) : lab.value[e.key]}${e.unit}`)
+          .join(" → ");
+
+        const row = (effect) => {
+          const on = lab.on[effect.key];
+          const value = lab.value[effect.key];
+          const shown = effect.unit === "%" ? Math.round(value * 100) : value;
+          return h(
+            "div",
+            { className: "row", key: effect.key },
+            h(
+              "label",
+              { className: "check" },
+              h("input", {
+                type: "checkbox",
+                id: `lab-${effect.key}`,
+                checked: on,
+                disabled: !on && active >= MAX_OPERATIONS,
+                onChange: () => apply({ ...lab, on: { ...lab.on, [effect.key]: !on } }),
+              }),
+              effect.label,
+            ),
+            h("input", {
+              type: "range",
+              id: `lab-${effect.key}-amount`,
+              "aria-label": `${effect.label} amount`,
+              "aria-valuetext": `${shown}${effect.unit}`,
+              min: effect.min,
+              max: effect.max,
+              step: effect.step,
+              value,
+              onChange: (event) => {
+                const next = { ...lab, value: { ...lab.value, [effect.key]: Number(event.target.value) } };
+                // Dragging a slider switches its effect on when there is room.
+                if (!on && active < MAX_OPERATIONS) next.on = { ...lab.on, [effect.key]: true };
+                apply(next);
+              },
+            }),
+            h("span", { className: "value", "aria-hidden": "true" }, `${shown}${effect.unit}`),
+          );
+        };
+
+        return h(
+          Fragment,
+          null,
+          h(
+            Surface,
+            {
+              id: "panel",
+              className: "panel",
+              "aria-label": "Shader lab controls",
+              layout: { ...layout.panel, padding: 16, direction: "column", gap: 12 },
+              appearance: { background: "rgb(28, 26, 56)", color: "rgb(232, 230, 245)", radius: 16 },
+            },
+            h("h2", null, "Shader lab"),
+            h("label", { htmlFor: "lab-caption" }, "Caption on the artwork"),
+            h("input", {
+              id: "lab-caption",
+              type: "text",
+              maxLength: 40,
+              autoComplete: "off",
+              value: caption,
+              onChange: (event) => setCaption(event.target.value),
+            }),
+            h(
+              "fieldset",
+              { className: "chain" },
+              h("legend", null, `Effect chain (${active}/${MAX_OPERATIONS})`),
+              EFFECTS.map(row),
+              h(
+                "label",
+                { className: "check" },
+                h("input", {
+                  type: "checkbox",
+                  id: "lab-animate",
+                  checked: playing && !reducedMotion.matches,
+                  disabled: reducedMotion.matches,
+                  onChange: () => {
+                    setPlaying(!playing);
+                    apply(lab, !playing);
+                  },
+                }),
+                "Animate shader time",
+              ),
+            ),
+            h(
+              "div",
+              { className: "actions" },
+              h("button", { type: "button", id: "lab-sky", onClick: () => setSeed((s) => s + 1) }, "New sky"),
+              h("button", { type: "button", id: "lab-clear", onClick: () => apply({ ...lab, on: { ripple: false, chromatic: false, aurora: false, dissolve: false } }) }, "Clear effects"),
+            ),
+            h("p", { className: "feedback", id: "lab-feedback" }, error ? `Effect unavailable: ${error}` : summary || "No effect: the original artwork."),
+          ),
+          h(
+            Surface,
+            {
+              id: "art",
+              className: "art",
+              decorative: true,
+              layout: { ...layout.art, overflow: "hidden" },
+              appearance: { background: "rgb(16, 18, 48)", radius: 16 },
+            },
+            h(Skyline, { seed }),
+            h("p", { className: "kicker" }, `NOW SHOWING · No. ${String(seed).padStart(2, "0")}`),
+            h("p", { className: "caption" }, caption || " "),
+          ),
+        );
+      }
+
+      // ---------------------------------------------------------------
+      // Mount, then ask for GPU once the stage is on screen (admission
+      // draws and clicks a small probe inside the output canvas, so it
+      // must be visible). Without HTML-in-Canvas or WebGPU the same app
+      // stays ordinary DOM and the status line says why.
+      // ---------------------------------------------------------------
+      const hosts = createCanvasHosts(stage);
+      let userChoseDom = false;
+      const controller = mountCanvasApp(
+        {
+          ...hosts,
+          onStatusChange(status) {
+            if (status.mode === "gpu") {
+              modeText.innerHTML = "<strong>GPU:</strong> WebGPU presents the React tree; the controls stay native.";
+              toggle.textContent = "Use ordinary DOM";
+              toggle.hidden = false;
+            } else if (status.mode === "dom") {
+              modeText.innerHTML = "<strong>Ordinary DOM.</strong> ";
+              modeText.append(userChoseDom ? "GPU is off." : status.reason);
+              toggle.textContent = "Use GPU";
+              toggle.hidden = false;
+            }
+          },
+        },
+        h(App),
+      );
+      // Expose the controller for the smoke test and for poking at it in DevTools.
+      stage.underglass = controller;
+
+      const enable = () => controller.enable().catch((cause) => console.warn(cause));
+      const visible = new IntersectionObserver((entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        if (!userChoseDom && controller.state().mode === "dom" && !controller.state().initializing) enable();
+      }, { threshold: 0.6 });
+      visible.observe(stage);
+
+      toggle.addEventListener("click", () => {
+        if (controller.state().mode === "gpu") {
+          userChoseDom = true;
+          controller.disable();
+        } else {
+          userChoseDom = false;
+          enable();
+        }
+      });
+
+      // The wrapped page swaps content on navigation; release the GPU then.
+      document.addEventListener(
+        "astro:before-swap",
+        () => {
+          visible.disconnect();
+          controller.dispose();
+        },
+        { once: true },
+      );
+    </script>
+  </body>
+</html>
