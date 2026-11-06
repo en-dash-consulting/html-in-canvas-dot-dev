@@ -1,0 +1,1 @@
+/*! Underglass Shader Lab bundle for html-in-canvas.dev. Contains react, react-dom and scheduler (MIT), @underglass/react and @underglass/core (Apache-2.0, https://github.com/RaananW/underglass) and @babylonjs/lite (Apache-2.0). License texts and notices: LICENSES.txt next to this file. Rebuild steps: README.md. */
