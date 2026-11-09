@@ -5,7 +5,7 @@ order: 6
 
 # Browser Support
 
-_Auto-synced from [`WICG/html-in-canvas` README](https://github.com/WICG/html-in-canvas/blob/main/README.md) on 2026-10-29 via `scripts/sync-spec-docs.mjs`._
+_Auto-synced from [`WICG/html-in-canvas` README](https://github.com/WICG/html-in-canvas/blob/main/README.md) on 2026-11-09 via `scripts/sync-spec-docs.mjs`._
 
 > **Chrome 157:** the upstream text below still describes the flag. Chrome 157 ships the API on by default; see [How to try it](#how-to-try-it).
 
@@ -13,17 +13,9 @@ _Auto-synced from [`WICG/html-in-canvas` README](https://github.com/WICG/html-in
 
 This is a living explainer which is continuously updated as we receive feedback.
 
-The APIs described here are implemented behind a flag in Chromium and can be enabled with `chrome://flags/#canvas-draw-element`.
-
 ## Developer Trial Information
 
-HTML-in-Canvas can be tried today by enabling *both* `chrome://flags/#canvas-draw-element` and `chrome://flags/#enable-experimental-web-platform-features` in Chrome Canary.
-
-We are most interested in feedback on the following topics:
-* What content works, and what fails? Which failure modes are most important to fix?
-* How does the feature interact with accessibility features? How can accessibility support be improved?
-
-Please file API feedback [here](https://github.com/WICG/html-in-canvas/issues/new), and Chromium implementation bugs [here](https://issues.chromium.org/u/0/issues/new?pli=1&component=1456440&template=0).
+_(not found in upstream README)_
 
 ## How to try it
 
